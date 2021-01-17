@@ -598,17 +598,17 @@ public class Player : MonoBehaviour
         if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (moving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
             //Smoothly orient toward camera look direction
-            float errorThreshold = 0.25f;
-            float turnRate = 0.12f; //0.12082853855005753739930955120829f;
+
+            float torqueStrengthFactor = 3f;
 
             //Pitch
-            TorqueAxisRelative(fpCamMountTran.forward, transform.forward, 500f, errorThreshold, turnRate);
+            TorqueAxisRelative(torqueStrengthFactor * 500f, fpCamMountTran.forward, transform.forward);
 
             //Yaw
-            TorqueAxisRelative(fpCamMountTran.right, transform.right, 0.3f, errorThreshold, turnRate);
+            TorqueAxisRelative(torqueStrengthFactor * 0.3f, fpCamMountTran.right, transform.right);
 
             //Roll
-            TorqueAxisRelative(fpCamMountTran.up, transform.up, 100f, errorThreshold, turnRate);
+            TorqueAxisRelative(torqueStrengthFactor * 100f, fpCamMountTran.up, transform.up);
 
 
             //ORIGINAL SOLUTION
@@ -807,8 +807,11 @@ public class Player : MonoBehaviour
 
     #region General methods: Movement
 
-    private void TorqueAxisRelative(Vector3 cameraDirection, Vector3 playerShipDirection, float torque, float errorThreshold, float turnRate)
+    private void TorqueAxisRelative(float torque, Vector3 cameraDirection, Vector3 playerShipDirection)
     {
+        float errorThreshold = 0.25f;
+        float turnRate = 0.12f; //0.12082853855005753739930955120829f;
+
         Vector3 cameraToShipCross = Vector3.Cross(-cameraDirection, playerShipDirection);
         float angleDifference = Mathf.Abs(Vector3.Cross(rb.angularVelocity, playerShipDirection).magnitude);
 
