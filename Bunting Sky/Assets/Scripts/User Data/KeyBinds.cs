@@ -9,6 +9,8 @@ public class KeyBinds : MonoBehaviour
     private IOBuffer ioBuffer;
     private string jsonSaveData;
     private string path;
+    private string keybindsSaveFile;
+    private string fullPath;
 
     //Mouse code definitions (1000 is subtracted later)
     private readonly short MOUSE_PRIMARY = 1000;
@@ -51,7 +53,9 @@ public class KeyBinds : MonoBehaviour
     public void Start()
     {
         //Set path
-        path = Application.persistentDataPath + "/user/keybinds.json";
+        path = Application.persistentDataPath;
+        keybindsSaveFile = "/keybinds.json";
+        fullPath = path + Control.userDataFolder + keybindsSaveFile;
 
         //Set all keybinds to their default settings as a fail-safe
         SetBindsToDefault();
@@ -210,7 +214,7 @@ public class KeyBinds : MonoBehaviour
     public void LoadIntoIOBuffer()
     {
         //Load all keybinds
-        jsonSaveData = File.ReadAllText(path);
+        jsonSaveData = File.ReadAllText(fullPath);
 
         ioBuffer = JsonUtility.FromJson<IOBuffer>(jsonSaveData);
     }
@@ -220,21 +224,33 @@ public class KeyBinds : MonoBehaviour
         //Save all keybinds
         jsonSaveData = JsonUtility.ToJson(ioBuffer, true);
 
-        File.WriteAllText(path, jsonSaveData);
+        File.WriteAllText(fullPath, jsonSaveData);
     }
 
     public void Load(bool saveIfFileDoesNotExist)
     {
-        if (File.Exists(path))
+        if (File.Exists(fullPath))
         {
             LoadIntoIOBuffer();
             SetBindsToIOBuffer();
         }
         else
         {
-            Debug.Log("File does not exist");
+            Debug.Log("File does not exist: " + fullPath);
 
-            if(saveIfFileDoesNotExist) SaveFromIOBuffer();
+            //Create file is toggled on to create if file does not exist
+            if (saveIfFileDoesNotExist)
+            {
+                //Create user data folder if needed
+                if (!Directory.Exists(path + Control.userDataFolder))
+                {
+                    Debug.Log("Directory does not exist; creating directory: " + path + Control.userDataFolder);
+                    Directory.CreateDirectory(path + Control.userDataFolder);
+                }
+
+                Debug.Log("File does not exist; creating file: " + fullPath);
+                SaveFromIOBuffer();
+            }
         }
     }
 

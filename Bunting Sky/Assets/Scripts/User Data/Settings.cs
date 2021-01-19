@@ -9,24 +9,39 @@ public class Settings : MonoBehaviour
     private IOBuffer ioBuffer;
     private string jsonSaveData;
     private string path;
+    private string settingsSaveFile;
+    private string fullPath;
+
+    //Definitions
+    public readonly float MOUSE_SENSITIVITY_MIN = 0.001f;
+    public readonly float MOUSE_SENSITIVITY_MAX = 1000f;
+    public readonly float CAMERA_DISTANCE_MIN = 0.08f;
+    public readonly float CAMERA_DISTANCE_MAX = 2.4f;
+    public readonly float CAMERA_HEIGHT_MIN = 0f;
+    public readonly float CAMERA_HEIGHT_MAX = 1f;
+    public readonly int TARGET_FPS_MIN = 1;
+    public readonly int TARGET_FPS_MAX = 2000;
 
     //Settings initializations
-    [System.NonSerialized] public float mouseSens;
-    [System.NonSerialized] public float cameraFollowDist;
-    [System.NonSerialized] public float cameraFollowHeight;
-    [System.NonSerialized] public bool displayFPSCounter;
+    [System.NonSerialized] public float mouseSensitivity;
+    [System.NonSerialized] public float cameraDistance;
+    [System.NonSerialized] public float cameraHeight;
+    [System.NonSerialized] public bool displayFPS;
     [System.NonSerialized] public bool displayHUD;
+    [System.NonSerialized] public int targetFPS;
     [System.NonSerialized] public bool spotlightOn;
 
     public void Start()
     {
         //Set path
-        path = Application.persistentDataPath + "/user/settings.json";
+        path = Application.persistentDataPath;
+        settingsSaveFile = "/settings.json";
+        fullPath = path + Control.userDataFolder + settingsSaveFile;
 
-        //Set all keybinds to their default settings as a fail-safe
+        //Set all settings to their default settings as a fail-safe
         SetSettingsToDefault();
 
-        //Load user-saved keybinds. If no file exists, make one from the defaults
+        //Load user-saved settings. If no file exists, make one from the defaults
         Load(true);
     }
 
@@ -35,11 +50,12 @@ public class Settings : MonoBehaviour
         ioBuffer = new IOBuffer
         {
             //Set defaults
-            mouseSens = 3f,
-            cameraFollowDist = 0.3f, //0.025 increments, range of 0.08f to 2.4f, 0.08f for first-person
-            cameraFollowHeight = 0.2f, //range of 0 to 1?
-            displayFPSCounter = false,
+            mouseSensitivity = 3f,
+            cameraFollowDistance = 1.0f, //0.025 increments from scroll wheel
+            cameraFollowHeight = 0.2f,
+            displayFPS = false,
             displayHUD = true,
+            targetFPS = 300,
             spotlightOn = true
         };
     }
@@ -47,25 +63,41 @@ public class Settings : MonoBehaviour
     public void SetIOBufferToSettings()
     {
         //Set all io buffer settings to the loaded settings
-        ioBuffer.mouseSens = mouseSens;
-        ioBuffer.cameraFollowDist = cameraFollowDist;
-        ioBuffer.cameraFollowHeight = cameraFollowHeight;
-        ioBuffer.displayFPSCounter = displayFPSCounter;
+        ioBuffer.mouseSensitivity = mouseSensitivity;
+        ioBuffer.cameraFollowDistance = cameraDistance;
+        ioBuffer.cameraFollowHeight = cameraHeight;
+        ioBuffer.displayFPS = displayFPS;
         ioBuffer.displayHUD = displayHUD;
+        ioBuffer.targetFPS = targetFPS;
         ioBuffer.spotlightOn = spotlightOn;
     }
 
     public void SetSettingsToIOBuffer()
     {
         //Set all settings to the io buffer's settings
-        mouseSens = ioBuffer.mouseSens;
-        cameraFollowDist = ioBuffer.cameraFollowDist;
-        cameraFollowHeight = ioBuffer.cameraFollowHeight;
-        displayFPSCounter = ioBuffer.displayFPSCounter;
+        mouseSensitivity = ioBuffer.mouseSensitivity;
+        cameraDistance = ioBuffer.cameraFollowDistance;
+        cameraHeight = ioBuffer.cameraFollowHeight;
+        displayFPS = ioBuffer.displayFPS;
         displayHUD = ioBuffer.displayHUD;
+        targetFPS = ioBuffer.targetFPS;
         spotlightOn = ioBuffer.spotlightOn;
     }
 
+    //This entire object is what we save/load. It must contain duplicates for all settings definitions that its parent class has
+    public class IOBuffer
+    {
+        //Settings initializations
+        public float mouseSensitivity;
+        public float cameraFollowDistance;
+        public float cameraFollowHeight;
+        public bool displayFPS;
+        public bool displayHUD;
+        public int targetFPS;
+        public bool spotlightOn;
+    }
+
+    #region Save/load
     public void SetSettingsToDefault()
     {
         InitIOBuffer();
@@ -75,7 +107,7 @@ public class Settings : MonoBehaviour
     public void LoadIntoIOBuffer()
     {
         //Load all keybinds
-        jsonSaveData = File.ReadAllText(path);
+        jsonSaveData = File.ReadAllText(fullPath);
 
         ioBuffer = JsonUtility.FromJson<IOBuffer>(jsonSaveData);
     }
@@ -85,21 +117,33 @@ public class Settings : MonoBehaviour
         //Save all keybinds
         jsonSaveData = JsonUtility.ToJson(ioBuffer, true);
 
-        File.WriteAllText(path, jsonSaveData);
+        File.WriteAllText(fullPath, jsonSaveData);
     }
 
     public void Load(bool saveIfFileDoesNotExist)
     {
-        if (File.Exists(path))
+        if (File.Exists(fullPath))
         {
             LoadIntoIOBuffer();
             SetSettingsToIOBuffer();
         }
         else
         {
-            Debug.Log("File does not exist");
+            Debug.Log("File does not exist: " + fullPath);
 
-            if(saveIfFileDoesNotExist) SaveFromIOBuffer();
+            //Create file is toggled on to create if file does not exist
+            if (saveIfFileDoesNotExist)
+            {
+                //Create user data folder if needed
+                if (!Directory.Exists(path + Control.userDataFolder))
+                {
+                    Debug.Log("Directory does not exist; creating directory: " + path + Control.userDataFolder);
+                    Directory.CreateDirectory(path + Control.userDataFolder);
+                }
+
+                Debug.Log("File does not exist; creating file: " + fullPath);
+                SaveFromIOBuffer();
+            }
         }
     }
 
@@ -108,16 +152,5 @@ public class Settings : MonoBehaviour
         SetIOBufferToSettings();
         SaveFromIOBuffer();
     }
-
-    //This entire object is what we save/load. It must contain duplicates for all binds definitions that its parent class has
-    public class IOBuffer
-    {
-        //Settings initializations
-        public float mouseSens;
-        public float cameraFollowDist;
-        public float cameraFollowHeight;
-        public bool displayFPSCounter;
-        public bool displayHUD;
-        public bool spotlightOn;
-    }
+    #endregion
 }

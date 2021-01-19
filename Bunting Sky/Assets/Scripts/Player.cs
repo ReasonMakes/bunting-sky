@@ -40,6 +40,15 @@ public class Player : MonoBehaviour
 
     //Could auto rotate camera roll around when upside down, like with Subnautica, but that may take away from the space-feel
 
+    /*
+     * MOVEMENT MODES:
+     * sublight, for moving around asteroids, stations, and dogfighting - has a constant acceleration and drag
+     * burn (or something, maybe raptor engines something) - has increasing acceleration up to a max equal to what warp currently is, has drag
+     * warp (or a better name for warping) - traveling in between solar systems, travels through to bulk or maybe uses alcubierre drive, no drag, limited range (can't go past several solar systems, have to make pit stop).
+     *      Also has a long cooldown time (more than a minute) and is expensive resource-wise (need lots of water).
+     *      https://images.gr-assets.com/hostedimages/1437669203ra/15612130.gif
+     */
+
     //TODO:
     /*
      * Add sound system which can handle multiple sounds being played at once (probably a dedicated object under control with an array of sound components)
@@ -127,8 +136,6 @@ public class Player : MonoBehaviour
     public GameObject fpCam;
     public GameObject tpCam;
     public GameObject tpModel;
-    private readonly float TP_CAM_FOLLOW_DISTANCE_MIN = 0.08f;
-    private readonly float TP_CAM_FOLLOW_DISTANCE_MAX = 2.4f;
 
     public GameObject mapCam;
     #endregion
@@ -362,7 +369,7 @@ public class Player : MonoBehaviour
         {
             Time.timeScale = 0.01f;
         }
-        else if (!Control.menuOpen)
+        else if (!Menu.menuOpen)
         {
             Time.timeScale = 1f;
         }
@@ -384,17 +391,11 @@ public class Player : MonoBehaviour
         }
 
         //Don't run if paused
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         {
             UpdateGetIfMoving();            //Check if moving at all so that it only has to be checked once per update
             UpdatePlayerMovementMode();     //Cycle movement mode if player inputs
             UpdatePlayerWeapons();          //Shoot stuff
-
-            //Spotlight on/off
-            if (binds.GetInputDown(binds.bindToggleSpotlight))
-            {
-                spotlight.SetActive(!spotlight.activeSelf);
-            }
 
             /*
             //ROCKET SOUND
@@ -420,6 +421,13 @@ public class Player : MonoBehaviour
                 //Loop smoothly and indefinitely
                 warningUIFlashTime = warningUIFlashTotalDuration * 100f;
             }
+
+            //Update map player ship position
+            transform.parent.Find("Ship Map Model").position.Set(
+                transform.position.x,
+                1000f,
+                transform.position.z
+            );
         }
     }
 
@@ -432,7 +440,7 @@ public class Player : MonoBehaviour
         }
 
         //Don't run if paused
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         {
             UpdatePlayerMovementTorque();   //Automatically torque the ship so that it is always facing "up" relative to the system
             UpdatePlayerMovementThrust();   //Move in the direction of player input
@@ -446,10 +454,7 @@ public class Player : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!Control.menuOpen)
-        {
-            UpdateCameraMovement();         //Make camera follow player at specified distance and height, plus speed feedback
-        }
+        UpdateCameraMovement();         //Make camera follow player at specified distance and height, plus speed feedback
     }
 
     private void SlowUpdate()
@@ -727,19 +732,25 @@ public class Player : MonoBehaviour
     #region Methods called in update: Camera
     private void UpdateCameraMovement()
     {
-        //Map
-        if (binds.GetInputDown(binds.bindToggleMap)) ToggleMapView();
-        if (Control.displayMap) mapCam.transform.position = Vector3.zero + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
-
-        //Not map
-        if (!Control.menuOpen && !Control.displayMap)
+        if (!Menu.menuOpenAndGamePaused)
         {
-            if (binds.GetInput(binds.bindCameraZoomIn) || binds.GetInput(binds.bindCameraZoomOut))
+            //Map
+            if (binds.GetInputDown(binds.bindToggleMap)) ToggleMapView();
+            if (Control.displayMap)
             {
-                SetCameraFollowDistance();
+                mapCam.transform.position = Vector3.zero + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
+            }
+            else
+            {
+                //Not map
+                if (binds.GetInput(binds.bindCameraZoomIn) || binds.GetInput(binds.bindCameraZoomOut))
+                {
+                    SetCameraFollowDistance();
+                }
+
+                GetMouseToCameraTransform();
             }
 
-            GetMouseToCameraTransform();
         }
 
         //We do this outside of the menuOpen check so that the camera won't lag behind the player by one frame when the menu is opened
@@ -827,11 +838,11 @@ public class Player : MonoBehaviour
     {
         //Camera follow distance
         //Zoom in
-        control.settings.cameraFollowDist = Math.Min(
-            TP_CAM_FOLLOW_DISTANCE_MAX,
+        control.settings.cameraDistance = Math.Min(
+            control.settings.CAMERA_DISTANCE_MAX,
             Math.Max(
-                TP_CAM_FOLLOW_DISTANCE_MIN,
-                control.settings.cameraFollowDist - (((Convert.ToSingle(binds.GetInput(binds.bindCameraZoomIn)) - 0.5f) * 2f) / 40f)
+                control.settings.CAMERA_DISTANCE_MIN,
+                control.settings.cameraDistance - (((Convert.ToSingle(binds.GetInput(binds.bindCameraZoomIn)) - 0.5f) * 2f) / 40f)
             )
         );
 
@@ -844,7 +855,7 @@ public class Player : MonoBehaviour
 
     private void DecideFirstOrThirdPerson()
     {
-        if (control.settings.cameraFollowDist <= 0.09)
+        if (control.settings.cameraDistance <= 0.09)
         {
             //isFirstPerson = true;
             fpCam.SetActive(true);
@@ -863,27 +874,33 @@ public class Player : MonoBehaviour
     private void GetMouseToCameraTransform()
     {
         //Pitch
-        fpCamPitch += -Input.GetAxisRaw("Mouse Y") * control.settings.mouseSens * MOUSE_SENS_COEFF;
+        fpCamPitch += -Input.GetAxisRaw("Mouse Y") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         //Yaw
         if (fpCamPitch >= 90 && fpCamPitch < 270)
         {
             //Normal
-            fpCamYaw += -Input.GetAxisRaw("Mouse X") * control.settings.mouseSens * MOUSE_SENS_COEFF;
+            fpCamYaw += -Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         }
         else
         {
             //Inverted
-            fpCamYaw += Input.GetAxisRaw("Mouse X") * control.settings.mouseSens * MOUSE_SENS_COEFF;
+            fpCamYaw += Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         }
         //Roll
         fpCamRoll = 0f;
 
+        Control.ClampEulerAngle(fpCamYaw);
+        Control.ClampEulerAngle(fpCamPitch);
+        Control.ClampEulerAngle(fpCamRoll);
+
+        /*
         if (fpCamYaw >= 360) fpCamYaw -= 360;
         else if (fpCamYaw < 0) fpCamYaw += 360;
         if (fpCamPitch >= 360) fpCamPitch -= 360;
         else if (fpCamPitch < 0) fpCamPitch += 360;
         if (fpCamRoll >= 360) fpCamRoll -= 360;
         else if (fpCamRoll < 0) fpCamRoll += 360;
+        */
     }
 
     private void AssignMouseToCameraTransform()
@@ -897,8 +914,8 @@ public class Player : MonoBehaviour
 
 
         float cameraSpeedEffect = 1f; //1f + Mathf.Pow(rb.velocity.magnitude, 0.15f);
-        Vector3 cameraUp = fpCamMountTran.up * (control.settings.cameraFollowDist * control.settings.cameraFollowHeight) * cameraSpeedEffect;
-        Vector3 cameraForward = fpCamMountTran.forward * control.settings.cameraFollowDist * cameraSpeedEffect;
+        Vector3 cameraUp = fpCamMountTran.up * (control.settings.cameraDistance * control.settings.cameraHeight) * cameraSpeedEffect;
+        Vector3 cameraForward = fpCamMountTran.forward * control.settings.cameraDistance * cameraSpeedEffect;
         tpCamMount.transform.position = transform.position + cameraUp - cameraForward; //subtracting forward results in the camera following behind the player, this should be more performant than *-1
         //tpCamMount.transform.position = (transform.position + (fpCamMountTran.up * set_tpCamFollowDistance * set_tpCamFollowHeight) - (fpCamMountTran.forward * set_tpCamFollowDistance));
     }
@@ -920,6 +937,9 @@ public class Player : MonoBehaviour
 
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = mapCam.transform;
+
+            //Map ship model
+            transform.Find("Ship Map Model").gameObject.SetActive(true);
         }
         else
         {
@@ -932,6 +952,9 @@ public class Player : MonoBehaviour
 
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = positionMount.transform;
+
+            //Map ship model
+            transform.Find("Ship Map Model").gameObject.SetActive(false);
         }
     }
     #endregion

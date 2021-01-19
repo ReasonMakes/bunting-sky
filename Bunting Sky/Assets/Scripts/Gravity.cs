@@ -26,7 +26,7 @@ public class Gravity : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         {
             //Slow update to reduce the lag from calculating all of these for loops
             //We use a generated index so that not all instances of this class run the same expensive gravity calculations at the same time

@@ -50,7 +50,7 @@ public class Ore : MonoBehaviour
 
     void Update()
     {
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         {
             //Get player data
             float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);

@@ -51,7 +51,7 @@ public class CBodyAsteroid : MonoBehaviour
     private void Update()
     {
         //Destruction
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         {
             bool particlesFadedOut = destroyedTime >= partSysShurikenDamage.emission.rateOverTime.constant;
             bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTran.transform.position) >= playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
@@ -65,7 +65,7 @@ public class CBodyAsteroid : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!Control.menuOpen && separating)
+        if (!Menu.menuOpenAndGamePaused && separating)
         {
             Separate();
         }

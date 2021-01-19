@@ -12,22 +12,21 @@ public class Control : MonoBehaviour
     //In real-life, G = 6.674*10^−11 m3*kg^−1*s^−2
     //62.5 is the avg inverse of Time.deltaTime during development
 
+    public GameObject canvas;
+
     //FPS
-    public int fps = 0;
-    public static int fps_target = 300;//240;
-    private short fps_print_interval = 60;
+    [System.NonSerialized] public int fps = 0;
+    private readonly short FPS_PRINT_PERIOD = 60;
     public TextMeshProUGUI systemInfo;
-    //HUD
-    public GameObject HUDCanvas;
 
     //Menu and cursor locking
     private bool isFocused = true;
-    public static bool menuOpen = false;
     public GameObject reticle;
+    public Menu menu;
 
     //Generate system
     public GameObject playerPrefab;
-    public GameObject instancePlayer;
+    [System.NonSerialized] public GameObject instancePlayer;
     private bool playerSpawned = false;
     private Vector3 playerSpawnCoords;
     public static int gravityInstanceIndex = 0;
@@ -60,6 +59,8 @@ public class Control : MonoBehaviour
     //User data
     public KeyBinds binds;
     public Settings settings;
+    public static string userDataFolder = "/user";
+    public static string screenshotsFolder = "/screenshots";
 
     //Target
     public Image target;
@@ -114,10 +115,10 @@ public class Control : MonoBehaviour
 
         //FPS Target
         QualitySettings.vSyncCount = 0; //VSync
-        Application.targetFrameRate = fps_target;
+        Application.targetFrameRate = settings.targetFPS;
         fps = (int)(1f / Time.unscaledDeltaTime);
 
-        //Cursor Locking
+        //Lock cursor
         Cursor.lockState = CursorLockMode.Locked;
 
         //Generate starter system
@@ -131,62 +132,13 @@ public class Control : MonoBehaviour
     private void Update()
     {
         //FPS target
-        if (fps_target != Application.targetFrameRate) Application.targetFrameRate = fps_target;
+        if (settings.targetFPS != Application.targetFrameRate) Application.targetFrameRate = settings.targetFPS;
 
         //FPS display
-        if (settings.displayFPSCounter)
+        if (settings.displayFPS)
         {
-            if (Time.frameCount % fps_print_interval == 0) fps = (int)(1f / Time.unscaledDeltaTime);
+            if (Time.frameCount % FPS_PRINT_PERIOD == 0) fps = (int)(1f / Time.unscaledDeltaTime);
             systemInfo.text = fps.ToString() + "FPS";
-        }
-        else
-        {
-            systemInfo.text = "";
-        }
-
-        //FPS toggle
-        if (binds.GetInputDown(binds.bindToggleFPS))
-        {
-            settings.displayFPSCounter = !settings.displayFPSCounter;
-            settings.Save();
-
-            /*
-            string[] lines = System.IO.File.ReadAllLines("Assets/User Data/settings.txt");
-            lines[12] = set_showFPS.ToString();
-            File.WriteAllLines("Assets/User Data/settings.txt", lines);
-            */
-        }
-
-        //HUD display
-        if (settings.displayHUD)
-        {
-            HUDCanvas.SetActive(true);
-        }
-        else
-        {
-            HUDCanvas.SetActive(false);
-        }
-
-        //HUD toggle
-        if (binds.GetInputDown(binds.bindToggleHUD))
-        {
-            settings.displayHUD = !settings.displayHUD;
-            settings.Save();
-
-            /*
-            string[] lines = System.IO.File.ReadAllLines("Assets/User Data/settings.txt");
-            lines[15] = set_showHUD.ToString();
-            File.WriteAllLines("Assets/User Data/settings.txt", lines);
-            */
-        }
-
-        //Menu and cursor locking
-        //Unlock with menu
-        if (binds.GetInputDown(binds.bindToggleMenu))
-        {
-            menuOpen = !menuOpen;                                                   //toggle menu
-            Time.timeScale = System.Convert.ToByte(!menuOpen);                      //toggle game pause
-            Cursor.lockState = (CursorLockMode)System.Convert.ToByte(!menuOpen);    //toggle cursor lock
         }
 
         //Unlock cursor if game not focused
@@ -391,27 +343,19 @@ public class Control : MonoBehaviour
         instancePlayerBodyTransform.position = playerSpawnCoords;
         instancePlayerBodyTransform.rotation = Quaternion.Euler(15f, 20f, 0f); //x = pitch, y = yaw, z = roll
 
-        instancePlayer.GetComponentInChildren<Player>().control = this;
-        instancePlayer.GetComponentInChildren<Player>().cBodies = cBodies;
-        instancePlayer.GetComponentInChildren<Player>().movementModeUI = transform.Find("Canvas").Find("MovementMode").gameObject;
-        instancePlayer.GetComponentInChildren<Player>().movementModeUISelector = transform.Find("Canvas").Find("MovementModeSelector").gameObject;
-        instancePlayer.GetComponentInChildren<Player>().vitalsHealthUI = transform.Find("Canvas").Find("Vitals").Find("VitalsHealth").gameObject;
-        instancePlayer.GetComponentInChildren<Player>().vitalsHealthUIText = transform.Find("Canvas").Find("Vitals").Find("VitalsHealthText").gameObject.GetComponent<TextMeshProUGUI>();
-        instancePlayer.GetComponentInChildren<Player>().vitalsFuelUI = transform.Find("Canvas").Find("Vitals").Find("VitalsFuel").gameObject;
-        instancePlayer.GetComponentInChildren<Player>().vitalsFuelUIText = transform.Find("Canvas").Find("Vitals").Find("VitalsFuelText").gameObject.GetComponent<TextMeshProUGUI>();
-        instancePlayer.GetComponentInChildren<Player>().warningUIText = transform.Find("Canvas").Find("WarningText").gameObject.GetComponent<TextMeshProUGUI>();
+        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
-        /*
-        playerInstanced.GetComponentInChildren<Player>().movementModeGUI = transform.GetChild(0).GetChild(2).gameObject;
-        playerInstanced.GetComponentInChildren<Player>().movementModeGUISelector = transform.GetChild(0).GetChild(3).gameObject;
-        playerInstanced.GetComponentInChildren<Player>().vitalsHealthUI = transform.GetChild(0).GetChild(10).gameObject;
-        playerInstanced.GetComponentInChildren<Player>().vitalsHealthUIText = transform.GetChild(0).GetChild(12).gameObject.GetComponent<TextMeshProUGUI>();
-        playerInstanced.GetComponentInChildren<Player>().vitalsFuelUI = transform.GetChild(0).GetChild(13).gameObject;
-        playerInstanced.GetComponentInChildren<Player>().vitalsFuelUIText = transform.GetChild(0).GetChild(15).gameObject.GetComponent<TextMeshProUGUI>();
-        playerInstanced.GetComponentInChildren<Player>().warningUIText = transform.GetChild(0).GetChild(16).gameObject.GetComponent<TextMeshProUGUI>();
-        */
+        playerScript.control = this;
+        playerScript.cBodies = cBodies;
+        playerScript.movementModeUI = canvas.transform.Find("MovementMode").gameObject;
+        playerScript.movementModeUISelector = canvas.transform.Find("MovementModeSelector").gameObject;
+        playerScript.vitalsHealthUI = canvas.transform.Find("Vitals").Find("VitalsHealth").gameObject;
+        playerScript.vitalsHealthUIText = canvas.transform.Find("Vitals").Find("VitalsHealthText").gameObject.GetComponent<TextMeshProUGUI>();
+        playerScript.vitalsFuelUI = canvas.transform.Find("Vitals").Find("VitalsFuel").gameObject;
+        playerScript.vitalsFuelUIText = canvas.transform.Find("Vitals").Find("VitalsFuelText").gameObject.GetComponent<TextMeshProUGUI>();
+        playerScript.warningUIText = canvas.transform.Find("WarningText").gameObject.GetComponent<TextMeshProUGUI>();
 
-        instancePlayer.GetComponentInChildren<Player>().LateStart();
+        playerScript.LateStart();
 
         CreatePlayerShipDirectionReticles();
 
@@ -718,16 +662,38 @@ public class Control : MonoBehaviour
     #region General methods
     public void SaveScreenshot()
     {
-        //string filename = System.DateTime.Now.ToString(); //01/06/2021 10:46:29
-        string filename = System.DateTime.Now.Year
+        string path;
+
+        //Ensure save directory exists
+        //User data folder
+        path = Application.persistentDataPath + userDataFolder;
+        if (!Directory.Exists(path))
+        {
+            Debug.Log("Directory does not exist; creating directory: " + path);
+            Directory.CreateDirectory(path);
+        }
+
+        //Screenshots folder
+        path = Application.persistentDataPath + userDataFolder + screenshotsFolder;
+        if (!Directory.Exists(path))
+        {
+            Debug.Log("Directory does not exist; creating directory: " + path);
+            Directory.CreateDirectory(path);
+        }
+
+        //Generate the filename based on time of screenshot
+        //We use string formatting to ensure there are leading zeros to help system file explorers can accurately sort
+        path = Application.persistentDataPath + userDataFolder + screenshotsFolder
+            + "/" + System.DateTime.Now.Year
             + "-" + System.DateTime.Now.Month.ToString("d2")
             + "-" + System.DateTime.Now.Day.ToString("d2")
             + "_" + System.DateTime.Now.Hour.ToString("d2")
             + "-" + System.DateTime.Now.Minute.ToString("d2")
             + "-" + System.DateTime.Now.Second.ToString("d2")
-            + "-" + System.DateTime.Now.Millisecond.ToString("d4");
+            + "-" + System.DateTime.Now.Millisecond.ToString("d4")
+            + ".png";
 
-        ScreenCapture.CaptureScreenshot(Application.persistentDataPath + "/user/screenshots/" + filename + ".png");
+        ScreenCapture.CaptureScreenshot(path);
     }
 
     public void ToggleMapUI()
@@ -821,6 +787,14 @@ public class Control : MonoBehaviour
             Random.value,
             Random.value
         );
+    }
+
+    public static float ClampEulerAngle(float angle)
+    {
+        if (angle >= 360) angle -= 360;
+        else if (angle < 0) angle += 360;
+
+        return angle;
     }
     #endregion
 }

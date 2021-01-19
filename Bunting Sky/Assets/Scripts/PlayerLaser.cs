@@ -14,7 +14,7 @@ public class PlayerLaser : MonoBehaviour
 
     private void Update()
     {
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         { 
             //Deactivate self after lifetime expires
             if (lifetime <= 0f)
