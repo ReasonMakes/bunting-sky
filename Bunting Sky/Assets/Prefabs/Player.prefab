@@ -5093,6 +5093,11 @@ MonoBehaviour:
   soundSourceLaser2: {fileID: 3028235927102417418}
   soundSourceLaser3: {fileID: 4657974608649234668}
   soundClipLaser: {fileID: 8300000, guid: a575cca7bd8e36c4392be5b14e67b502, type: 3}
+  vitalsHealth: 10
+  vitalsHealthMax: 10
+  vitalsFuel: 30
+  vitalsFuelMax: 30
+  vitalsFuelConsumptionRate: 0.1
   playerLaser: {fileID: 6553045504266895388, guid: 371bd3c94d4221946b3f768d30a5f7e6, type: 3}
   skyboxStarsParticleSystem: {fileID: 617420397379647762}
 --- !u!64 &3053305804255348954
@@ -6111,7 +6116,7 @@ Camera:
   far clip plane: 12000
   field of view: 90.34047
   orthographic: 1
-  orthographic size: 6000
+  orthographic size: 10000
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

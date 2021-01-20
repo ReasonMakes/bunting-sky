@@ -426,11 +426,14 @@ public class Player : MonoBehaviour
             }
 
             //Update map player ship position
+            transform.parent.Find("Ship Map Model").position = transform.position;
+            /*
             transform.parent.Find("Ship Map Model").position.Set(
                 transform.position.x,
                 1000f,
                 transform.position.z
             );
+            */
         }
     }
 
@@ -815,7 +818,8 @@ public class Player : MonoBehaviour
         //Fire
         if
         (
-            !Menu.menuOpenAndGamePaused
+            Application.isFocused
+            && !Menu.menuOpenAndGamePaused
             && !Commerce.menuOpen
             && binds.GetInput(binds.bindPrimaryFire)
             && weaponLaserSingleCooldownCurrent <= 0f
@@ -829,9 +833,7 @@ public class Player : MonoBehaviour
     #endregion
 
     #region General methods
-
     #region General methods: Movement
-
     private void TorqueAxisRelative(float torque, Vector3 cameraDirection, Vector3 playerShipDirection)
     {
         float errorThreshold = 0.25f;

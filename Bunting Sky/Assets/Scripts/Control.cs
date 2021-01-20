@@ -20,7 +20,7 @@ public class Control : MonoBehaviour
     public TextMeshProUGUI systemInfo;
 
     //Menu and cursor locking
-    private bool isFocused = true;
+    //public static bool windowIsFocused = true;
     public GameObject reticle;
     public Menu menu;
     public Commerce commerce;
@@ -143,7 +143,7 @@ public class Control : MonoBehaviour
         }
 
         //Unlock cursor if game not focused
-        if (!isFocused)
+        if (!Application.isFocused)
         {
             Cursor.lockState = CursorLockMode.None;
         }
@@ -303,15 +303,17 @@ public class Control : MonoBehaviour
         }
     }
 
+    /*
     private void OnApplicationFocus(bool hasFocus)
     {
-        isFocused = hasFocus;
+        windowIsFocused = hasFocus;
     }
 
     private void OnApplicationPause(bool pauseStatus)
     {
-        isFocused = !pauseStatus;
+        windowIsFocused = !pauseStatus;
     }
+    */
 
     #region System generation
     private void GenerateSystem(bool isStarter, byte nCBodiesPlanetoids, byte nCBodiesAsteroids)
@@ -365,11 +367,11 @@ public class Control : MonoBehaviour
 
     private void CreatePlayerShipDirectionReticles()
     {
-        Transform instancePlayerBodyTransform = instancePlayer.transform.Find("Body");
+        //Transform instancePlayerBodyTransform = instancePlayer.transform.Find("Body");
 
         //Create ship direction reticles
         playerShipDirectionReticleTree = new GameObject("Player Direction Reticle Tree");
-        playerShipDirectionReticleTree.transform.parent = gameObject.transform.Find("Canvas");
+        playerShipDirectionReticleTree.transform.parent = canvas.transform;
 
         for (int i = 0; i < playerShipDirectionReticleListLength; i++)
         {

@@ -91,9 +91,10 @@ public class Commerce : MonoBehaviour
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[0] * pricePlatinoid;
-        control.textCurrency.text = "" + playerScript.currency.ToString("F2");
+        control.textCurrency.text = playerScript.currency.ToString("F2");
 
         playerScript.ore[0] = 0.0;
+        control.textWater.text = playerScript.ore[0].ToString("F2");
 
         UpdateUI();
     }
@@ -103,9 +104,10 @@ public class Commerce : MonoBehaviour
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[1] * pricePreciousMetal;
-        control.textCurrency.text = "" + playerScript.currency.ToString("F2");
+        control.textCurrency.text = playerScript.currency.ToString("F2");
 
         playerScript.ore[1] = 0.0;
+        control.textWater.text = playerScript.ore[1].ToString("F2");
 
         UpdateUI();
     }
@@ -115,9 +117,10 @@ public class Commerce : MonoBehaviour
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[2] * priceWater;
-        control.textCurrency.text = "" + playerScript.currency.ToString("F2");
+        control.textCurrency.text = playerScript.currency.ToString("F2");
 
         playerScript.ore[2] = 0.0;
+        control.textWater.text = playerScript.ore[2].ToString("F2");
 
         UpdateUI();
     }
@@ -129,7 +132,7 @@ public class Commerce : MonoBehaviour
         if ((playerScript.currency >= priceRepair) && (playerScript.vitalsHealth < playerScript.vitalsHealthMax))
         {
             playerScript.currency -= priceRepair;
-            control.textCurrency.text = "" + playerScript.currency.ToString("F2");
+            control.textCurrency.text = playerScript.currency.ToString("F2");
 
             playerScript.vitalsHealth = playerScript.vitalsHealthMax;
         }
@@ -144,7 +147,7 @@ public class Commerce : MonoBehaviour
         if ((playerScript.currency >= priceRefuel) && (playerScript.vitalsFuel < playerScript.vitalsFuelMax))
         {
             playerScript.currency -= priceRefuel;
-            control.textCurrency.text = "" + playerScript.currency.ToString("F2");
+            control.textCurrency.text = playerScript.currency.ToString("F2");
 
             playerScript.vitalsFuel = playerScript.vitalsFuelMax;
         }
