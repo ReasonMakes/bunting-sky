@@ -40,6 +40,9 @@ public class Player : MonoBehaviour
 
     //Could auto rotate camera roll around when upside down, like with Subnautica, but that may take away from the space-feel
 
+    //Engine glow affects local lighting, so when in first person and that light source is gone, the surroundings suddenly look darker.
+    //This can be fixed by not deleting the light source and rendering a cockpit model to block view to it. On the back wall of the cockpit could be a camera or something
+
     /*
      * MOVEMENT MODES:
      * sublight, for moving around asteroids, stations, and dogfighting - has a constant acceleration and drag
@@ -871,7 +874,7 @@ public class Player : MonoBehaviour
 
     private void DecideFirstOrThirdPerson()
     {
-        if (control.settings.cameraDistance <= 0.09)
+        if (control.settings.cameraDistance <= control.settings.CAMERA_DISTANCE_MIN + 0.01f)
         {
             //isFirstPerson = true;
             fpCam.SetActive(true);

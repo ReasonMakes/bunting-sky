@@ -162,8 +162,8 @@ public class Ore : MonoBehaviour
         */
 
         //Update resources display
-        control.textPlatinoids.text = "" + playerTran.GetComponent<Player>().ore[0];
-        control.textPreciousMetals.text = "" + playerTran.GetComponent<Player>().ore[1];
+        control.textPlatinoid.text = "" + playerTran.GetComponent<Player>().ore[0];
+        control.textPreciousMetal.text = "" + playerTran.GetComponent<Player>().ore[1];
         control.textWater.text = "" + playerTran.GetComponent<Player>().ore[2];
 
         //Destroy if it hasn't been already

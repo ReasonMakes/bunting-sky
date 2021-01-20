@@ -15,7 +15,7 @@ public class Settings : MonoBehaviour
     //Definitions
     public readonly float MOUSE_SENSITIVITY_MIN = 0.001f;
     public readonly float MOUSE_SENSITIVITY_MAX = 1000f;
-    public readonly float CAMERA_DISTANCE_MIN = 0.08f;
+    public readonly float CAMERA_DISTANCE_MIN = 0.18f;
     public readonly float CAMERA_DISTANCE_MAX = 2.4f;
     public readonly float CAMERA_HEIGHT_MIN = 0f;
     public readonly float CAMERA_HEIGHT_MAX = 1f;

@@ -81,8 +81,8 @@ public class Control : MonoBehaviour
 
     //Player resources
     public TextMeshProUGUI textCurrency;
-    public TextMeshProUGUI textPlatinoids;
-    public TextMeshProUGUI textPreciousMetals;
+    public TextMeshProUGUI textPlatinoid;
+    public TextMeshProUGUI textPreciousMetal;
     public TextMeshProUGUI textWater;
 
     //Player weapons

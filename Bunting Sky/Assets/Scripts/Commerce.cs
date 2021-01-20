@@ -94,7 +94,7 @@ public class Commerce : MonoBehaviour
         control.textCurrency.text = playerScript.currency.ToString("F2");
 
         playerScript.ore[0] = 0.0;
-        control.textWater.text = playerScript.ore[0].ToString("F2");
+        control.textPlatinoid.text = playerScript.ore[0].ToString("F2");
 
         UpdateUI();
     }
@@ -107,7 +107,7 @@ public class Commerce : MonoBehaviour
         control.textCurrency.text = playerScript.currency.ToString("F2");
 
         playerScript.ore[1] = 0.0;
-        control.textWater.text = playerScript.ore[1].ToString("F2");
+        control.textPreciousMetal.text = playerScript.ore[1].ToString("F2");
 
         UpdateUI();
     }
