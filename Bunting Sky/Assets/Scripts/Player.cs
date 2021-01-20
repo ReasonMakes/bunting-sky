@@ -214,11 +214,11 @@ public class Player : MonoBehaviour
 
     #region Init fields: Vitals
     //Vitals
-    private double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
-    private double vitalsHealthMax = 10.0;
-    private double vitalsFuel = 30.0;
-    private double vitalsFuelMax = 30.0;
-    private double vitalsFuelConsumptionRate = 0.1;
+    public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
+    public double vitalsHealthMax = 10.0;
+    public double vitalsFuel = 30.0;
+    public double vitalsFuelMax = 30.0;
+    public double vitalsFuelConsumptionRate = 0.1;
     [System.NonSerialized] public GameObject vitalsHealthUI;
     [System.NonSerialized] public TextMeshProUGUI vitalsHealthUIText;
     [System.NonSerialized] public GameObject vitalsFuelUI;
@@ -232,7 +232,7 @@ public class Player : MonoBehaviour
 
     #region Init fields: Cargo
     //Cargo (displayed on map screen or when trading at a station)
-    //private double currency = 100.0;
+    [System.NonSerialized] public double currency = 100.0;
     //public double resWater = 0.0;
     //public double resPreciousMetal = 0.0;
     //public double resPlatinoids = 0.0;
@@ -318,6 +318,9 @@ public class Player : MonoBehaviour
 
         //Ore
         ore = new double[3]; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
+
+        //Currency
+        control.textCurrency.text = "" + currency.ToString("F2");
 
         //WEAPONS
         //Weapons trees
@@ -484,13 +487,18 @@ public class Player : MonoBehaviour
     #region Methods called in update: Movement
     private void UpdateGetIfMoving()
     {
-        if (
-            binds.GetInput(binds.bindThrustForward) ||
-            binds.GetInput(binds.bindThrustLeft) ||
-            binds.GetInput(binds.bindThrustBackward) ||
-            binds.GetInput(binds.bindThrustRight) ||
-            binds.GetInput(binds.bindThrustUp) ||
-            binds.GetInput(binds.bindThrustDown)
+        //Ignore movement input if a menu is opened
+        if
+        (
+            !Menu.menuOpenAndGamePaused && !Commerce.menuOpen
+            && (
+                binds.GetInput(binds.bindThrustForward)
+                || binds.GetInput(binds.bindThrustLeft)
+                || binds.GetInput(binds.bindThrustBackward)
+                || binds.GetInput(binds.bindThrustRight)
+                || binds.GetInput(binds.bindThrustUp)
+                || binds.GetInput(binds.bindThrustDown)
+            )
         )
         {
             moving = true;
@@ -732,7 +740,7 @@ public class Player : MonoBehaviour
     #region Methods called in update: Camera
     private void UpdateCameraMovement()
     {
-        if (!Menu.menuOpenAndGamePaused)
+        if (!Menu.menuOpenAndGamePaused && !Commerce.menuOpen)
         {
             //Map
             if (binds.GetInputDown(binds.bindToggleMap)) ToggleMapView();
@@ -750,7 +758,6 @@ public class Player : MonoBehaviour
 
                 GetMouseToCameraTransform();
             }
-
         }
 
         //We do this outside of the menuOpen check so that the camera won't lag behind the player by one frame when the menu is opened
@@ -806,7 +813,14 @@ public class Player : MonoBehaviour
         playerWeaponCooldowns();
         
         //Fire
-        if (binds.GetInput(binds.bindPrimaryFire) && weaponLaserSingleCooldownCurrent <= 0f && weaponLaserClipCooldownCurrent <= 0f)
+        if
+        (
+            !Menu.menuOpenAndGamePaused
+            && !Commerce.menuOpen
+            && binds.GetInput(binds.bindPrimaryFire)
+            && weaponLaserSingleCooldownCurrent <= 0f
+            && weaponLaserClipCooldownCurrent <= 0f
+        )
         {
             FireWeaponLaser();
         }
@@ -929,32 +943,32 @@ public class Player : MonoBehaviour
         if (Control.displayMap)
         {
             //Ship cameras
-            fpCam.SetActive(false);
-            tpCam.SetActive(false);
+            fpCam.SetActive(!Control.displayMap);
+            tpCam.SetActive(!Control.displayMap);
 
             //Map camera
-            mapCam.SetActive(true);
+            mapCam.SetActive(Control.displayMap);
 
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = mapCam.transform;
 
             //Map ship model
-            transform.Find("Ship Map Model").gameObject.SetActive(true);
+            transform.parent.Find("Ship Map Model").gameObject.SetActive(Control.displayMap);
         }
         else
         {
             //Ship cameras
-            fpCam.SetActive(true);
+            fpCam.SetActive(!Control.displayMap);
             DecideFirstOrThirdPerson(); 
 
             //Map camera
-            mapCam.SetActive(false);
+            mapCam.SetActive(Control.displayMap);
 
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = positionMount.transform;
 
             //Map ship model
-            transform.Find("Ship Map Model").gameObject.SetActive(false);
+            transform.parent.Find("Ship Map Model").gameObject.SetActive(Control.displayMap);
         }
     }
     #endregion

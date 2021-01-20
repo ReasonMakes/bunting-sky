@@ -36,8 +36,9 @@ public class Menu : MonoBehaviour
     {
         //KEYBINDS
         //Menu toggle (includes cursor locking/unlocking)
-        if (control.binds.GetInputDown(control.binds.bindToggleMenu))
+        if (!Commerce.menuOpen && control.binds.GetInputDown(control.binds.bindToggleMenu))
         {
+            //Toggle menu
             MenuToggle();
         }
 
@@ -66,6 +67,7 @@ public class Menu : MonoBehaviour
         //Toggle menu
         menuOpenAndGamePaused = !menuOpenAndGamePaused;
 
+        //Toggle UI
         menuContainer.gameObject.SetActive(menuOpenAndGamePaused);
         menuMain.SetActive(menuOpenAndGamePaused);
         if (!menuOpenAndGamePaused)
@@ -78,22 +80,7 @@ public class Menu : MonoBehaviour
         Time.timeScale = System.Convert.ToByte(!menuOpenAndGamePaused);
 
         //Toggle cursor lock
-
         Cursor.lockState = menuOpenAndGamePaused ? CursorLockMode.None : CursorLockMode.Locked;
-
-        /*
-        if (menuOpenAndGamePaused)
-        {
-            Cursor.lockState = CursorLockMode.None;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-        }
-        */
-
-        //This is bad practice since assigning 1 or 0 to true or false is arbitrary
-        //Cursor.lockState = (CursorLockMode)System.Convert.ToByte(!menuOpenAndGamePaused);
 
         //Toggle reticle
         control.reticle.SetActive(!menuOpenAndGamePaused);

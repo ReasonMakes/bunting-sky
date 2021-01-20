@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Gravity : MonoBehaviour
 {
+    [System.NonSerialized] public Control control;
     public Rigidbody rb;
     public GameObject station;
 
@@ -160,6 +161,9 @@ public class Gravity : MonoBehaviour
                 Quaternion.Euler(270f, 0f, 270f)
             );
             instancedStation.transform.parent = transform;
+
+            //Give control reference
+            instancedStation.GetComponentInChildren<StationDocking>().control = control;
         }
 
         return stationCoords;

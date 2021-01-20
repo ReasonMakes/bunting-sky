@@ -23,6 +23,7 @@ public class Control : MonoBehaviour
     private bool isFocused = true;
     public GameObject reticle;
     public Menu menu;
+    public Commerce commerce;
 
     //Generate system
     public GameObject playerPrefab;
@@ -428,6 +429,9 @@ public class Control : MonoBehaviour
 
             //Put in CBodies tree
             instanceCBodyPlanetoid.transform.parent = cBodiesPlanetoids.transform;
+
+            //Give control reference
+            instanceCBodyPlanetoid.GetComponent<Gravity>().control = this;
 
             //Orbit central star
             instanceCBodyPlanetoid.GetComponent<Gravity>().SetVelocityToOrbit(centreCBodyStar, spawnAngle);
