@@ -350,8 +350,6 @@ public class Control : MonoBehaviour
 
         playerScript.control = this;
         playerScript.cBodies = cBodies;
-        playerScript.movementModeUI = canvas.transform.Find("MovementMode").gameObject;
-        playerScript.movementModeUISelector = canvas.transform.Find("MovementModeSelector").gameObject;
         playerScript.vitalsHealthUI = canvas.transform.Find("Vitals").Find("VitalsHealth").gameObject;
         playerScript.vitalsHealthUIText = canvas.transform.Find("Vitals").Find("VitalsHealthText").gameObject.GetComponent<TextMeshProUGUI>();
         playerScript.vitalsFuelUI = canvas.transform.Find("Vitals").Find("VitalsFuel").gameObject;

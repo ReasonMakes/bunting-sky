@@ -150,31 +150,22 @@ public class Player : MonoBehaviour
     //Movement
     public Rigidbody rb;
     private Vector3 playerThrustVector;
-    private readonly float PLAYER_THRUST_WARP = 11222.211f;
-    private readonly float PLAYER_THRUST_SUBLIGHT = 8416.65825f;
-    private readonly float PLAYER_THRUST_COMBAT = 8416.65825f;
+    //private readonly float PLAYER_THRUST_WARP = 11222.211f;
+    //private readonly float PLAYER_THRUST_SUBLIGHT = 8416.65825f;
+    //private readonly float PLAYER_THRUST_COMBAT = 8416.65825f;
     private float playerThrust = 8416.65825f;
-    private float playerThrustForwardMultiplier = 1f;
+    private float playerThrustEngineWarmupMultiplier = 1f;
+    [System.NonSerialized] public float playerThrustEngineWarmupMultiplierMax = 16f;
+    private float playerThrustEngineWarmupSpeed = 0.5f; //3f;
+    private float playerThrustEngineCooldownSpeed = 6f;
+    private float playerThrustForwardMultiplier = 1.1f;
     private float playerThrustMultiplier = 1f;
     private float engineBrightness = 0f;
     public Material engineGlowMat;
     private Color engineEmissionColor = new Color(191, 102, 43);
     private float engineEmissionIntensity = 1.3f * 0.00748f; //1.4f * 0.00748f; //1.631096f;
     public Light engineLight;
-    private bool moving = false;
-
-    //Movement: Movement modes
-    [System.NonSerialized] public byte movementMode = 1; //warp, sublight, combat
-    private readonly float MOVEMENT_MODE_UI_ALPHAS_DECREMENT = 0.8f;
-
-    [System.NonSerialized] public GameObject movementModeUI;
-    private TextMeshProUGUI movementModeUIText;
-    private float movementModeUITextAlpha = 0.43f;
-
-    [System.NonSerialized] public GameObject movementModeUISelector;
-    private RectTransform movementModeUISelectorRectTransform;
-    private Image movementModeUISelectorImage;
-    private float movementModeUISelectorImageAlpha = 0.43f;
+    private bool canAndIsMoving = false;
 
     //Movement: Relative drag
     [System.NonSerialized] public GameObject targetObject;
@@ -310,11 +301,6 @@ public class Player : MonoBehaviour
         fpCamYaw = fpCamMountTran.localRotation.y;
         fpCamRoll = fpCamMountTran.localRotation.z;
 
-        //GUI
-        movementModeUISelectorRectTransform = movementModeUISelector.GetComponent<RectTransform>();
-        movementModeUISelectorImage = movementModeUISelector.GetComponent<Image>();
-        movementModeUIText = movementModeUI.GetComponent<TextMeshProUGUI>();
-
         //Vitals
         //We have to work with odd-numbered multiples of the inverse of the flash rate to end smoothly (end while it is transparent)
         warningUIFlashTotalDuration *= (1f / WARNING_UI_FLASH_RATE);
@@ -400,7 +386,6 @@ public class Player : MonoBehaviour
         if (!Menu.menuOpenAndGamePaused)
         {
             UpdateGetIfMoving();            //Check if moving at all so that it only has to be checked once per update
-            UpdatePlayerMovementMode();     //Cycle movement mode if player inputs
             UpdatePlayerWeapons();          //Shoot stuff
 
             /*
@@ -414,7 +399,7 @@ public class Player : MonoBehaviour
             UpdatePlayerEngineEffect();     //Set engine glow relative to movement
 
             //Decrement fuel
-            if (moving)
+            if (canAndIsMoving)
             {
                 vitalsFuel = Math.Max(0.0, vitalsFuel - (vitalsFuelConsumptionRate * Time.deltaTime));
             }
@@ -507,65 +492,14 @@ public class Player : MonoBehaviour
             )
         )
         {
-            moving = true;
+            canAndIsMoving = true;
         }
         else
         {
-            moving = false;
+            canAndIsMoving = false;
         }
     }
 
-    private void UpdatePlayerMovementMode()
-    {
-        //Movement mode
-        if (binds.GetInputDown(binds.bindCycleMovementMode))
-        {
-            movementMode++;
-            if (movementMode >= 3) movementMode = 0;
-
-            //Reset movement GUI alpha
-            movementModeUISelectorImageAlpha = 1f;
-            movementModeUITextAlpha = 1f;
-
-            if (movementMode == 0)
-            {
-                //Warp
-                movementModeUISelectorRectTransform.anchoredPosition = new Vector2(-93f, 85f + 48f);
-                movementModeUISelectorRectTransform.sizeDelta = new Vector2(68f, 3f);
-
-                playerThrust = PLAYER_THRUST_WARP;
-                playerThrustForwardMultiplier = 32f;
-                //playerRollTorque = 56.111055f;
-            }
-            else if (movementMode == 1)
-            {
-                //Sublight
-                movementModeUISelectorRectTransform.anchoredPosition = new Vector2(0f, 85f + 48f);
-                movementModeUISelectorRectTransform.sizeDelta = new Vector2(94f, 3f);
-
-                playerThrust = PLAYER_THRUST_SUBLIGHT;
-                playerThrustForwardMultiplier = 1f;
-                //playerRollTorque = 56.111055f;
-            }
-            else if (movementMode == 2)
-            {
-                //Combat
-                movementModeUISelectorRectTransform.anchoredPosition = new Vector2(105f, 85f + 48f);
-                movementModeUISelectorRectTransform.sizeDelta = new Vector2(92f, 3f);
-
-                playerThrust = PLAYER_THRUST_COMBAT;
-                playerThrustForwardMultiplier = 4f;
-                //playerRollTorque = 168.333165f;
-            }
-        }
-
-        //Set movement GUI alpha and decrement
-        movementModeUISelectorImage.color = new Color(1f, 1f, 1f, Mathf.Min(0.43f, movementModeUISelectorImageAlpha));
-        movementModeUISelectorImageAlpha = Mathf.Max(0f, movementModeUISelectorImageAlpha - (MOVEMENT_MODE_UI_ALPHAS_DECREMENT * Time.deltaTime));
-
-        movementModeUIText.color = new Color(1f, 1f, 1f, Mathf.Min(0.43f, movementModeUITextAlpha) * 1.8f);
-        movementModeUITextAlpha = Mathf.Max(0f, movementModeUITextAlpha - (MOVEMENT_MODE_UI_ALPHAS_DECREMENT * Time.deltaTime));
-    }
 
     private void UpdatePlayerEngineEffect()
     {
@@ -614,7 +548,7 @@ public class Player : MonoBehaviour
         */
 
         //Auto torque in the direction of camera
-        if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (moving || binds.GetInput(binds.bindAlignShipToReticle)))
+        if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
             //Smoothly orient toward camera look direction
 
@@ -714,7 +648,7 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementThrust()
     {
-        //Translation movement
+        //Debug.Log(playerThrustEngineWarmupMultiplier);
 
         //Reset vector
         playerThrustVector = Vector3.zero;
@@ -725,20 +659,39 @@ public class Player : MonoBehaviour
             //Faster if moving forward
             if (binds.GetInput(binds.bindThrustForward))
             {
+                //Add forward to thrust vector
                 playerThrustVector += transform.forward;
-                playerThrustMultiplier = playerThrustForwardMultiplier;
+
+                //Engine warmup jerk (increasing acceleration)
+                playerThrustEngineWarmupMultiplier = Mathf.Min(playerThrustEngineWarmupMultiplierMax,
+                    playerThrustEngineWarmupMultiplier + (playerThrustEngineWarmupMultiplier * playerThrustEngineWarmupSpeed * Time.deltaTime));
+                
+                //Total multiplier
+                playerThrustMultiplier = playerThrustForwardMultiplier * playerThrustEngineWarmupMultiplier;
             }
             else
             {
+                //Engine warmup
+                playerThrustEngineWarmupMultiplier = Mathf.Max(1f,
+                    playerThrustEngineWarmupMultiplier - (Time.deltaTime * playerThrustEngineCooldownSpeed));
+
+                //Total multiplier
                 playerThrustMultiplier = 1f;
             }
-            if (binds.GetInput(binds.bindThrustBackward)) playerThrustVector += -transform.forward;
-            if (binds.GetInput(binds.bindThrustLeft))     playerThrustVector += -transform.right;
-            if (binds.GetInput(binds.bindThrustRight))    playerThrustVector += transform.right;
-            if (binds.GetInput(binds.bindThrustUp))       playerThrustVector += transform.up;
-            if (binds.GetInput(binds.bindThrustDown))     playerThrustVector += -transform.up;
+            
+            //We don't want the player to be able to move if the moving check fails
+            //(it's not just a shotcut to detect any input, it also detects if the player CAN move)
+            //We exclude the above from this check as some parts like the engine warmup must be able to decrement even when unable to move
+            if (canAndIsMoving)
+            {
+                if (binds.GetInput(binds.bindThrustBackward)) playerThrustVector += -transform.forward;
+                if (binds.GetInput(binds.bindThrustLeft)) playerThrustVector += -transform.right;
+                if (binds.GetInput(binds.bindThrustRight)) playerThrustVector += transform.right;
+                if (binds.GetInput(binds.bindThrustUp)) playerThrustVector += transform.up;
+                if (binds.GetInput(binds.bindThrustDown)) playerThrustVector += -transform.up;
 
-            rb.AddForce(playerThrustVector.normalized * playerThrust * playerThrustMultiplier * Time.deltaTime);
+                rb.AddForce(playerThrustVector.normalized * playerThrust * playerThrustMultiplier * Time.deltaTime);
+            }
         }
     }
     #endregion

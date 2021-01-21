@@ -45,19 +45,27 @@ public class Menu : MonoBehaviour
         //HUD toggle
         if (control.binds.GetInputDown(control.binds.bindToggleHUD))
         {
-            MenuSettingsHUDToggle();
+            menuSettingsToggleDisplayHUD.isOn = !menuSettingsToggleDisplayHUD.isOn;
+
+            //MenuSettingsHUDToggle();
         }
 
         //FPS toggle
         if (control.binds.GetInputDown(control.binds.bindToggleFPS))
         {
-            MenuSettingsFPSToggle();
+            menuSettingsToggleDisplayFPS.isOn = !menuSettingsToggleDisplayFPS.isOn;
+
+            //MenuSettingsFPSToggle();
         }
 
         //Spotlight toggle
         if (control.binds.GetInputDown(control.binds.bindToggleSpotlight))
         {
-            control.menu.MenuSettingsSpotlightToggle();
+            //Because this Toggle calls the MenuSettingsSpotlightToggle() method ON VALUE CHANGED, changing the isOn bool will call the method for us
+            //If we call the method (again) explicitly here, we will run into an infinite loop causing a stack overflow error
+            menuSettingsToggleSpotlight.isOn = !menuSettingsToggleSpotlight.isOn;
+            
+            //MenuSettingsSpotlightToggle();
         }
     }
 
@@ -201,9 +209,6 @@ public class Menu : MonoBehaviour
         {
             control.systemInfo.text = "";
         }
-
-        //Update in menu
-        menuSettingsToggleDisplayFPS.isOn = control.settings.displayFPS;
     }
 
     public void MenuSettingsHUDToggle()
@@ -216,28 +221,19 @@ public class Menu : MonoBehaviour
         control.canvas.transform.Find("CameraReticle").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("SystemInfo").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("WarningText").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("MovementMode").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("MovementModeSelector").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("Vitals").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("Resources").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("Weapons").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("Waypoint").gameObject.SetActive(control.settings.displayHUD);
-
-        //Update in menu
-        menuSettingsToggleDisplayHUD.isOn = control.settings.displayHUD;
     }
 
     public void MenuSettingsSpotlightToggle()
     {
-        //Update in settings and save
         control.settings.spotlightOn = !control.settings.spotlightOn;
         control.settings.Save();
 
-        //Update in game
-        control.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(control.settings.spotlightOn);
-
-        //Update in menu
-        menuSettingsToggleSpotlight.isOn = control.settings.spotlightOn;
+        //Not quite sure why this needs to be inverted, but it works
+        control.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(!control.settings.spotlightOn);
     }
 
     public void MenuSettingsTargetFPSSet()
