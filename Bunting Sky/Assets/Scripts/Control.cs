@@ -123,11 +123,40 @@ public class Control : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
 
         //Generate starter system
-        GenerateSystem(//Player, planetoids, asteroids (byte)Random.Range(11, 15)
+        GenerateSystem(//Player, planetoids, asteroid clusters
             true,
-            (byte)Random.Range(4, 9),
-            (byte)Random.Range(8, 13)
+            (byte)Random.Range(6, 10),
+            (byte)Random.Range(6, 9)
         );
+
+        //Test
+        int lows = 0;
+        int highs = 0;
+        int iterations = 100000;
+        for(int i = 0; i < iterations; i++)
+        {
+            int value = LowBiasedRandomSquared(4);
+            if (value < 8)
+            {
+                lows++;
+            }
+            else
+            {
+                highs++;
+            }
+            if (value <= 1)
+            {
+                Debug.Log(value);
+            }
+            if (value >= 16)
+            {
+                Debug.Log(value);
+            }
+        }
+        Debug.LogFormat("{0}% lows, {1}% highs",
+            Mathf.Round(((float)lows / (float)iterations) * 100f),
+            Mathf.Round(((float)highs / (float)iterations) * 100f)
+            );
     }
 
     private void Update()
@@ -455,11 +484,11 @@ public class Control : MonoBehaviour
     {
         //Properties
         float minimumDistanceBetweenClusters = 100f;
-        float distanceOut = 1300f - minimumDistanceBetweenClusters; //Minimum distance
+        float distanceOut = 1300f - minimumDistanceBetweenClusters;
         float randSpacing;
         float spawnRadius;
         float spawnAngle;
-        float clusterSize;
+        int clusterSize;
         byte clusterType;
 
         //Spawn all
@@ -470,7 +499,8 @@ public class Control : MonoBehaviour
             spawnRadius = distanceOut + minimumDistanceBetweenClusters + randSpacing;
             distanceOut = spawnRadius; //increment distanceOut for the next cBody
             spawnAngle = Random.Range(0f, 360f);
-            clusterSize = Random.Range(1, 5);
+            clusterSize = LowBiasedRandomSquared(4); //4^2 = 16
+
             //We don't have to add 1 here to format for Random.Range max being exclusive for ints because the length is already 1 greater than the index (since index starts at 0)
             clusterType = (byte)Random.Range(0, Ore.typeLength);
 
@@ -799,6 +829,26 @@ public class Control : MonoBehaviour
         else if (angle < 0) angle += 360;
 
         return angle;
+    }
+
+    public static int LowBiasedRandomSquared(int valueMax)
+    {
+        float value;
+
+        //Randomize size (nneds to be shifted one to the right so that multiplication has grows the low-end number too)
+        value = Random.Range(2f, (float)valueMax + 1f);
+
+        //Power (making distribution uneven, and unintentionally making smaller sizes rarer)
+        value *= value;                       
+        
+        //Invert (making larger sizes rarer)
+        //value = ((valueMax * valueMax) + 1f) - value;
+
+        //Round
+        value = Mathf.Round(value);
+
+        //Return
+        return (int)value;
     }
     #endregion
 }

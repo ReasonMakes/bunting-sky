@@ -132,7 +132,7 @@ public class CBodyAsteroid : MonoBehaviour
 
             case "Medium":
                 model = modelClassMedium;
-                partSysShurikenDamageEmitCount = 200;
+                partSysShurikenDamageEmitCount = 150;
                 partSysShurikenDamageShapeRadius = 1.3f;
                 partSysShurikenDamageSizeMultiplier = 1.2f;
                 rb.mass = 0.001f;
@@ -141,7 +141,7 @@ public class CBodyAsteroid : MonoBehaviour
 
             case "Large":
                 model = modelClassLarge;
-                partSysShurikenDamageEmitCount = 350;
+                partSysShurikenDamageEmitCount = 250;
                 partSysShurikenDamageShapeRadius = 3.2f;
                 partSysShurikenDamageSizeMultiplier = 2f;
                 rb.mass = 0.01f;
