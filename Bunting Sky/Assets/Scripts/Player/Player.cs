@@ -43,6 +43,8 @@ public class Player : MonoBehaviour
     //Engine glow affects local lighting, so when in first person and that light source is gone, the surroundings suddenly look darker.
     //This can be fixed by not deleting the light source and rendering a cockpit model to block view to it. On the back wall of the cockpit could be a camera or something
 
+    //ICC stands for interstellar crypto currency
+
     /*
      * MOVEMENT MODES:
      * sublight, for moving around asteroids, stations, and dogfighting - has a constant acceleration and drag
@@ -308,8 +310,8 @@ public class Player : MonoBehaviour
         //Ore
         ore = new double[3]; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
-        //Currency
-        control.textCurrency.text = "" + currency.ToString("F2");
+        //Update resources UI
+        control.UpdatePlayerResourcesUI();
 
         //WEAPONS
         //Weapons trees
@@ -351,8 +353,14 @@ public class Player : MonoBehaviour
     {
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
         {
-            control.SpawnAsteroidAbovePlayer();
+            control.SpawnAsteroidManually(transform.position + transform.forward * 2f, rb.velocity, true);
             Debug.Log("Spawned one asteroid");
+        }
+
+        if (binds.GetInputDown(binds.bindThrustVectorDecrease))
+        {
+            control.SpawnPlanetoidManually(transform.position + transform.forward * 10f, rb.velocity);
+            Debug.Log("Spawned one planetoid");
         }
 
         /*
@@ -519,9 +527,9 @@ public class Player : MonoBehaviour
         
         //Can set the relative drag to only happen when not moving to allow for more realistic acceleration by surrounding this with an if (!moving) check
 
-        if (distToClosestPlanetoid <= ORBITAL_DRAG_MODE_THRESHOLD)
+        if (closestPlanetoidTransform != null && distToClosestPlanetoid <= ORBITAL_DRAG_MODE_THRESHOLD)
         {
-            //Planetoid-relative drag
+            //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
             rb.velocity = control.DragRelative(rb.velocity, closestPlanetoidTransform.GetComponent<Rigidbody>().velocity, DRAG);
         }
         else if (closestAsteroidTransform != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)

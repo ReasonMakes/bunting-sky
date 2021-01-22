@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class StationDocking : MonoBehaviour
 {
@@ -30,11 +31,27 @@ public class StationDocking : MonoBehaviour
         upgradeButton = new string[4, 3];
         for (int i = 0; i < upgradeButton.GetLength(0); i++)
         {
+            //Generate random index
             int upgradeSelected = Random.Range(1, control.commerce.upgradeDictionary.GetLength(0));
 
+            //Assign upgrade at index
             upgradeButton[i, 0] = control.commerce.upgradeDictionary[upgradeSelected, 0]; //Name
             upgradeButton[i, 1] = control.commerce.upgradeDictionary[upgradeSelected, 1]; //Price
             upgradeButton[i, 2] = control.commerce.upgradeDictionary[upgradeSelected, 2]; //Description
+
+            //Check if upgrade is a duplicate of a previous upgrade
+            if (i > 0) //if we are at the first iteration, it is impossible to be a duplicate
+            {
+                for (int i2 = 0; i2 < i; i2++)
+                {
+                    if (upgradeButton[i, 0] == upgradeButton[i2, 0])
+                    {
+                        upgradeButton[i, 0] = "Sold out";                                       //Name
+                        upgradeButton[i, 1] = control.commerce.priceUpgradeMax.ToString();      //Price
+                        upgradeButton[i, 2] = "Item is out of stock";                           //Description
+                    }
+                }
+            }
         }
     }
 
@@ -59,14 +76,16 @@ public class StationDocking : MonoBehaviour
             control.commerce.priceWater = priceWater;
 
             //Send upgrades to commerce script
-            control.commerce.menuButtonUpgrade1.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[0, 0];                        //Name
-            control.commerce.menuButtonUpgrade1.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeButton[0, 1] + " ea";  //Price display
-            control.commerce.priceUpgrade1 = float.Parse(upgradeButton[0, 1]);                                                                            //Price internal
-
+            SendUpgradeButtonsToCommerce(0, control.commerce.menuButtonUpgrade1, out control.commerce.priceUpgrade1);
+            SendUpgradeButtonsToCommerce(1, control.commerce.menuButtonUpgrade2, out control.commerce.priceUpgrade2);
+            SendUpgradeButtonsToCommerce(2, control.commerce.menuButtonUpgrade3, out control.commerce.priceUpgrade3);
+            SendUpgradeButtonsToCommerce(3, control.commerce.menuButtonUpgrade4, out control.commerce.priceUpgrade4);
+            
+            /*
             control.commerce.menuButtonUpgrade2.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[1, 0];                        //Name
             control.commerce.menuButtonUpgrade2.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeButton[1, 1] + " ea";  //Price display
             control.commerce.priceUpgrade2 = float.Parse(upgradeButton[1, 1]);                                                                            //Price internal
-
+            
             control.commerce.menuButtonUpgrade3.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[2, 0];                        //Name
             control.commerce.menuButtonUpgrade3.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeButton[2, 1] + " ea";  //Price display
             control.commerce.priceUpgrade3 = float.Parse(upgradeButton[2, 1]);                                                                            //Price internal
@@ -74,7 +93,8 @@ public class StationDocking : MonoBehaviour
             control.commerce.menuButtonUpgrade4.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[3, 0];                        //Name
             control.commerce.menuButtonUpgrade4.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeButton[3, 1] + " ea";  //Price display
             control.commerce.priceUpgrade4 = float.Parse(upgradeButton[3, 1]);                                                                            //Price internal
-            
+            */
+
             //Open commerce menu
             control.commerce.MenuToggle();
         }
@@ -104,5 +124,25 @@ public class StationDocking : MonoBehaviour
         {
             host = false;
         }
+    }
+
+    private void SendUpgradeButtonsToCommerce(int stationUpgradeIndex, Button commerceButton, out float commercePrice)
+    {
+        //Name
+        commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[stationUpgradeIndex, 0];
+        
+        //Price display
+        TextMeshProUGUI priceDisplay = commerceButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>();
+        if (float.Parse(upgradeButton[stationUpgradeIndex, 1]) >= control.commerce.priceUpgradeMax)
+        {
+            priceDisplay.text = "N/A";
+        }
+        else
+        {
+            priceDisplay.text = "$" + upgradeButton[stationUpgradeIndex, 1] + " ea";
+        }
+
+        //Price internal
+        commercePrice = float.Parse(upgradeButton[stationUpgradeIndex, 1]);
     }
 }

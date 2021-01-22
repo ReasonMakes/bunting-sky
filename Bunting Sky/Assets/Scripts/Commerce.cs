@@ -27,6 +27,7 @@ public class Commerce : MonoBehaviour
     public Button menuButtonUpgrade2;
     public Button menuButtonUpgrade3;
     public Button menuButtonUpgrade4;
+    public float priceUpgradeMax = 1000000; //Setting to this price will be interpretted as an unavailable item
     public float priceUpgrade1 = 2000f;
     public float priceUpgrade2 = 200f;
     public float priceUpgrade3 = 500f;
@@ -90,6 +91,12 @@ public class Commerce : MonoBehaviour
         control.reticle.SetActive(!menuOpen);
     }
 
+    private void UpdateAllUI()
+    {
+        control.UpdatePlayerResourcesUI();
+        UpdateUI();
+    }
+
     private void UpdateUI()
     {
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
@@ -104,10 +111,10 @@ public class Commerce : MonoBehaviour
         menuButtonSellAllWater.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + priceWater.ToString() + " / g";
 
         //Upgrade
-        menuButtonUpgrade1.interactable = playerScript.currency >= priceUpgrade1;
-        menuButtonUpgrade2.interactable = playerScript.currency >= priceUpgrade2;
-        menuButtonUpgrade3.interactable = playerScript.currency >= priceUpgrade3;
-        menuButtonUpgrade4.interactable = playerScript.currency >= priceUpgrade4;
+        menuButtonUpgrade1.interactable = (priceUpgrade1 < priceUpgradeMax) && (playerScript.currency >= priceUpgrade1);
+        menuButtonUpgrade2.interactable = (priceUpgrade2 < priceUpgradeMax) && (playerScript.currency >= priceUpgrade2);
+        menuButtonUpgrade3.interactable = (priceUpgrade3 < priceUpgradeMax) && (playerScript.currency >= priceUpgrade3);
+        menuButtonUpgrade4.interactable = (priceUpgrade4 < priceUpgradeMax) && (playerScript.currency >= priceUpgrade4);
 
         //Refuel & repair
         menuButtonRepair.interactable = (playerScript.currency >= priceRepair) && (playerScript.vitalsHealth < playerScript.vitalsHealthMax);
@@ -119,12 +126,9 @@ public class Commerce : MonoBehaviour
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[0] * pricePlatinoid;
-        control.textCurrency.text = playerScript.currency.ToString("F2");
-
         playerScript.ore[0] = 0.0;
-        control.textPlatinoid.text = playerScript.ore[0].ToString("F2");
 
-        UpdateUI();
+        UpdateAllUI();
     }
 
     public void SellAllPreciousMetal()
@@ -132,12 +136,9 @@ public class Commerce : MonoBehaviour
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[1] * pricePreciousMetal;
-        control.textCurrency.text = playerScript.currency.ToString("F2");
-
         playerScript.ore[1] = 0.0;
-        control.textPreciousMetal.text = playerScript.ore[1].ToString("F2");
 
-        UpdateUI();
+        UpdateAllUI();
     }
 
     public void SellAllWater()
@@ -145,12 +146,9 @@ public class Commerce : MonoBehaviour
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[2] * priceWater;
-        control.textCurrency.text = playerScript.currency.ToString("F2");
-
         playerScript.ore[2] = 0.0;
-        control.textWater.text = playerScript.ore[2].ToString("F2");
 
-        UpdateUI();
+        UpdateAllUI();
     }
 
     public void Repair()
@@ -160,12 +158,10 @@ public class Commerce : MonoBehaviour
         if ((playerScript.currency >= priceRepair) && (playerScript.vitalsHealth < playerScript.vitalsHealthMax))
         {
             playerScript.currency -= priceRepair;
-            control.textCurrency.text = playerScript.currency.ToString("F2");
-
             playerScript.vitalsHealth = playerScript.vitalsHealthMax;
         }
 
-        UpdateUI();
+        UpdateAllUI();
     }
 
     public void Refuel()
@@ -175,11 +171,9 @@ public class Commerce : MonoBehaviour
         if ((playerScript.currency >= priceRefuel) && (playerScript.vitalsFuel < playerScript.vitalsFuelMax))
         {
             playerScript.currency -= priceRefuel;
-            control.textCurrency.text = playerScript.currency.ToString("F2");
-
             playerScript.vitalsFuel = playerScript.vitalsFuelMax;
         }
 
-        UpdateUI();
+        UpdateAllUI();
     }
 }

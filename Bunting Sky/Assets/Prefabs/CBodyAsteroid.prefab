@@ -4998,6 +4998,7 @@ GameObject:
   - component: {fileID: 1333070546947983288}
   - component: {fileID: 1333070546947983289}
   - component: {fileID: 1333070546947983286}
+  - component: {fileID: 8611109209138625066}
   m_Layer: 0
   m_Name: CBodyAsteroid
   m_TagString: CBody
@@ -5114,7 +5115,6 @@ MonoBehaviour:
   matWater: {fileID: 2100000, guid: ec94f4270075f474196b4f1ee2c17b6c, type: 2}
   type: 0
   partSysShurikenDamage: {fileID: 5662085692244842276}
-  destroyed: 0
   targetCollider1: {fileID: 5520706539341832288}
   targetCollider2: {fileID: 8390337967562609920}
   targetCollider3: {fileID: 294555307309304710}
@@ -5133,8 +5133,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 1333070546947983288}
-  station: {fileID: 3535112129357172416, guid: 188c3194560817b48becf027043164ae, type: 3}
-  gravityInstanceIndex: 0
+--- !u!114 &8611109209138625066
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333070546947983284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8d55b6aa9924464c97e788d9f405514, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6685615498556311451
 GameObject:
   m_ObjectHideFlags: 0

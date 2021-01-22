@@ -30,8 +30,8 @@ public class CBodyAsteroid : MonoBehaviour
     private float partSysShurikenDamageShapeRadius = 0.1f;
     private float partSysShurikenDamageSizeMultiplier = 1f;
 
-    private byte health = 4;
-    public bool destroyed = false;
+    [System.NonSerialized] public byte health = 4;
+    [System.NonSerialized] public bool destroyed = false;
     private float destroyedTime = 0f;
 
     Transform playerTran;

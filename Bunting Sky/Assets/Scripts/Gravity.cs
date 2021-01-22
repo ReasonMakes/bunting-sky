@@ -4,10 +4,8 @@ using UnityEngine;
 
 public class Gravity : MonoBehaviour
 {
-    [System.NonSerialized] public Control control;
     public Rigidbody rb;
-    public GameObject station;
-
+    
     //smooth out gravitate addForce by adding a bit of the planned force every fixed update
     //basically on every gravitate call, calculate the amount of force to add, then in fixed update add that force divided by the amount of time in between updates
 
@@ -15,7 +13,7 @@ public class Gravity : MonoBehaviour
     //That way there will be more fidelity in the physics when it's most relevant
     //But calculating distance may be intensive too
     public readonly short GRAVITY_SLOW_UPDATE_PERIOD = 90;
-    public int gravityInstanceIndex;
+    [System.NonSerialized] public int gravityInstanceIndex;
     private float timeAtLastGravitate = 0f;
     private float deltaTimeSinceLastGravitate = 0f;
 
@@ -144,28 +142,5 @@ public class Gravity : MonoBehaviour
         Control.gravityInstanceIndex += (int)(GRAVITY_SLOW_UPDATE_PERIOD * 0.161803398874989484820458683436f);
         //Wrap
         if (Control.gravityInstanceIndex >= GRAVITY_SLOW_UPDATE_PERIOD) Control.gravityInstanceIndex -= GRAVITY_SLOW_UPDATE_PERIOD;
-    }
-
-    public Vector3 SpawnStation(bool forced)
-    {
-        //Offset the station from the host cBody
-        Vector3 stationCoords = new Vector3(transform.position.x + 10f, transform.position.y + 10f, transform.position.z + 10f);
-
-        //4 in 5 chance of having a space station. Option to force-spawn the station
-        if (forced || Random.Range(0f, 4f) >= 1f)
-        {
-            GameObject instancedStation = Instantiate
-            (
-                station,
-                stationCoords,
-                Quaternion.Euler(270f, 0f, 270f)
-            );
-            instancedStation.transform.parent = transform;
-
-            //Give control reference
-            instancedStation.GetComponentInChildren<StationDocking>().control = control;
-        }
-
-        return stationCoords;
     }
 }

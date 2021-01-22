@@ -162,9 +162,9 @@ public class Ore : MonoBehaviour
         */
 
         //Update resources display
-        control.textPlatinoid.text = "" + playerBodyTransform.GetComponent<Player>().ore[0];
-        control.textPreciousMetal.text = "" + playerBodyTransform.GetComponent<Player>().ore[1];
-        control.textWater.text = "" + playerBodyTransform.GetComponent<Player>().ore[2];
+        control.textPlatinoid.text = playerBodyTransform.GetComponent<Player>().ore[0].ToString("F2") + " g";
+        control.textPreciousMetal.text = playerBodyTransform.GetComponent<Player>().ore[1].ToString("F2") + " g";
+        control.textWater.text = playerBodyTransform.GetComponent<Player>().ore[2].ToString("F2") + " g";
 
         //Destroy if it hasn't been already
         if (gameObject != null) Destroy(gameObject, 0f);

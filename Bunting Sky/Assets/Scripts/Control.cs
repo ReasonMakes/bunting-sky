@@ -125,38 +125,9 @@ public class Control : MonoBehaviour
         //Generate starter system
         GenerateSystem(//Player, planetoids, asteroid clusters
             true,
-            (byte)Random.Range(6, 10),
-            (byte)Random.Range(6, 9)
+            (byte)1,//Random.Range(6, 10),
+            (byte)0//Random.Range(6, 9)
         );
-
-        //Test
-        int lows = 0;
-        int highs = 0;
-        int iterations = 100000;
-        for(int i = 0; i < iterations; i++)
-        {
-            int value = LowBiasedRandomSquared(4);
-            if (value < 8)
-            {
-                lows++;
-            }
-            else
-            {
-                highs++;
-            }
-            if (value <= 1)
-            {
-                Debug.Log(value);
-            }
-            if (value >= 16)
-            {
-                Debug.Log(value);
-            }
-        }
-        Debug.LogFormat("{0}% lows, {1}% highs",
-            Mathf.Round(((float)lows / (float)iterations) * 100f),
-            Mathf.Round(((float)highs / (float)iterations) * 100f)
-            );
     }
 
     private void Update()
@@ -353,7 +324,7 @@ public class Control : MonoBehaviour
         instanceCBodyStar.transform.parent = cBodies.transform;
 
         //Planetoids
-        playerSpawnCoords = GenerateCBodiesPlanetoids(nCBodiesPlanetoids, instanceCBodyStar);
+        playerSpawnCoords = GenerateCBodiesPlanetoidsAndGetPlayerCoords(nCBodiesPlanetoids, instanceCBodyStar);
         playerSpawnCoords += new Vector3(-1f, 2f, -5f);
 
         //Asteroids
@@ -422,7 +393,7 @@ public class Control : MonoBehaviour
         }
     }
 
-    private Vector3 GenerateCBodiesPlanetoids(byte nCBodiesPlanetoids, GameObject centreCBodyStar)
+    private Vector3 GenerateCBodiesPlanetoidsAndGetPlayerCoords(byte nCBodiesPlanetoids, GameObject centreCBodyStar)
     {
         Vector3 outPlayerSpawnCoords = new Vector3(0f,0f,0f);
 
@@ -460,7 +431,7 @@ public class Control : MonoBehaviour
             instanceCBodyPlanetoid.transform.parent = cBodiesPlanetoids.transform;
 
             //Give control reference
-            instanceCBodyPlanetoid.GetComponent<Gravity>().control = this;
+            instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = this;
 
             //Orbit central star
             instanceCBodyPlanetoid.GetComponent<Gravity>().SetVelocityToOrbit(centreCBodyStar, spawnAngle);
@@ -469,11 +440,11 @@ public class Control : MonoBehaviour
             if (i == 0)
             {
                 //Force a station to spawn and return those coords to spawn the player there
-                outPlayerSpawnCoords = instanceCBodyPlanetoid.GetComponent<Gravity>().SpawnStation(true);
+                outPlayerSpawnCoords = instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(true);
             }
             else
             {
-                instanceCBodyPlanetoid.GetComponent<Gravity>().SpawnStation(false);
+                instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(false);
             }
         }
 
@@ -499,7 +470,7 @@ public class Control : MonoBehaviour
             spawnRadius = distanceOut + minimumDistanceBetweenClusters + randSpacing;
             distanceOut = spawnRadius; //increment distanceOut for the next cBody
             spawnAngle = Random.Range(0f, 360f);
-            clusterSize = LowBiasedRandomSquared(4); //4^2 = 16
+            clusterSize = LowBiasedRandomIntSquared(4); //range of 1 to 16 (4^2 = 16)
 
             //We don't have to add 1 here to format for Random.Range max being exclusive for ints because the length is already 1 greater than the index (since index starts at 0)
             clusterType = (byte)Random.Range(0, Ore.typeLength);
@@ -540,13 +511,35 @@ public class Control : MonoBehaviour
         }
     }
 
-    public void SpawnAsteroidAbovePlayer()
+    public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity)
     {
-        Transform playerBodyTransform = instancePlayer.transform.GetChild(0);
+        GameObject instanceCBodyPlanetoid = Instantiate(
+                cBodyPlanetoid,
+                position,
+                Quaternion.Euler(
+                    Random.Range(0f, 360f),
+                    Random.Range(0f, 360f),
+                    Random.Range(0f, 360f)
+                )
+            );
 
+        //Put in CBodies tree
+        instanceCBodyPlanetoid.transform.parent = cBodiesPlanetoids.transform;
+
+        //Give control reference
+        instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = this;
+
+        //Set velocity
+        instanceCBodyPlanetoid.GetComponent<Rigidbody>().velocity = velocity;
+
+        return instanceCBodyPlanetoid;
+    }
+
+    public GameObject SpawnAsteroidManually(Vector3 position, Vector3 velocity, bool randomType)
+    {
         GameObject instanceCBodyAsteroid = Instantiate(
             cBodyAsteroid,
-            playerBodyTransform.position + Vector3.up * 2f,
+            position,
             Quaternion.Euler(
                 Random.Range(0f, 360f),
                 Random.Range(0f, 360f),
@@ -554,18 +547,30 @@ public class Control : MonoBehaviour
             )
         );
 
+        CBodyAsteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<CBodyAsteroid>();
+
         //Put in CBodies tree
         instanceCBodyAsteroid.transform.parent = cBodiesAsteroids.transform;
 
-        //Set velocity
-        instanceCBodyAsteroid.GetComponent<Rigidbody>().velocity = playerBodyTransform.GetComponent<Rigidbody>().velocity;
-
-        CBodyAsteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<CBodyAsteroid>();
-        //Randomize size and type
-        instanceCBodyAsteroidScript.SetSize(instanceCBodyAsteroidScript.RandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
-        instanceCBodyAsteroidScript.SetType((byte)Random.Range(0, Ore.typeLength));
         //Give control reference
         instanceCBodyAsteroidScript.control = this;
+
+        //Set velocity
+        instanceCBodyAsteroid.GetComponent<Rigidbody>().velocity = velocity;
+
+        //Randomize size and type
+        instanceCBodyAsteroidScript.SetSize(instanceCBodyAsteroidScript.RandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
+
+        if (randomType)
+        {
+            instanceCBodyAsteroidScript.SetType((byte)Random.Range(0, Ore.typeLength));
+        }
+        else
+        {
+            instanceCBodyAsteroidScript.SetType(0);
+        }
+        
+        return instanceCBodyAsteroid;
     }
     #endregion
 
@@ -831,24 +836,66 @@ public class Control : MonoBehaviour
         return angle;
     }
 
-    public static int LowBiasedRandomSquared(int valueMax)
+    public static int LowBiasedRandomIntSquared(int valueMax)
     {
-        float value;
+        /*
+         * Randomly generates an int with a bias toward low numbers
+         * (85% below the middle of the specified range and 15% above the middle of the specified range)
+         * This is useful for generating asteroids with the rare chance of large clusters
+         */
 
         //Randomize size (nneds to be shifted one to the right so that multiplication has grows the low-end number too)
-        value = Random.Range(2f, (float)valueMax + 1f);
+        float value = Random.Range(1f, (float)valueMax);
 
         //Power (making distribution uneven, and unintentionally making smaller sizes rarer)
-        value *= value;                       
-        
-        //Invert (making larger sizes rarer)
-        //value = ((valueMax * valueMax) + 1f) - value;
+        value *= value;
 
-        //Round
+        //Making larger sizes rarer by multiplying the inverse of the value by maximum value squared
+        value = (1f / value) * valueMax * valueMax;
+
+        //Round (to properly parse to int)
         value = Mathf.Round(value);
 
         //Return
         return (int)value;
+    }
+
+    /*
+    private void TestLowBiasedRandomIntSquared()
+    {
+        int lows = 0;
+        int highs = 0;
+        int iterations = 1000 * 1000;
+
+        for (int i = 0; i < iterations; i++)
+        {
+            int value = LowBiasedRandomIntSquared(4);
+            //Debug.Log(value);
+            if (value < 8)
+            {
+                lows++;
+            }
+            else
+            {
+                highs++;
+            }
+        }
+
+        Debug.LogFormat("{0}% lows, {1}% highs",
+            Mathf.Round(((float)lows / (float)iterations) * 100f),
+            Mathf.Round(((float)highs / (float)iterations) * 100f)
+        );
+    }
+    */
+
+    public void UpdatePlayerResourcesUI()
+    {
+        Player playerScript = instancePlayer.transform.Find("Body").GetComponent<Player>();
+
+        textCurrency.text = playerScript.currency.ToString("F2") + " ICC";
+        textPlatinoid.text = playerScript.ore[0].ToString("F2") + " g";
+        textPreciousMetal.text = playerScript.ore[1].ToString("F2") + " g";
+        textWater.text = playerScript.ore[2].ToString("F2") + " g";
     }
     #endregion
 }

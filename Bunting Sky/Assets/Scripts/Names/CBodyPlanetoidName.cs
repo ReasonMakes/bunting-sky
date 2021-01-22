@@ -5,7 +5,7 @@ using System.IO;
 
 public class CBodyPlanetoidName : MonoBehaviour
 {
-    public string title = "Error: could not load";
+    [System.NonSerialized] public string title = "Error: could not generate name";
     string[] lines;
     string prefix = "";
     string main = "";
@@ -13,12 +13,6 @@ public class CBodyPlanetoidName : MonoBehaviour
 
     void Start()
     {
-        /*
-        prefix = "";
-        main = "";
-        suffix = "";
-        */
-
         //Prefix
         if (Random.value >= 0.8f)
         {
