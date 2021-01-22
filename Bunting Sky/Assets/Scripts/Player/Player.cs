@@ -311,7 +311,7 @@ public class Player : MonoBehaviour
         ore = new double[3]; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
         //Update resources UI
-        control.UpdatePlayerResourcesUI();
+        control.UpdateAllPlayerResourcesUI();
 
         //WEAPONS
         //Weapons trees

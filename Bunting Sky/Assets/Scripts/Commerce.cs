@@ -13,6 +13,9 @@ public class Commerce : MonoBehaviour
 
     public TextMeshProUGUI stationName;
 
+    public Color colorTextDisabled = new Color(1f, 1f, 1f, 0.1f);
+    public Color colorTextEnabled = new Color(1f, 1f, 1f, 1f);
+
     public GameObject menuContainer;
 
     public Button menuButtonSellAllPlatinoid;
@@ -82,7 +85,7 @@ public class Commerce : MonoBehaviour
         menuContainer.SetActive(menuOpen);
 
         //Update UI
-        UpdateUI();
+        UpdateCommerceMenuUI();
 
         //Toggle cursor lock
         Cursor.lockState = menuOpen ? CursorLockMode.None : CursorLockMode.Locked;
@@ -91,13 +94,13 @@ public class Commerce : MonoBehaviour
         control.reticle.SetActive(!menuOpen);
     }
 
-    private void UpdateAllUI()
+    private void UpdatePlayerResourcesAndCommerceMenuUI()
     {
-        control.UpdatePlayerResourcesUI();
-        UpdateUI();
+        control.UpdateAllPlayerResourcesUI();
+        UpdateCommerceMenuUI();
     }
 
-    private void UpdateUI()
+    private void UpdateCommerceMenuUI()
     {
         Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
 
@@ -128,7 +131,7 @@ public class Commerce : MonoBehaviour
         playerScript.currency += playerScript.ore[0] * pricePlatinoid;
         playerScript.ore[0] = 0.0;
 
-        UpdateAllUI();
+        UpdatePlayerResourcesAndCommerceMenuUI();
     }
 
     public void SellAllPreciousMetal()
@@ -138,7 +141,7 @@ public class Commerce : MonoBehaviour
         playerScript.currency += playerScript.ore[1] * pricePreciousMetal;
         playerScript.ore[1] = 0.0;
 
-        UpdateAllUI();
+        UpdatePlayerResourcesAndCommerceMenuUI();
     }
 
     public void SellAllWater()
@@ -148,7 +151,7 @@ public class Commerce : MonoBehaviour
         playerScript.currency += playerScript.ore[2] * priceWater;
         playerScript.ore[2] = 0.0;
 
-        UpdateAllUI();
+        UpdatePlayerResourcesAndCommerceMenuUI();
     }
 
     public void Repair()
@@ -161,7 +164,7 @@ public class Commerce : MonoBehaviour
             playerScript.vitalsHealth = playerScript.vitalsHealthMax;
         }
 
-        UpdateAllUI();
+        UpdatePlayerResourcesAndCommerceMenuUI();
     }
 
     public void Refuel()
@@ -174,6 +177,6 @@ public class Commerce : MonoBehaviour
             playerScript.vitalsFuel = playerScript.vitalsFuelMax;
         }
 
-        UpdateAllUI();
+        UpdatePlayerResourcesAndCommerceMenuUI();
     }
 }

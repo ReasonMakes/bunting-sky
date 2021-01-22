@@ -82,6 +82,7 @@ public class Control : MonoBehaviour
     private float playerShipDirectionReticleSpacingPower = 2f;
 
     //Player resources
+    public bool updatePlayerResourcesUIAnimations = true;
     public Image imageCurrency;
     public Image imagePlatinoid;
     public Image imagePreciousMetal;
@@ -131,8 +132,8 @@ public class Control : MonoBehaviour
         //Generate starter system
         GenerateSystem(//Player, planetoids, asteroid clusters
             true,
-            (byte)1,//Random.Range(6, 10),
-            (byte)0//Random.Range(6, 9)
+            (byte)Random.Range(6, 10),
+            (byte)Random.Range(6, 9)
         );
     }
 
@@ -158,7 +159,11 @@ public class Control : MonoBehaviour
         if (binds.GetInputDown(binds.bindSaveScreenshot)) SaveScreenshot();
 
         //Resources animations
-        UpdatePlayerResourcesUIAnimations();
+        if (updatePlayerResourcesUIAnimations)
+        {
+            updatePlayerResourcesUIAnimations = false;
+            UpdateAllPlayerResourcesUIAnimations();
+        }
     }
 
     private void LateUpdate()
@@ -901,70 +906,56 @@ public class Control : MonoBehaviour
     }
     */
 
-    public void UpdatePlayerResourcesUI()
+    public void UpdateAllPlayerResourcesUI()
     {
         Player playerScript = instancePlayer.transform.Find("Body").GetComponent<Player>();
 
-        if (textCurrency.text != playerScript.currency.ToString("F2") + " ICC"){
-            textCurrency.text = playerScript.currency.ToString("F2") + " ICC";
-            imageCurrency.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
-        }
+        //Update values and start animations on a resource if its value changed
+        UpdatePlayerResourceUI(ref textCurrency,      ref imageCurrency,      playerScript.currency.ToString("F2") + " ICC");
+        UpdatePlayerResourceUI(ref textPlatinoid,     ref imagePlatinoid,     playerScript.ore[0].ToString("F2")   + " g");
+        UpdatePlayerResourceUI(ref textPreciousMetal, ref imagePreciousMetal, playerScript.ore[1].ToString("F2")   + " g");
+        UpdatePlayerResourceUI(ref textWater,         ref imageWater,         playerScript.ore[2].ToString("F2")   + " g");
 
-        if (textPlatinoid.text != playerScript.ore[0].ToString("F2") + " g")
-        {
-            textPlatinoid.text = playerScript.ore[0].ToString("F2") + " g";
-            imagePlatinoid.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
-        }
+        //Set animations to update
+        UpdateAllPlayerResourcesUIAnimations();
+    }
 
-        if (textPreciousMetal.text != playerScript.ore[1].ToString("F2") + " g")
-        {
-            textPreciousMetal.text = playerScript.ore[1].ToString("F2") + " g";
-            imagePreciousMetal.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
-        }
+    private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, string textNew)
+    {
+        //Grow
+        float growAmount = 4f;
 
-        if (textWater.text != playerScript.ore[2].ToString("F2") + " g")
+        if (textMeshCurrent.text != textNew)
         {
-            textWater.text = playerScript.ore[2].ToString("F2") + " g";
-            imageWater.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
+            textMeshCurrent.text = textNew;
+            image.rectTransform.sizeDelta = new Vector2(
+                (image.sprite.rect.width / 2) * growAmount,
+                (image.sprite.rect.height / 2) * growAmount
+            );
         }
     }
 
-    public void UpdatePlayerResourcesUIAnimations()
+    public void UpdateAllPlayerResourcesUIAnimations()
     {
-        if (imageCurrency.rectTransform.localScale.x > 1f)
-        {
-            imageCurrency.rectTransform.localScale.Set(
-                Mathf.Max(1f, imageCurrency.rectTransform.localScale.x - (imageCurrency.rectTransform.localScale.x * Time.deltaTime)),
-                Mathf.Max(1f, imageCurrency.rectTransform.localScale.y - (imageCurrency.rectTransform.localScale.y * Time.deltaTime)),
-                1f
-            );
-        }
+        UpdatePlayerResourcesUIAnimation(ref imageCurrency);
+        UpdatePlayerResourcesUIAnimation(ref imagePlatinoid);
+        UpdatePlayerResourcesUIAnimation(ref imagePreciousMetal);
+        UpdatePlayerResourcesUIAnimation(ref imageWater);
+    }
 
-        if (imagePlatinoid.rectTransform.localScale.x > 1f)
-        {
-            imagePlatinoid.rectTransform.localScale.Set(
-                Mathf.Max(1f, imagePlatinoid.rectTransform.localScale.x - (imagePlatinoid.rectTransform.localScale.x * Time.deltaTime)),
-                Mathf.Max(1f, imagePlatinoid.rectTransform.localScale.y - (imagePlatinoid.rectTransform.localScale.y * Time.deltaTime)),
-                1f
-            );
-        }
+    private void UpdatePlayerResourcesUIAnimation(ref Image imageCurrent)
+    {
+        //Shrink
+        float shrinkRate = 200f;
 
-        if (imagePreciousMetal.rectTransform.localScale.x > 1f)
+        if (imageCurrent.rectTransform.sizeDelta.x > (imageCurrent.sprite.rect.width / 2) || imageCurrent.rectTransform.sizeDelta.y > (imageCurrent.sprite.rect.height / 2))
         {
-            imagePreciousMetal.rectTransform.localScale.Set(
-                Mathf.Max(1f, imagePreciousMetal.rectTransform.localScale.x - (imagePreciousMetal.rectTransform.localScale.x * Time.deltaTime)),
-                Mathf.Max(1f, imagePreciousMetal.rectTransform.localScale.y - (imagePreciousMetal.rectTransform.localScale.y * Time.deltaTime)),
-                1f
+            imageCurrent.rectTransform.sizeDelta = new Vector2(
+                Mathf.Max((imageCurrent.sprite.rect.width / 2), imageCurrent.rectTransform.sizeDelta.x - (Time.deltaTime * shrinkRate)),
+                Mathf.Max((imageCurrent.sprite.rect.height / 2), imageCurrent.rectTransform.sizeDelta.y - (Time.deltaTime * shrinkRate))
             );
-        }
 
-        if (imageWater.rectTransform.localScale.x > 1f)
-        {
-            imageWater.rectTransform.localScale.Set(
-                Mathf.Max(1f, imageWater.rectTransform.localScale.x - (imageWater.rectTransform.localScale.x * Time.deltaTime)),
-                Mathf.Max(1f, imageWater.rectTransform.localScale.y - (imageWater.rectTransform.localScale.y * Time.deltaTime)),
-                1f
-            );
+            updatePlayerResourcesUIAnimations = true;
         }
     }
     #endregion

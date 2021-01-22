@@ -128,18 +128,22 @@ public class StationDocking : MonoBehaviour
 
     private void SendUpgradeButtonsToCommerce(int stationUpgradeIndex, Button commerceButton, out float commercePrice)
     {
-        //Name
+        //Type
         commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[stationUpgradeIndex, 0];
         
-        //Price display
+        //Text color and additions
         TextMeshProUGUI priceDisplay = commerceButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>();
         if (float.Parse(upgradeButton[stationUpgradeIndex, 1]) >= control.commerce.priceUpgradeMax)
         {
+            commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = control.commerce.colorTextDisabled;
             priceDisplay.text = "N/A";
+            priceDisplay.color = control.commerce.colorTextDisabled;
         }
         else
         {
+            commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = control.commerce.colorTextEnabled;
             priceDisplay.text = "$" + upgradeButton[stationUpgradeIndex, 1] + " ea";
+            priceDisplay.color = control.commerce.colorTextEnabled;
         }
 
         //Price internal
