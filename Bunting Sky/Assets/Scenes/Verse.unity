@@ -14249,11 +14249,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15b416629665b8f40afb5f547176f42e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canvas: {fileID: 1962589715}
-  systemInfo: {fileID: 17489796}
-  reticle: {fileID: 778736928}
-  menu: {fileID: 2000740126}
-  commerce: {fileID: 2000740127}
   playerPrefab: {fileID: 3053305805003596234, guid: e7cefad2da74c8940b402dee83242130, type: 3}
   cBodies: {fileID: 2028820547}
   cBodyStar: {fileID: 4286574223158942659, guid: 60611ee4f5669a54a9997778a15d7b17, type: 3}
@@ -14263,6 +14258,11 @@ MonoBehaviour:
   cBodiesAsteroids: {fileID: 1340256351}
   cBodyAsteroid: {fileID: 1333070546947983284, guid: 23162748d9fabbf489f60072e3d2378c, type: 3}
   ore: {fileID: 1434091533}
+  canvas: {fileID: 1962589715}
+  systemInfo: {fileID: 17489796}
+  reticle: {fileID: 778736928}
+  menu: {fileID: 2000740126}
+  commerce: {fileID: 2000740127}
   waypoint: {fileID: 2030627432}
   textWaypointType: {fileID: 654361732}
   textWaypointTitle: {fileID: 722506838}
@@ -14271,6 +14271,10 @@ MonoBehaviour:
   settings: {fileID: 2000740125}
   target: {fileID: 1209913584}
   playerShipDirectionReticle: {fileID: 5317684262419695248, guid: d2a823f2f541c004d9c5723a57fc5a83, type: 3}
+  imageCurrency: {fileID: 1305210286}
+  imagePlatinoid: {fileID: 650119601}
+  imagePreciousMetal: {fileID: 317242952}
+  imageWater: {fileID: 1387990124}
   textCurrency: {fileID: 1475316790}
   textPlatinoid: {fileID: 778209115}
   textPreciousMetal: {fileID: 1803265433}
@@ -14365,6 +14369,7 @@ MonoBehaviour:
   menuButtonUpgrade2: {fileID: 2061786298}
   menuButtonUpgrade3: {fileID: 707884496}
   menuButtonUpgrade4: {fileID: 1593136741}
+  priceUpgradeMax: 1000000
   priceUpgrade1: 2000
   priceUpgrade2: 200
   priceUpgrade3: 500

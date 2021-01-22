@@ -24,11 +24,7 @@ public class CBodyAsteroid : MonoBehaviour
     public Material matWater;
     public byte type = 0; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
-    public ParticleSystem partSysShurikenDamage;
-    private ParticleSystem.EmitParams partSysShurikenDamageEmitParameters;
-    private int partSysShurikenDamageEmitCount = 0;
-    private float partSysShurikenDamageShapeRadius = 0.1f;
-    private float partSysShurikenDamageSizeMultiplier = 1f;
+    public GameObject particlesShurikenDamageObj;
 
     [System.NonSerialized] public byte health = 4;
     [System.NonSerialized] public bool destroyed = false;
@@ -53,7 +49,7 @@ public class CBodyAsteroid : MonoBehaviour
         //Destruction
         if (!Menu.menuOpenAndGamePaused)
         {
-            bool particlesFadedOut = destroyedTime >= partSysShurikenDamage.emission.rateOverTime.constant;
+            bool particlesFadedOut = destroyedTime >= GetComponent<ParticlesDamageRock>().partSysShurikenDamage.emission.rateOverTime.constant;
             bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTran.transform.position) >= playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
             if (destroyed && particlesFadedOut && playerBeyondArbitraryDistance)
             {
@@ -124,26 +120,26 @@ public class CBodyAsteroid : MonoBehaviour
             case "Small":
                 model = modelClassSmall;
                 rb.mass = 0.0001f;
-                partSysShurikenDamageEmitCount = 50;
-                partSysShurikenDamageShapeRadius = 0.2f;
-                partSysShurikenDamageSizeMultiplier = 1f;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 50;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.2f;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1f;
                 health = (byte)Random.Range(1, 3);
                 break;
 
             case "Medium":
                 model = modelClassMedium;
-                partSysShurikenDamageEmitCount = 150;
-                partSysShurikenDamageShapeRadius = 1.3f;
-                partSysShurikenDamageSizeMultiplier = 1.2f;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
                 rb.mass = 0.001f;
                 health = (byte)Random.Range(2, 5);
                 break;
 
             case "Large":
                 model = modelClassLarge;
-                partSysShurikenDamageEmitCount = 250;
-                partSysShurikenDamageShapeRadius = 3.2f;
-                partSysShurikenDamageSizeMultiplier = 2f;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+                GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
                 rb.mass = 0.01f;
                 health = (byte)Random.Range(4, 8);
                 break;
@@ -180,41 +176,7 @@ public class CBodyAsteroid : MonoBehaviour
                 break;
         }
 
-        SetParticleSystemDamageColour();
-    }
-
-    private void SetParticleSystemDamageColour()
-    {
-        //Assign type color to damage particle material
-        Color activeModelMaterialColor = activeModel.transform.GetChild(0).GetComponent<MeshRenderer>().material.GetColor("_Tint");
-        Color materialColorRGB = new Color(
-            activeModelMaterialColor.r,
-            activeModelMaterialColor.g,
-            activeModelMaterialColor.b,
-            1f
-        );
-
-        //REDUCE SATURATION
-        //Convert to HSV colour space
-        Color.RGBToHSV(
-            materialColorRGB,
-            out float materialColorRGB_H,
-            out float materialColorRGB_S,
-            out float materialColorRGB_V
-        );
-        //Modify saturation
-        materialColorRGB_S *= 0.8f;
-        //Convert back to RGB colour space
-        materialColorRGB = Color.HSVToRGB(
-            materialColorRGB_H,
-            materialColorRGB_S,
-            materialColorRGB_V
-        );
-
-        partSysShurikenDamageEmitParameters = new ParticleSystem.EmitParams
-        {
-            startColor = materialColorRGB
-        };
+        GetComponent<ParticlesDamageRock>().SetParticleSystemDamageColour(activeModel.transform.GetChild(0), GetComponent<ParticlesDamageRock>().saturationDefault);
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -232,106 +194,13 @@ public class CBodyAsteroid : MonoBehaviour
         health -= damageAmount;
         if (health > 0)
         {
-            EmitDamageParticles(1, direction, position, false);
+            GetComponent<ParticlesDamageRock>().EmitDamageParticles(1, direction, position, false);
         }
         else
         {
             health = 0;
-            EmitDamageParticles(7, Vector3.zero, position, true);
+            GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, position, true);
             BreakApart();
-        }
-    }
-
-    private void EmitDamageParticles(int countMultiplier, Vector3 directionIn, Vector3 positionIn, bool destroyingEntireAsteroid)
-    {
-        /*
-         * If destroyingEntireAsteroid flag is true:
-         *  - emits particles in a sphere
-         *  - with larger particles
-         *  - with more particles
-         *  - at a starting shape radius equal to the asteroid model radius
-         *  - all from the centre of the asteroid, ignoring the specified position
-         *  
-         * Otherwise
-         *  - emits 90% of particles in a cone shape
-         *  - with the last 10% in a sphere shape
-         *  - all from the specified position
-         */
-
-        //Shape radius/position, and size multiplier
-        Vector3 directionOut;
-        float sizeMultiplier = 1f;
-
-        
-        if (destroyingEntireAsteroid)
-        {
-            //Shape radius = model radius
-            ParticleSystem.ShapeModule partSysShurikenDamageShapeModule = partSysShurikenDamage.shape;
-
-            //For some reason this method just doesn't seem to return with the correct radius
-            //Vector3 modelSize = activeModel.transform.GetChild(0).GetComponent<MeshFilter>().mesh.bounds.size;
-            //smallestRadius = 0.5f * Mathf.Min(Mathf.Min(modelSize.x, modelSize.y), modelSize.z);
-            //float averageRadius = (modelSize.x + modelSize.y + modelSize.z) / 6f; //divide by (n terms * 2) to get radius instead of diameter
-
-            partSysShurikenDamageShapeModule.radius = partSysShurikenDamageShapeRadius;
-
-            //Position and size
-            //^^particleSystemDamageEmitParameters.position = transform.position;
-            partSysShurikenDamageEmitParameters.position = Vector3.zero;
-            partSysShurikenDamageEmitParameters.applyShapeToPosition = true;
-            sizeMultiplier *= partSysShurikenDamageSizeMultiplier;
-        }
-        else
-        {
-            //Position
-            partSysShurikenDamageEmitParameters.applyShapeToPosition = false;
-            //^^particleSystemDamageEmitParameters.position = positionIn;
-            partSysShurikenDamageEmitParameters.position = positionIn - transform.position;
-        }
-
-        //Velocity/rotation
-        //particleSystemDamageEmitParameters.angularVelocity = 0f;
-        //particleSystemDamageEmitParameters.rotation = 0f;
-        
-        //Per particle:
-        float loops = partSysShurikenDamageEmitCount * countMultiplier;
-        for (int i = 0; i <= loops; i++)
-        {
-            
-            //Direction
-            float directionCurve = Random.Range(0f, 3f);
-            if (destroyingEntireAsteroid)
-            {
-                //Spherical because destroying entire asteroid
-                directionOut = Random.insideUnitSphere.normalized;
-            }
-            else if (i >= loops - (loops * 0.1f))
-            {
-                //Cone has last 10% spherical
-                directionOut = Random.insideUnitSphere.normalized;
-            }
-            else
-            {
-                //Cone
-                float coneRadius = Random.Range(3f, 10f);
-                directionOut = directionIn
-                    + (Vector3.forward * Random.value * coneRadius)
-                    + (Vector3.up * Random.value * coneRadius)
-                    + (Vector3.right * Random.value * coneRadius);
-            }
-
-            //Velocity
-            //^^particleSystemDamageEmitParameters.velocity = rb.velocity + (directionOut * directionCurve);
-            partSysShurikenDamageEmitParameters.velocity = directionOut * directionCurve;
-
-            //Size
-            partSysShurikenDamageEmitParameters.startSize = Random.Range(0.03f * sizeMultiplier, 0.15f * sizeMultiplier);
-            
-            //Emit
-            partSysShurikenDamage.Emit(
-                partSysShurikenDamageEmitParameters,
-                1
-            );
         }
     }
 
@@ -346,6 +215,9 @@ public class CBodyAsteroid : MonoBehaviour
             targetCollider4.enabled = false;
             rb.detectCollisions = false;
             activeModel.SetActive(false);
+
+            //Gravitate toward centre star only (so that the lack of the hitbox doesn't cause it to accelerate to infinity)
+            GetComponent<Gravity>().gravitateTowardCentreStartOnly = true;
 
             switch (sizeClassDisplay)
             {
@@ -385,6 +257,9 @@ public class CBodyAsteroid : MonoBehaviour
         );
         //Put in CBodies tree
         instanceCBodyAsteroid.transform.parent = control.cBodiesAsteroids.transform;
+
+        //Pass control reference
+        instanceCBodyAsteroid.GetComponent<Gravity>().control = control;
 
         //Rigidbody
         Rigidbody instanceCBodyAsteroidRb = instanceCBodyAsteroid.GetComponent<Rigidbody>();

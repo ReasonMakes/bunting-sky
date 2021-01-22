@@ -12,25 +12,13 @@ public class Control : MonoBehaviour
     //In real-life, G = 6.674*10^−11 m3*kg^−1*s^−2
     //62.5 is the avg inverse of Time.deltaTime during development
 
-    public GameObject canvas;
-
-    //FPS
-    [System.NonSerialized] public int fps = 0;
-    private readonly short FPS_PRINT_PERIOD = 60;
-    public TextMeshProUGUI systemInfo;
-
-    //Menu and cursor locking
-    //public static bool windowIsFocused = true;
-    public GameObject reticle;
-    public Menu menu;
-    public Commerce commerce;
-
     //Generate system
     public GameObject playerPrefab;
     [System.NonSerialized] public GameObject instancePlayer;
     private bool playerSpawned = false;
     private Vector3 playerSpawnCoords;
     public static int gravityInstanceIndex = 0;
+    [System.NonSerialized] public GameObject instanceCBodyStar;
 
     public GameObject cBodies;
         public GameObject cBodyStar;
@@ -43,6 +31,20 @@ public class Control : MonoBehaviour
             public GameObject cBodyAsteroid;
 
     public GameObject ore;
+
+    //HUD
+    public GameObject canvas;
+
+    //FPS
+    [System.NonSerialized] public int fps = 0;
+    private readonly short FPS_PRINT_PERIOD = 60;
+    public TextMeshProUGUI systemInfo;
+
+    //Menu and cursor locking
+    //public static bool windowIsFocused = true;
+    public GameObject reticle;
+    public Menu menu;
+    public Commerce commerce;
 
     //Waypoint
     public Image waypoint;
@@ -80,6 +82,10 @@ public class Control : MonoBehaviour
     private float playerShipDirectionReticleSpacingPower = 2f;
 
     //Player resources
+    public Image imageCurrency;
+    public Image imagePlatinoid;
+    public Image imagePreciousMetal;
+    public Image imageWater;
     public TextMeshProUGUI textCurrency;
     public TextMeshProUGUI textPlatinoid;
     public TextMeshProUGUI textPreciousMetal;
@@ -150,6 +156,9 @@ public class Control : MonoBehaviour
 
         //Screenshot
         if (binds.GetInputDown(binds.bindSaveScreenshot)) SaveScreenshot();
+
+        //Resources animations
+        UpdatePlayerResourcesUIAnimations();
     }
 
     private void LateUpdate()
@@ -319,7 +328,7 @@ public class Control : MonoBehaviour
     private void GenerateSystem(bool isStarter, byte nCBodiesPlanetoids, byte nCBodiesAsteroids)
     {
         //CENTRE STAR CELESTIAL BODY
-        GameObject instanceCBodyStar = Instantiate(cBodyStar, new Vector3(0f, 0f, 0f), Quaternion.Euler(0f, 0f, 0f));
+        instanceCBodyStar = Instantiate(cBodyStar, new Vector3(0f, 0f, 0f), Quaternion.Euler(0f, 0f, 0f));
         //Put in CBodies tree
         instanceCBodyStar.transform.parent = cBodies.transform;
 
@@ -432,6 +441,7 @@ public class Control : MonoBehaviour
 
             //Give control reference
             instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = this;
+            instanceCBodyPlanetoid.GetComponent<Gravity>().control = this;
 
             //Orbit central star
             instanceCBodyPlanetoid.GetComponent<Gravity>().SetVelocityToOrbit(centreCBodyStar, spawnAngle);
@@ -507,6 +517,7 @@ public class Control : MonoBehaviour
                 instanceCBodyAsteroidScript.SetType(clusterType);
                 //Give control reference
                 instanceCBodyAsteroidScript.control = this;
+                instanceCBodyGravityScript.control = this;
             }
         }
     }
@@ -528,6 +539,7 @@ public class Control : MonoBehaviour
 
         //Give control reference
         instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = this;
+        instanceCBodyPlanetoid.GetComponent<Gravity>().control = this;
 
         //Set velocity
         instanceCBodyPlanetoid.GetComponent<Rigidbody>().velocity = velocity;
@@ -554,6 +566,7 @@ public class Control : MonoBehaviour
 
         //Give control reference
         instanceCBodyAsteroidScript.control = this;
+        instanceCBodyAsteroid.GetComponent<Gravity>().control = this;
 
         //Set velocity
         instanceCBodyAsteroid.GetComponent<Rigidbody>().velocity = velocity;
@@ -892,10 +905,67 @@ public class Control : MonoBehaviour
     {
         Player playerScript = instancePlayer.transform.Find("Body").GetComponent<Player>();
 
-        textCurrency.text = playerScript.currency.ToString("F2") + " ICC";
-        textPlatinoid.text = playerScript.ore[0].ToString("F2") + " g";
-        textPreciousMetal.text = playerScript.ore[1].ToString("F2") + " g";
-        textWater.text = playerScript.ore[2].ToString("F2") + " g";
+        if (textCurrency.text != playerScript.currency.ToString("F2") + " ICC"){
+            textCurrency.text = playerScript.currency.ToString("F2") + " ICC";
+            imageCurrency.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
+        }
+
+        if (textPlatinoid.text != playerScript.ore[0].ToString("F2") + " g")
+        {
+            textPlatinoid.text = playerScript.ore[0].ToString("F2") + " g";
+            imagePlatinoid.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
+        }
+
+        if (textPreciousMetal.text != playerScript.ore[1].ToString("F2") + " g")
+        {
+            textPreciousMetal.text = playerScript.ore[1].ToString("F2") + " g";
+            imagePreciousMetal.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
+        }
+
+        if (textWater.text != playerScript.ore[2].ToString("F2") + " g")
+        {
+            textWater.text = playerScript.ore[2].ToString("F2") + " g";
+            imageWater.rectTransform.localScale.Set(1.5f, 1.5f, 1f);
+        }
+    }
+
+    public void UpdatePlayerResourcesUIAnimations()
+    {
+        if (imageCurrency.rectTransform.localScale.x > 1f)
+        {
+            imageCurrency.rectTransform.localScale.Set(
+                Mathf.Max(1f, imageCurrency.rectTransform.localScale.x - (imageCurrency.rectTransform.localScale.x * Time.deltaTime)),
+                Mathf.Max(1f, imageCurrency.rectTransform.localScale.y - (imageCurrency.rectTransform.localScale.y * Time.deltaTime)),
+                1f
+            );
+        }
+
+        if (imagePlatinoid.rectTransform.localScale.x > 1f)
+        {
+            imagePlatinoid.rectTransform.localScale.Set(
+                Mathf.Max(1f, imagePlatinoid.rectTransform.localScale.x - (imagePlatinoid.rectTransform.localScale.x * Time.deltaTime)),
+                Mathf.Max(1f, imagePlatinoid.rectTransform.localScale.y - (imagePlatinoid.rectTransform.localScale.y * Time.deltaTime)),
+                1f
+            );
+        }
+
+        if (imagePreciousMetal.rectTransform.localScale.x > 1f)
+        {
+            imagePreciousMetal.rectTransform.localScale.Set(
+                Mathf.Max(1f, imagePreciousMetal.rectTransform.localScale.x - (imagePreciousMetal.rectTransform.localScale.x * Time.deltaTime)),
+                Mathf.Max(1f, imagePreciousMetal.rectTransform.localScale.y - (imagePreciousMetal.rectTransform.localScale.y * Time.deltaTime)),
+                1f
+            );
+        }
+
+        if (imageWater.rectTransform.localScale.x > 1f)
+        {
+            imageWater.rectTransform.localScale.Set(
+                Mathf.Max(1f, imageWater.rectTransform.localScale.x - (imageWater.rectTransform.localScale.x * Time.deltaTime)),
+                Mathf.Max(1f, imageWater.rectTransform.localScale.y - (imageWater.rectTransform.localScale.y * Time.deltaTime)),
+                1f
+            );
+        }
     }
     #endregion
 }

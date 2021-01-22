@@ -5,6 +5,7 @@ using UnityEngine;
 public class Gravity : MonoBehaviour
 {
     public Rigidbody rb;
+    [System.NonSerialized] public Control control;
     
     //smooth out gravitate addForce by adding a bit of the planned force every fixed update
     //basically on every gravitate call, calculate the amount of force to add, then in fixed update add that force divided by the amount of time in between updates
@@ -16,6 +17,8 @@ public class Gravity : MonoBehaviour
     [System.NonSerialized] public int gravityInstanceIndex;
     private float timeAtLastGravitate = 0f;
     private float deltaTimeSinceLastGravitate = 0f;
+
+    public bool gravitateTowardCentreStartOnly = false;
 
     private void Start()
     {
@@ -48,22 +51,39 @@ public class Gravity : MonoBehaviour
         timeAtLastGravitate = Time.time;
 
         //Gravitate
-        Gravity[] cBodyArray = FindObjectsOfType<Gravity>();
-        foreach (Gravity cBody in cBodyArray)
+        //Debug.Log(gameObject.name);
+        if (gravitateTowardCentreStartOnly)
         {
-            //Don't gravitate toward self
-            if (cBody != this)
+            Gravitate(control.instanceCBodyStar.GetComponent<Gravity>());
+        }
+        else
+        {
+            Gravity[] cBodyArray = FindObjectsOfType<Gravity>();
+            foreach (Gravity cBody in cBodyArray)
             {
-                //Don't gravitate toward destroyed asteroids
-                if(cBody.name == "CBodyAsteroid(Clone)")
+                //Don't gravitate toward self
+                if (cBody != this)
                 {
-                    if (cBody.GetComponent<CBodyAsteroid>().destroyed || cBody.GetComponent<CBodyAsteroid>().separating)
+                    //Don't gravitate toward destroyed asteroids
+                    if (cBody.name == "CBodyAsteroid" + "(Clone)") //control.cBodyAsteroid.name
                     {
-                        return;
+                        if (cBody.GetComponent<CBodyAsteroid>().destroyed || cBody.GetComponent<CBodyAsteroid>().separating)
+                        {
+                            return;
+                        }
                     }
-                }
 
-                Gravitate(cBody);
+                    //Don't gravitate toward destroyed planetoids
+                    if (cBody.name == "CBodyPlanetoid" + "(Clone)") //control.cBodyPlanetoid.name
+                    {
+                        if (cBody.GetComponent<CBodyPlanetoid>().destroyed)
+                        {
+                            return;
+                        }
+                    }
+
+                    Gravitate(cBody);
+                }
             }
         }
     }

@@ -13,7 +13,8 @@ public class Ore : MonoBehaviour
 
     public Control control; //this is set by its instantiator
     private float deathTime;
-    private readonly float DEATH_DELAY = 30f;
+    private readonly float DEATH_DELAY = 20f;
+    private readonly float DEATH_DELAY_ANIMATION_PORTION = 0.2f;
 
     public Vector3 parentVelocity = Vector3.zero;
     //private Vector3 playerVAtInit = Vector3.zero;
@@ -76,8 +77,7 @@ public class Ore : MonoBehaviour
         //Calculate scale for each type
         //Scale relative to limited player distance
         float scaleByPlayerDist = Mathf.Min(0.05f, 0.0025f + (0.025f * Mathf.Max(0f, distanceToPlayer - ABSORB_DIST)));
-        //Only the last 10% of deathTime affects size (ratio of second Min argument's multiplier to the first Min argument)
-        float scaleByDeathTime = Mathf.Min(1f, ((deathTime - Time.time) / DEATH_DELAY) * 10f);
+        float scaleByDeathTime = Mathf.Min(1f, ((deathTime - Time.time) / DEATH_DELAY) * DEATH_DELAY_ANIMATION_PORTION);
         
         //Choose the scale type
         float scale = Mathf.Min(scaleByPlayerDist, scaleByDeathTime);

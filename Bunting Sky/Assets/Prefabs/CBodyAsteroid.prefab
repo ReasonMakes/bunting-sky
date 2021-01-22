@@ -5114,7 +5114,7 @@ MonoBehaviour:
   matPreciousMetal: {fileID: 2100000, guid: d9ffcbaf140a3ff4b9037f03a7c95403, type: 2}
   matWater: {fileID: 2100000, guid: ec94f4270075f474196b4f1ee2c17b6c, type: 2}
   type: 0
-  partSysShurikenDamage: {fileID: 5662085692244842276}
+  particlesShurikenDamageObj: {fileID: 1181372118361428596}
   targetCollider1: {fileID: 5520706539341832288}
   targetCollider2: {fileID: 8390337967562609920}
   targetCollider3: {fileID: 294555307309304710}
@@ -5145,6 +5145,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8d55b6aa9924464c97e788d9f405514, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  partSysShurikenDamage: {fileID: 5662085692244842276}
 --- !u!1 &6685615498556311451
 GameObject:
   m_ObjectHideFlags: 0
