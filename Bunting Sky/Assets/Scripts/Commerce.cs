@@ -58,15 +58,15 @@ public class Commerce : MonoBehaviour
     //GENERAL
     private void DefineUpgrades()
     {
-        upgradeDictionary = new string[7, 3];
-        //Name                                              Price                             Description
-        upgradeDictionary[0, 0] = "Fuel efficiency";        upgradeDictionary[0, 1] = "1000"; upgradeDictionary[0, 2] = "Fuel is consumed at half the standard rate for the same resultant thrust";
-        upgradeDictionary[1, 0] = "Titan fuel tank";        upgradeDictionary[1, 1] = "500";  upgradeDictionary[1, 2] = "Double sized fuel tank with a superior design resulting in the same net weight";
-        upgradeDictionary[2, 0] = "Reinforced hull";        upgradeDictionary[2, 1] = "500";  upgradeDictionary[2, 2] = "Double strength outer hull";
-        upgradeDictionary[3, 0] = "Raptor engines";         upgradeDictionary[3, 1] = "1000"; upgradeDictionary[3, 2] = "1.5x greater maximum forward thrust output";
-        upgradeDictionary[4, 0] = "Dual batteries";         upgradeDictionary[4, 1] = "200";  upgradeDictionary[4, 2] = "Laser weapon has double maximum ammunition per cycle";
-        upgradeDictionary[5, 0] = "In situ fuel refinery";  upgradeDictionary[5, 1] = "5000"; upgradeDictionary[5, 2] = "Automatically process water into usable jet fuel anywhere";
-        upgradeDictionary[6, 0] = "Warp drive";             upgradeDictionary[6, 1] = "3000"; upgradeDictionary[6, 2] = "Enables extra-dimensional interstellar travel through the bulk";
+        upgradeDictionary = new string[7, 4];
+        //Name                                              Price                             Description                                                                                                   Max level
+        upgradeDictionary[0, 0] = "Fuel efficiency";        upgradeDictionary[0, 1] = "1000"; upgradeDictionary[0, 2] = "Fuel is consumed at half the standard rate for the same resultant thrust";         upgradeDictionary[0, 3] = "1";
+        upgradeDictionary[1, 0] = "Titan fuel tank";        upgradeDictionary[1, 1] = "500";  upgradeDictionary[1, 2] = "Double sized fuel tank with a superior design resulting in the same net weight";   upgradeDictionary[1, 3] = "1";
+        upgradeDictionary[2, 0] = "Reinforced hull";        upgradeDictionary[2, 1] = "500";  upgradeDictionary[2, 2] = "Double strength outer hull";                                                       upgradeDictionary[2, 3] = "1";
+        upgradeDictionary[3, 0] = "Raptor engines";         upgradeDictionary[3, 1] = "1000"; upgradeDictionary[3, 2] = "1.5x greater maximum forward thrust output";                                       upgradeDictionary[3, 3] = "1";
+        upgradeDictionary[4, 0] = "Dual batteries";         upgradeDictionary[4, 1] = "200";  upgradeDictionary[4, 2] = "Laser weapon has double maximum ammunition per cycle";                             upgradeDictionary[4, 3] = "1";
+        upgradeDictionary[5, 0] = "In situ fuel refinery";  upgradeDictionary[5, 1] = "5000"; upgradeDictionary[5, 2] = "Automatically process water into usable jet fuel anywhere";                        upgradeDictionary[5, 3] = "1";
+        upgradeDictionary[6, 0] = "Warp drive";             upgradeDictionary[6, 1] = "3000"; upgradeDictionary[6, 2] = "Enables extra-dimensional interstellar travel through the bulk";                   upgradeDictionary[6, 3] = "1";
     }
 
     //MENU

@@ -451,6 +451,9 @@ public class Control : MonoBehaviour
             //Orbit central star
             instanceCBodyPlanetoid.GetComponent<Gravity>().SetVelocityToOrbit(centreCBodyStar, spawnAngle);
 
+            //Spin
+            instanceCBodyPlanetoid.GetComponent<Rigidbody>().AddTorque(Vector3.up * 1e5f * Random.Range(1f, 60f));
+
             //Spawn station
             if (i == 0)
             {
@@ -783,8 +786,7 @@ public class Control : MonoBehaviour
         Vector3 hitVelocity;
         if (isStation)
         {
-            hitVelocity = hitTransform.parent.GetComponent<Rigidbody>().velocity;
-            
+            hitVelocity = hitTransform.GetComponent<StationOrbit>().planetoidToOrbit.GetComponent<Rigidbody>().velocity;
         }
         else
         {
@@ -923,7 +925,7 @@ public class Control : MonoBehaviour
     private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, string textNew)
     {
         //Grow
-        float growAmount = 4f;
+        float growAmount = 3f;
 
         if (textMeshCurrent.text != textNew)
         {

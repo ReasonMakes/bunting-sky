@@ -54,18 +54,18 @@ public class Ore : MonoBehaviour
         if (!Menu.menuOpenAndGamePaused)
         {
             //Get player data
-            float distanceToPlayer = Vector3.Distance(transform.position, playerBodyTransform.position);
+            float distanceBetweenOreAndPlayer = Vector3.Distance(transform.position, playerBodyTransform.position);
 
             //Forces (gravitate toward player, repel away from other ore, drag relative)
-            AttractToPlayer(distanceToPlayer);
+            AttractToPlayer(distanceBetweenOreAndPlayer);
             RepelFromOtherOre();
             DragOreRelative();
 
             //Scale down as the ore gets closer to the player (to look like it's being absorbed) or as ore gets closer to deathTime
-            Scale(distanceToPlayer);
+            Scale(distanceBetweenOreAndPlayer);
 
             //When close enough to player, absorb into and increment ore counter
-            if (distanceToPlayer <= ABSORB_DIST) AbsorbIntoPlayer();
+            if (distanceBetweenOreAndPlayer <= ABSORB_DIST) AbsorbIntoPlayer();
 
             //If can't find way to player, absorb automagically
             if (Time.time >= deathTime) AbsorbIntoPlayer();
@@ -111,10 +111,10 @@ public class Ore : MonoBehaviour
         }
     }
 
-    private void AttractToPlayer(float distanceBetweenPlayer)
+    private void AttractToPlayer(float distanceBetweenOreAndPlayer)
     {
         Vector3 directionToPlayer = (playerBodyTransform.position - transform.position).normalized;
-        float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenPlayer);
+        float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenOreAndPlayer);
         rb.AddForce(directionToPlayer * ATTRACT_STRENGTH * LimitedInverseDistanceBetweenPlayer * Time.deltaTime);
     }
 

@@ -5,7 +5,7 @@ using System.IO;
 
 public class StationName : MonoBehaviour
 {
-    public string title = "Error: could not load";
+    [System.NonSerialized] public string title = "Error: could not load"; //default title
     string[] lines;
     string prefix = "";
     string main = "";

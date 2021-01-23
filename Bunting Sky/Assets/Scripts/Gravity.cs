@@ -18,7 +18,7 @@ public class Gravity : MonoBehaviour
     private float timeAtLastGravitate = 0f;
     private float deltaTimeSinceLastGravitate = 0f;
 
-    public bool gravitateTowardCentreStartOnly = false;
+    [System.NonSerialized] public bool gravitateTowardCentreStarOnly = false;
 
     private void Start()
     {
@@ -52,9 +52,9 @@ public class Gravity : MonoBehaviour
 
         //Gravitate
         //Debug.Log(gameObject.name);
-        if (gravitateTowardCentreStartOnly)
+        if (gravitateTowardCentreStarOnly)
         {
-            Gravitate(control.instanceCBodyStar.GetComponent<Gravity>());
+            GravitateTowardOneCBody(control.instanceCBodyStar.GetComponent<Gravity>());
         }
         else
         {
@@ -76,19 +76,19 @@ public class Gravity : MonoBehaviour
                     //Don't gravitate toward destroyed planetoids
                     if (cBody.name == "CBodyPlanetoid" + "(Clone)") //control.cBodyPlanetoid.name
                     {
-                        if (cBody.GetComponent<CBodyPlanetoid>().destroyed)
+                        if (cBody.GetComponent<CBodyPlanetoid>().disabled)
                         {
                             return;
                         }
                     }
 
-                    Gravitate(cBody);
+                    GravitateTowardOneCBody(cBody);
                 }
             }
         }
     }
 
-    private void Gravitate(Gravity cBody)
+    private void GravitateTowardOneCBody(Gravity cBody)
     {
         //Gravitate toward a celestial body
         /*

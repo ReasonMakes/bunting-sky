@@ -217,7 +217,7 @@ public class CBodyAsteroid : MonoBehaviour
             activeModel.SetActive(false);
 
             //Gravitate toward centre star only (so that the lack of the hitbox doesn't cause it to accelerate to infinity)
-            GetComponent<Gravity>().gravitateTowardCentreStartOnly = true;
+            GetComponent<Gravity>().gravitateTowardCentreStarOnly = true;
 
             switch (sizeClassDisplay)
             {

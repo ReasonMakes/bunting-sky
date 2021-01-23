@@ -159,7 +159,7 @@ public class Player : MonoBehaviour
     private float playerThrustEngineWarmupMultiplier = 1f;
     [System.NonSerialized] public float playerThrustEngineWarmupMultiplierMax = 16f;
     private float playerThrustEngineWarmupSpeed = 0.5f; //3f;
-    private float playerThrustEngineCooldownSpeed = 6f;
+    private float playerThrustEngineCooldownSpeed = 12f;
     private float playerThrustForwardMultiplier = 1.1f;
     private float playerThrustMultiplier = 1f;
     private float engineBrightness = 0f;
@@ -244,6 +244,8 @@ public class Player : MonoBehaviour
      * Includes ruthenium, rhodium, palladium, osmium, iridium, platinum, etc.
      * Valuable due to their high mechanical strength, good ductility, and stable electrical properties. They also have many useful catalytic properties and are resistant to chemical attack.
      */
+
+    [System.NonSerialized] int[] upgradeLevels;
     #endregion
 
     #region Init fields: Weapons
@@ -307,11 +309,14 @@ public class Player : MonoBehaviour
         //We have to work with odd-numbered multiples of the inverse of the flash rate to end smoothly (end while it is transparent)
         warningUIFlashTotalDuration *= (1f / WARNING_UI_FLASH_RATE);
 
-        //Ore
+        //Cargo
         ore = new double[3]; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
         //Update resources UI
         control.UpdateAllPlayerResourcesUI();
+
+        //Upgrades length
+        upgradeLevels = new int[control.commerce.upgradeDictionary.GetLength(0)];
 
         //WEAPONS
         //Weapons trees
