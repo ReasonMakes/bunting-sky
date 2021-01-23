@@ -913,23 +913,28 @@ public class Control : MonoBehaviour
         Player playerScript = instancePlayer.transform.Find("Body").GetComponent<Player>();
 
         //Update values and start animations on a resource if its value changed
-        UpdatePlayerResourceUI(ref textCurrency,      ref imageCurrency,      playerScript.currency.ToString("F2") + " ICC");
-        UpdatePlayerResourceUI(ref textPlatinoid,     ref imagePlatinoid,     playerScript.ore[0].ToString("F2")   + " g");
-        UpdatePlayerResourceUI(ref textPreciousMetal, ref imagePreciousMetal, playerScript.ore[1].ToString("F2")   + " g");
-        UpdatePlayerResourceUI(ref textWater,         ref imageWater,         playerScript.ore[2].ToString("F2")   + " g");
+        UpdatePlayerResourceUI(ref textCurrency,      ref imageCurrency,      playerScript.currency.ToString("F2") + " ICC", playerScript.soundSourceCoins);
+        UpdatePlayerResourceUI(ref textPlatinoid,     ref imagePlatinoid,     playerScript.ore[0].ToString("F2")   + " g",   playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref textPreciousMetal, ref imagePreciousMetal, playerScript.ore[1].ToString("F2")   + " g",   playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref textWater,         ref imageWater,         playerScript.ore[2].ToString("F2")   + " g",   playerScript.soundSourceOreCollected);
 
         //Set animations to update
         UpdateAllPlayerResourcesUIAnimations();
     }
 
-    private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, string textNew)
+    private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, string textNew, AudioSource clip)
     {
-        //Grow
         float growAmount = 3f;
 
         if (textMeshCurrent.text != textNew)
         {
+            //Play sound
+            clip.Play();
+
+            //Update text
             textMeshCurrent.text = textNew;
+
+            //Start animation (grow)
             image.rectTransform.sizeDelta = new Vector2(
                 (image.sprite.rect.width / 2) * growAmount,
                 (image.sprite.rect.height / 2) * growAmount
@@ -947,16 +952,17 @@ public class Control : MonoBehaviour
 
     private void UpdatePlayerResourcesUIAnimation(ref Image imageCurrent)
     {
-        //Shrink
         float shrinkRate = 200f;
 
         if (imageCurrent.rectTransform.sizeDelta.x > (imageCurrent.sprite.rect.width / 2) || imageCurrent.rectTransform.sizeDelta.y > (imageCurrent.sprite.rect.height / 2))
         {
+            //Animate (shrink)
             imageCurrent.rectTransform.sizeDelta = new Vector2(
                 Mathf.Max((imageCurrent.sprite.rect.width / 2), imageCurrent.rectTransform.sizeDelta.x - (Time.deltaTime * shrinkRate)),
                 Mathf.Max((imageCurrent.sprite.rect.height / 2), imageCurrent.rectTransform.sizeDelta.y - (Time.deltaTime * shrinkRate))
             );
 
+            //Loop until animation is finished
             updatePlayerResourcesUIAnimations = true;
         }
     }

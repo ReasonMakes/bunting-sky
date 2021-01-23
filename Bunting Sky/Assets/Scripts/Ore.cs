@@ -153,21 +153,8 @@ public class Ore : MonoBehaviour
         //Add ore type to player inventory
         playerBodyTransform.GetComponent<Player>().ore[type]++;
 
-        /*
-        Debug.Log(
-            "Platinoids: " + playerTran.GetComponent<Player>().ore[0]
-            + ", Precious metals: " + playerTran.GetComponent<Player>().ore[1]
-            + ", Water: " + playerTran.GetComponent<Player>().ore[2]
-        );
-        */
-
         //Update resources display
         control.UpdateAllPlayerResourcesUI();
-        /*
-        control.textPlatinoid.text = playerBodyTransform.GetComponent<Player>().ore[0].ToString("F2") + " g";
-        control.textPreciousMetal.text = playerBodyTransform.GetComponent<Player>().ore[1].ToString("F2") + " g";
-        control.textWater.text = playerBodyTransform.GetComponent<Player>().ore[2].ToString("F2") + " g";
-        */
 
         //Destroy if it hasn't been already
         if (gameObject != null) Destroy(gameObject, 0f);

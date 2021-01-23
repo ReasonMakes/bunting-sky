@@ -58,7 +58,11 @@ public class Commerce : MonoBehaviour
     //GENERAL
     private void DefineUpgrades()
     {
+        //Initializations
         upgradeDictionary = new string[7, 4];
+        control.instancePlayer.GetComponentInChildren<Player>().upgradeLevels = new int[upgradeDictionary.GetLength(0)];
+
+        //Definitions
         //Name                                              Price                             Description                                                                                                   Max level
         upgradeDictionary[0, 0] = "Fuel efficiency";        upgradeDictionary[0, 1] = "1000"; upgradeDictionary[0, 2] = "Fuel is consumed at half the standard rate for the same resultant thrust";         upgradeDictionary[0, 3] = "1";
         upgradeDictionary[1, 0] = "Titan fuel tank";        upgradeDictionary[1, 1] = "500";  upgradeDictionary[1, 2] = "Double sized fuel tank with a superior design resulting in the same net weight";   upgradeDictionary[1, 3] = "1";

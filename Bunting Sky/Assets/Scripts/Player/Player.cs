@@ -112,13 +112,24 @@ public class Player : MonoBehaviour
     /*
      * CREDITS
      * 
-     * Rocket sound by Benboncan
-     * https://freesound.org/people/Benboncan/sounds/167563/
-     * https://creativecommons.org/licenses/by/3.0/
+     * Rocket sound by Zovex
+     * Modified by Reason: EQ'd and looped
+     * https://freesound.org/people/Zovex/sounds/237974/
      * 
-     * Cannon ball sound by OGsoundFX
+     * Cannon ball (laser) sound by OGsoundFX
      * Modified by Reason to start at the transient and fade out more quickly
      * https://freesound.org/people/OGsoundFX/sounds/423105/
+     * https://creativecommons.org/licenses/by/3.0/
+     * 
+     * Elevator (reloading) sound by calivintage
+     * Modified by Reason to fit the reloading time
+     * https://freesound.org/people/calivintage/sounds/95701/
+     * https://creativecommons.org/licenses/sampling+/1.0/
+     * 
+     * Ore collection sound is original - made by Reason
+     * 
+     * Coins sound by DWOBoyle
+     * https://freesound.org/people/DWOBoyle/sounds/140382/
      * https://creativecommons.org/licenses/by/3.0/
      * 
      */
@@ -199,6 +210,9 @@ public class Player : MonoBehaviour
     //Audio: Sound Effects
     public AudioSource soundSourceRocket;
     public AudioClip soundClipRocket;
+    private float soundRocketVolumeDeltaRate = 0.1f;
+    private float soundRocketMaxVolume = 0.02f;
+
     public AudioSource soundSourceLaser0;
     public AudioSource soundSourceLaser1;
     public AudioSource soundSourceLaser2;
@@ -206,6 +220,15 @@ public class Player : MonoBehaviour
     private byte soundSourceLaserArrayIndex = 0;
     private byte soundSourceLaserArrayLength = 4;
     public AudioClip soundClipLaser;
+
+    public AudioSource soundSourceLaserReload;
+    public AudioClip soundClipLaserReload;
+
+    public AudioSource soundSourceOreCollected;
+    public AudioClip soundClipOreCollected;
+
+    public AudioSource soundSourceCoins;
+    public AudioClip soundClipCoins;
     #endregion
 
     #region Init fields: Vitals
@@ -245,7 +268,7 @@ public class Player : MonoBehaviour
      * Valuable due to their high mechanical strength, good ductility, and stable electrical properties. They also have many useful catalytic properties and are resistant to chemical attack.
      */
 
-    [System.NonSerialized] int[] upgradeLevels;
+    [System.NonSerialized] public int[] upgradeLevels;
     #endregion
 
     #region Init fields: Weapons
@@ -309,14 +332,14 @@ public class Player : MonoBehaviour
         //We have to work with odd-numbered multiples of the inverse of the flash rate to end smoothly (end while it is transparent)
         warningUIFlashTotalDuration *= (1f / WARNING_UI_FLASH_RATE);
 
-        //Cargo
+        //ORE
         ore = new double[3]; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
         //Update resources UI
         control.UpdateAllPlayerResourcesUI();
 
-        //Upgrades length
-        upgradeLevels = new int[control.commerce.upgradeDictionary.GetLength(0)];
+        //Collection sound
+        soundSourceOreCollected.clip = soundClipOreCollected;
 
         //WEAPONS
         //Weapons trees
@@ -340,22 +363,29 @@ public class Player : MonoBehaviour
         //UI
         control.weaponSelectedClipSizeText.text = "" + weaponLaserClipSize;
 
-        //MUSIC
+        //AUDIO
         //Play the first song 0 to 30 seconds after startup
         musicPlayTime = Time.time + UnityEngine.Random.Range(0f, 30f);
 
         //Init sounds
-        //soundSourceRocket.clip = soundClipRocket;
+        soundSourceRocket.clip = soundClipRocket;
         soundSourceLaser0.clip = soundClipLaser;
         soundSourceLaser1.clip = soundClipLaser;
         soundSourceLaser2.clip = soundClipLaser;
         soundSourceLaser3.clip = soundClipLaser;
+        soundSourceLaserReload.clip = soundClipLaserReload;
+        soundSourceCoins.clip = soundClipCoins;
+
+        //Start rocket sound
+        soundSourceRocket.Play();
     }
     #endregion
 
     #region Update/fixed update & their slow versions
     private void Update()
     {
+        //DEBUG
+        //Spawning
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
         {
             control.SpawnAsteroidManually(transform.position + transform.forward * 2f, rb.velocity, true);
@@ -380,6 +410,27 @@ public class Player : MonoBehaviour
         }
         */
 
+        //ROCKET SOUND
+        //Don't loop endlessly while paused
+        if (Menu.menuOpenAndGamePaused)
+        {
+            soundSourceRocket.Stop();
+        }
+        else if (!soundSourceRocket.isPlaying)
+        {
+            soundSourceRocket.Play();
+        }
+
+        //Adjust volume with movement
+        if (canAndIsMoving)
+        {
+            soundSourceRocket.volume = Mathf.Min(soundRocketMaxVolume, soundSourceRocket.volume + (Time.deltaTime * soundRocketVolumeDeltaRate));
+        }
+        else
+        {
+            soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * soundRocketVolumeDeltaRate) * 32f));
+        }
+        
         //Update every n frames instead of every frame
         if (Time.frameCount % 3 == 0)
         {
@@ -400,14 +451,6 @@ public class Player : MonoBehaviour
         {
             UpdateGetIfMoving();            //Check if moving at all so that it only has to be checked once per update
             UpdatePlayerWeapons();          //Shoot stuff
-
-            /*
-            //ROCKET SOUND
-            if (!rocket.isPlaying && moving)
-            {
-                rocket.Play();
-            }
-            */
 
             UpdatePlayerEngineEffect();     //Set engine glow relative to movement
 
@@ -1025,6 +1068,8 @@ public class Player : MonoBehaviour
         //Reloading
         if (weaponLaserClipRemaining == 0)
         {
+            //Play sound
+            soundSourceLaserReload.Play();
             //Start cooldown
             weaponLaserClipCooldownCurrent = weaponLaserClipCooldownDuration;
             //Reset clip
