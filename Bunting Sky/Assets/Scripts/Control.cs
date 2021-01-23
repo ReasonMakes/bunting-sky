@@ -115,12 +115,6 @@ public class Control : MonoBehaviour
         targetYMin = target.GetPixelAdjustedRect().height / 2;
         targetYMax = Screen.height - targetYMin;
 
-        //HUD Display
-        //string[] lines = System.IO.File.ReadAllLines("Assets/User Data/settings.txt");
-        //set_showFPS = bool.Parse(lines[12]);
-        //FPS Display
-        //set_showHUD = bool.Parse(lines[15]);
-
         //FPS Target
         QualitySettings.vSyncCount = 0; //VSync
         Application.targetFrameRate = settings.targetFPS;
@@ -364,11 +358,11 @@ public class Control : MonoBehaviour
 
         playerScript.control = this;
         playerScript.cBodies = cBodies;
-        playerScript.vitalsHealthUI = canvas.transform.Find("Vitals").Find("VitalsHealth").gameObject;
-        playerScript.vitalsHealthUIText = canvas.transform.Find("Vitals").Find("VitalsHealthText").gameObject.GetComponent<TextMeshProUGUI>();
-        playerScript.vitalsFuelUI = canvas.transform.Find("Vitals").Find("VitalsFuel").gameObject;
-        playerScript.vitalsFuelUIText = canvas.transform.Find("Vitals").Find("VitalsFuelText").gameObject.GetComponent<TextMeshProUGUI>();
-        playerScript.warningUIText = canvas.transform.Find("WarningText").gameObject.GetComponent<TextMeshProUGUI>();
+        playerScript.vitalsHealthUI = canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsHealth").gameObject;
+        playerScript.vitalsHealthUIText = canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsHealthText").gameObject.GetComponent<TextMeshProUGUI>();
+        playerScript.vitalsFuelUI = canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsFuel").gameObject;
+        playerScript.vitalsFuelUIText = canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsFuelText").gameObject.GetComponent<TextMeshProUGUI>();
+        playerScript.warningUIText = canvas.transform.Find("HUD Top").Find("WarningText").gameObject.GetComponent<TextMeshProUGUI>();
 
         playerScript.LateStart();
 
@@ -383,7 +377,7 @@ public class Control : MonoBehaviour
 
         //Create ship direction reticles
         playerShipDirectionReticleTree = new GameObject("Player Direction Reticle Tree");
-        playerShipDirectionReticleTree.transform.parent = canvas.transform;
+        playerShipDirectionReticleTree.transform.parent = canvas.transform.Find("HUD Centre");
 
         for (int i = 0; i < playerShipDirectionReticleListLength; i++)
         {
@@ -452,7 +446,7 @@ public class Control : MonoBehaviour
             instanceCBodyPlanetoid.GetComponent<Gravity>().SetVelocityToOrbit(centreCBodyStar, spawnAngle);
 
             //Spin
-            instanceCBodyPlanetoid.GetComponent<Rigidbody>().AddTorque(Vector3.up * 1e5f * Random.Range(1f, 60f));
+            instanceCBodyPlanetoid.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
 
             //Spawn station
             if (i == 0)

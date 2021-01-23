@@ -132,6 +132,11 @@ public class Player : MonoBehaviour
      * https://freesound.org/people/DWOBoyle/sounds/140382/
      * https://creativecommons.org/licenses/by/3.0/
      * 
+     * Rock slide (asteroid explosion) sound by Opsaaaaa
+     * Modified by reason: clipped to start at the transient and end as the volume dies out, deepened the pitch of the low-end, hushed the high-end
+     * https://freesound.org/people/Opsaaaaa/sounds/335337/
+     * https://creativecommons.org/licenses/by/3.0/
+     * 
      */
     #endregion
 
@@ -212,6 +217,8 @@ public class Player : MonoBehaviour
     public AudioClip soundClipRocket;
     private float soundRocketVolumeDeltaRate = 0.1f;
     private float soundRocketMaxVolume = 0.02f;
+    private float soundRocketMaxPitch = 1.5f;
+    private float soundRocketPitchDeltaRate = 0.2f;
 
     public AudioSource soundSourceLaser0;
     public AudioSource soundSourceLaser1;
@@ -284,7 +291,7 @@ public class Player : MonoBehaviour
     
     private short weaponLaserClipSize = 16;
     private short weaponLaserClipRemaining = 16;
-    private float weaponLaserClipCooldownDuration = 2f;
+    private float weaponLaserClipCooldownDuration = 1.5f; //reload period
     private float weaponLaserClipCooldownCurrent = 0f;
 
     private float weaponLaserSingleCooldownDuration = 0.2f;
@@ -385,6 +392,7 @@ public class Player : MonoBehaviour
     private void Update()
     {
         //DEBUG
+        //---------------------------------------------------
         //Spawning
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
         {
@@ -410,28 +418,9 @@ public class Player : MonoBehaviour
         }
         */
 
-        //ROCKET SOUND
-        //Don't loop endlessly while paused
-        if (Menu.menuOpenAndGamePaused)
-        {
-            soundSourceRocket.Stop();
-        }
-        else if (!soundSourceRocket.isPlaying)
-        {
-            soundSourceRocket.Play();
-        }
+        //---------------------------------------------------
 
-        //Adjust volume with movement
-        if (canAndIsMoving)
-        {
-            soundSourceRocket.volume = Mathf.Min(soundRocketMaxVolume, soundSourceRocket.volume + (Time.deltaTime * soundRocketVolumeDeltaRate));
-        }
-        else
-        {
-            soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * soundRocketVolumeDeltaRate) * 32f));
-        }
-        
-        //Update every n frames instead of every frame
+        //Slow update
         if (Time.frameCount % 3 == 0)
         {
             SlowUpdate();
@@ -440,11 +429,8 @@ public class Player : MonoBehaviour
         //Have the position mount follow the player position
         positionMount.transform.position = transform.position;
 
-        //MUSIC
-        if (Time.time >= musicPlayTime)
-        {
-            PlayMusic();
-        }
+        //AUDIO
+        UpdateAudio();
 
         //Don't run if paused
         if (!Menu.menuOpenAndGamePaused)
@@ -842,6 +828,18 @@ public class Player : MonoBehaviour
         }
     }
     #endregion
+
+    private void UpdateAudio()
+    {
+        //ROCKET SOUND
+        AdjustRocketSound();
+
+        //MUSIC
+        if (Time.time >= musicPlayTime)
+        {
+            PlayMusic();
+        }
+    }
     #endregion
 
     #region General methods
@@ -1085,7 +1083,7 @@ public class Player : MonoBehaviour
     }
     #endregion
 
-    #region General methods: Music
+    #region General methods: Audio
     private void PlayMusic()
     {
         //Select the track
@@ -1113,6 +1111,33 @@ public class Player : MonoBehaviour
         
         //Queue another song to be played 10-20 minutes after the current one finishes
         musicPlayTime = Time.time + music.clip.length + UnityEngine.Random.Range(600f, 1200f);
+    }
+
+    private void AdjustRocketSound()
+    {
+        //Don't loop endlessly while paused
+        if (Menu.menuOpenAndGamePaused)
+        {
+            soundSourceRocket.Stop();
+        }
+        else if (!soundSourceRocket.isPlaying)
+        {
+            soundSourceRocket.Play();
+        }
+
+        //Adjust volume and pitch with movement
+        if (canAndIsMoving)
+        {
+            soundSourceRocket.volume = Mathf.Min(soundRocketMaxVolume, soundSourceRocket.volume + (Time.deltaTime * soundRocketVolumeDeltaRate));
+
+            soundSourceRocket.pitch = Mathf.Min(soundRocketMaxPitch, soundSourceRocket.pitch + (Time.deltaTime * soundRocketPitchDeltaRate));
+        }
+        else
+        {
+            soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * soundRocketVolumeDeltaRate) * 32f));
+
+            soundSourceRocket.pitch = Mathf.Max(1f, soundSourceRocket.pitch - ((soundSourceRocket.pitch * Time.deltaTime * soundRocketPitchDeltaRate) * 32f));
+        }
     }
     #endregion
 

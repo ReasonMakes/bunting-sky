@@ -218,6 +218,16 @@ public class Menu : MonoBehaviour
         control.settings.Save();
 
         //Update in game
+        control.canvas.transform.Find("HUD Centre").gameObject.SetActive(control.settings.displayHUD);
+        control.canvas.transform.Find("HUD Top-Left").gameObject.SetActive(control.settings.displayHUD);
+        control.canvas.transform.Find("HUD Top").gameObject.SetActive(control.settings.displayHUD);
+        control.canvas.transform.Find("HUD Top-Right").gameObject.SetActive(control.settings.displayHUD);
+        control.canvas.transform.Find("HUD Bottom-Right").gameObject.SetActive(control.settings.displayHUD);
+        control.canvas.transform.Find("HUD Bottom-Left").gameObject.SetActive(control.settings.displayHUD);
+
+        //control.canvas.transform.Find("HUD").gameObject.SetActive(control.settings.displayHUD);
+
+        /*
         control.canvas.transform.Find("CameraReticle").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("SystemInfo").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("WarningText").gameObject.SetActive(control.settings.displayHUD);
@@ -225,6 +235,7 @@ public class Menu : MonoBehaviour
         control.canvas.transform.Find("Resources").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("Weapons").gameObject.SetActive(control.settings.displayHUD);
         control.canvas.transform.Find("Waypoint").gameObject.SetActive(control.settings.displayHUD);
+        */
     }
 
     public void MenuSettingsSpotlightToggle()

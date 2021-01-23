@@ -238,6 +238,9 @@ public class CBodyAsteroid : MonoBehaviour
             }
             //in order to spawn more than one asteroid, setup a system which ignores collisions with siblings until no longer intersecting?
 
+            //Play sound effect
+            GetComponent<AudioSource>().Play();
+
             //Destroy self
             destroyed = true;
         }

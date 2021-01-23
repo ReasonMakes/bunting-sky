@@ -74,6 +74,9 @@ public class CBodyPlanetoid : MonoBehaviour
             asteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);
         }
 
+        //Play sound
+        GetComponent<AudioSource>().Play();
+
         //Remember is disabled
         disabled = true;
     }
