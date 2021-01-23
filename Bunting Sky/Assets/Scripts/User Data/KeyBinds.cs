@@ -12,7 +12,7 @@ public class KeyBinds : MonoBehaviour
     private string keybindsSaveFile;
     private string fullPath;
 
-    //Mouse code definitions (1000 is subtracted later)
+    //Mouse code definitions (1000 is subtracted later. TODO: make this into an enum)
     private readonly short MOUSE_PRIMARY = 1000;
     private readonly short MOUSE_SECONDARY = 1001;
     private readonly short MOUSE_MIDDLE = 1002;
@@ -281,7 +281,8 @@ public class KeyBinds : MonoBehaviour
     public bool GetInput(short inputCode)
     {
         //0 to 509 = KeyCode
-        //1000 to 1002 = Mouse code
+        //1000 to 1002 = Mouse button
+        //1003 and 1004 = Mouse scroll wheel
 
         if(inputCode <= 509)
         {
