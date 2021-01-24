@@ -46,6 +46,9 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //Add setting to turn off music
+    //Add auto-saving
+    //Fix ship auto-torquing
+    //Implement upgrades
 
     /*
      * MOVEMENT MODES:
