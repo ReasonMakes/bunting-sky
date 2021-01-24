@@ -77,9 +77,9 @@ public class Control : MonoBehaviour
     private GameObject playerShipDirectionReticleTree;
     public GameObject playerShipDirectionReticle;
     private List<GameObject> playerShipDirectionReticleList = new List<GameObject>();
-    private short playerShipDirectionReticleListLength = 22;
-    private float playerShipDirectionReticleSpacing = 0.4f;
-    private float playerShipDirectionReticleSpacingPower = 2f;
+    private short playerShipDirectionReticleListLength = 16;
+    private float playerShipDirectionReticleSpacing = 0.05f;
+    private float playerShipDirectionReticleSpacingPower = 3f;
     private float playerShipDirectionReticleScale = 0.05f;
     private float playerShipDirectionReticleForwardOffset = 0.15f;
 
@@ -844,7 +844,7 @@ public class Control : MonoBehaviour
         );
     }
 
-    public static float ClampEulerAngle(float angle)
+    public static float LoopEulerAngle(float angle)
     {
         if (angle >= 360) angle -= 360;
         else if (angle < 0) angle += 360;

@@ -4,25 +4,43 @@ using UnityEngine;
 
 public class PlayerLaser : MonoBehaviour
 {
+    [System.NonSerialized] public Control control;
     public Rigidbody rb;
-    public float lifetime;
+    [System.NonSerialized] public float timeRemainingInLife;
+    private readonly float MIN_GLOW_DISTANCE = 2f;
+    private Transform playerBody;
 
     private void Start()
     {
         rb.detectCollisions = false;
+        playerBody = control.instancePlayer.transform.Find("Body");
     }
 
     private void Update()
     {
         if (!Menu.menuOpenAndGamePaused)
-        { 
-            //Deactivate self after lifetime expires
-            if (lifetime <= 0f)
+        {
+            //Make point light visible after awhile
+            if (Vector3.Distance(transform.position, playerBody.position) > (MIN_GLOW_DISTANCE + (playerBody.GetComponent<Rigidbody>().velocity.magnitude / 25f)))
             {
+                transform.Find("Emissive Model").gameObject.SetActive(true);
+                transform.Find("Point Light").gameObject.SetActive(true);
+            }
+            else
+            {
+                transform.Find("Emissive Model").gameObject.SetActive(false);
+                transform.Find("Point Light").gameObject.SetActive(false);
+            }
+
+            //Deactivate self after lifetime expires
+            if (timeRemainingInLife <= 0f)
+            {
+                transform.Find("Emissive Model").gameObject.SetActive(false);
+                transform.Find("Point Light").gameObject.SetActive(false);
                 gameObject.SetActive(false);
             }
 
-            lifetime -= Time.deltaTime;
+            timeRemainingInLife -= Time.deltaTime;
 
             //Raycast collisions
             //Check farther ahead when moving faster so it's impossible to move through a collider without hitting

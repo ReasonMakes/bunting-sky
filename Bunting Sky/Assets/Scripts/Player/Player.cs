@@ -117,6 +117,7 @@ public class Player : MonoBehaviour
      * Rocket sound by Zovex
      * Modified by Reason: EQ'd and looped
      * https://freesound.org/people/Zovex/sounds/237974/
+     * http://creativecommons.org/publicdomain/zero/1.0/
      * 
      * Cannon ball (laser) sound by OGsoundFX
      * Modified by Reason to start at the transient and fade out more quickly
@@ -128,16 +129,21 @@ public class Player : MonoBehaviour
      * https://freesound.org/people/calivintage/sounds/95701/
      * https://creativecommons.org/licenses/sampling+/1.0/
      * 
-     * Ore collection sound is original - made by Reason
+     * Ore collection sound is original - made by Reason using Serum in Reaper
      * 
      * Coins sound by DWOBoyle
      * https://freesound.org/people/DWOBoyle/sounds/140382/
      * https://creativecommons.org/licenses/by/3.0/
      * 
      * Rock slide (asteroid explosion) sound by Opsaaaaa
-     * Modified by reason: clipped to start at the transient and end as the volume dies out, deepened the pitch of the low-end, hushed the high-end
+     * Modified by Reason: clipped to start at the transient and end as the volume dies out, deepened the pitch of the low-end, hushed the high-end
      * https://freesound.org/people/Opsaaaaa/sounds/335337/
      * https://creativecommons.org/licenses/by/3.0/
+     * 
+     * Metal storm door (ship collision) sound by volivieri
+     * Modified by Reason: clipped to start at the second hit and end more quickly, deepened the pitch of the low-end, boosted bass, added a low-pass filter
+     * https://freesound.org/people/volivieri/sounds/161190/
+     * http://creativecommons.org/licenses/by/3.0/
      * 
      */
     #endregion
@@ -160,7 +166,9 @@ public class Player : MonoBehaviour
     public GameObject fpCam;
     public GameObject tpCam;
     public GameObject tpModel;
-    private float fpCamClippingPlaneNear = 0.003f;
+    public GameObject fpModel;
+    private float fpCamClippingPlaneNear = 0.003f; //0.0005f;
+    private float fpCamClippingPlaneFar = 1e20f;
 
     public GameObject mapCam;
     #endregion
@@ -240,15 +248,18 @@ public class Player : MonoBehaviour
 
     public AudioSource soundSourceCoins;
     public AudioClip soundClipCoins;
+
+    public AudioSource soundSourceCollision;
+    public AudioClip soundClipCollision;
     #endregion
 
     #region Init fields: Vitals
     //Vitals
-    public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
-    public double vitalsHealthMax = 10.0;
-    public double vitalsFuel = 30.0;
-    public double vitalsFuelMax = 30.0;
-    public double vitalsFuelConsumptionRate = 0.1;
+    [System.NonSerialized] public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
+    [System.NonSerialized] public double vitalsHealthMax = 10.0;
+    [System.NonSerialized] public double vitalsFuel = 15.0;
+    [System.NonSerialized] public double vitalsFuelMax = 15.0;
+    [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.1;
     [System.NonSerialized] public GameObject vitalsHealthUI;
     [System.NonSerialized] public TextMeshProUGUI vitalsHealthUIText;
     [System.NonSerialized] public GameObject vitalsFuelUI;
@@ -339,6 +350,7 @@ public class Player : MonoBehaviour
         fpCamYaw = centreMountTran.localRotation.y;
         fpCamRoll = centreMountTran.localRotation.z;
         fpCam.GetComponent<Camera>().nearClipPlane = fpCamClippingPlaneNear;
+        fpCam.GetComponent<Camera>().farClipPlane = fpCamClippingPlaneFar;
 
         //Vitals
         //We have to work with odd-numbered multiples of the inverse of the flash rate to end smoothly (end while it is transparent)
@@ -370,6 +382,9 @@ public class Player : MonoBehaviour
 
             //Put in weapons tree
             instancePlayerLaser.transform.parent = playerWeaponsTreeLaser.transform;
+
+            //Pass control reference
+            instancePlayerLaser.GetComponent<PlayerLaser>().control = control;
         }
 
         //UI
@@ -387,6 +402,7 @@ public class Player : MonoBehaviour
         soundSourceLaser3.clip = soundClipLaser;
         soundSourceLaserReload.clip = soundClipLaserReload;
         soundSourceCoins.clip = soundClipCoins;
+        soundSourceCollision.clip = soundClipCollision;
 
         //Start rocket sound
         soundSourceRocket.Play();
@@ -411,13 +427,14 @@ public class Player : MonoBehaviour
             Debug.Log("Spawned one planetoid");
         }
 
+        
+        //Slow motion (useful for testing hitboxes and fast moving objects)
         /*
-        //Slow motion (useful for testing hitboxes)
         if (binds.GetInput(binds.bindPrimaryFire))
         {
             Time.timeScale = 0.01f;
         }
-        else if (!Menu.menuOpen)
+        else if (!Menu.menuOpenAndGamePaused)
         {
             Time.timeScale = 1f;
         }
@@ -886,24 +903,19 @@ public class Player : MonoBehaviour
 
     private void DecideFirstOrThirdPerson()
     {
-        if (control.settings.cameraDistance <= control.settings.CAMERA_DISTANCE_MIN + 0.01f)
-        {
-            //isFirstPerson = true;
-            fpCam.SetActive(true);
-            tpCam.SetActive(false);
-            tpModel.SetActive(false);
-        }
-        else
-        {
-            //isFirstPerson = false;
-            tpCam.SetActive(true);
-            fpCam.SetActive(false);
-            tpModel.SetActive(true);
-        }
+        bool firstPerson = control.settings.cameraDistance <= control.settings.CAMERA_DISTANCE_MIN + 0.01f;
+
+        tpCam.SetActive(!firstPerson);
+        tpModel.SetActive(!firstPerson);
+
+        fpCam.SetActive(firstPerson);
+        fpModel.SetActive(firstPerson);
     }
 
     private void GetMouseToCameraTransform()
     {
+        //Debug.LogFormat("Pitch {0}, Yaw {1}", fpCamPitch, fpCamYaw);
+
         //Pitch
         fpCamPitch += -Input.GetAxisRaw("Mouse Y") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         //Yaw
@@ -920,18 +932,9 @@ public class Player : MonoBehaviour
         //Roll
         fpCamRoll = 0f;
 
-        Control.ClampEulerAngle(fpCamYaw);
-        Control.ClampEulerAngle(fpCamPitch);
-        Control.ClampEulerAngle(fpCamRoll);
-
-        /*
-        if (fpCamYaw >= 360) fpCamYaw -= 360;
-        else if (fpCamYaw < 0) fpCamYaw += 360;
-        if (fpCamPitch >= 360) fpCamPitch -= 360;
-        else if (fpCamPitch < 0) fpCamPitch += 360;
-        if (fpCamRoll >= 360) fpCamRoll -= 360;
-        else if (fpCamRoll < 0) fpCamRoll += 360;
-        */
+        Control.LoopEulerAngle(fpCamYaw);
+        Control.LoopEulerAngle(fpCamPitch);
+        Control.LoopEulerAngle(fpCamRoll);
     }
 
     private void UpdateMountPositions()
@@ -1006,12 +1009,12 @@ public class Player : MonoBehaviour
         //Ignore collisions between the laser and the player (this does not seem necessary)
         //Physics.IgnoreCollision(weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Collider>(), transform.GetComponent<Collider>());
         //Reset weapon instance
-        weaponLaserPool[WeaponLaserPoolIndex].transform.position = transform.position + (0.18f * transform.forward);
+        weaponLaserPool[WeaponLaserPoolIndex].transform.position = transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f);
         weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         weaponLaserPool[WeaponLaserPoolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().velocity = rb.velocity + (weaponLaserProjectileSpeed * transform.forward);
-        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().lifetime = weaponLaserLifetimeDuration;
+        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeRemainingInLife = weaponLaserLifetimeDuration;
 
         //Iterate through list
         if (WeaponLaserPoolIndex < weaponLaserPoolLength - 1)
@@ -1220,10 +1223,22 @@ public class Player : MonoBehaviour
 
         if (impactDeltaV.magnitude >= impactIntoleranceThreshold)
         {
-            DamagePlayer
-            (
-                Math.Max(0.0, vitalsHealth - Math.Min(impactIntoleranceThreshold * impactIntoleranceRange, impactDeltaV.magnitude) / ((impactIntoleranceThreshold * impactIntoleranceRange) / impactMaxDamage)),
-                "over-threshold impact of " + (int)impactDeltaV.magnitude + " Δv"
+            //Play sound effect
+            soundSourceCollision.pitch = UnityEngine.Random.Range(0.8f, 1.2f);
+            soundSourceCollision.Play();
+
+            //Damage
+            double newHealthAmount = Math.Max(
+                0.0,
+                vitalsHealth - Math.Min(
+                    impactIntoleranceThreshold * impactIntoleranceRange,
+                    impactDeltaV.magnitude
+                ) / (impactIntoleranceThreshold * impactIntoleranceRange / impactMaxDamage)
+            );
+
+            DamagePlayer(
+                newHealthAmount,
+                "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv"
             );
         }
     }

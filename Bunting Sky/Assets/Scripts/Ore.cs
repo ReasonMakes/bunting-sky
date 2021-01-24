@@ -150,11 +150,15 @@ public class Ore : MonoBehaviour
 
     private void AbsorbIntoPlayer()
     {
-        //Add ore type to player inventory
-        playerBodyTransform.GetComponent<Player>().ore[type]++;
+        //Only add to player inventory if player isn't in the middle of nowhere
+        if (Vector3.Distance(transform.position, playerBodyTransform.position) < 600f)
+        {
+            //Add ore type to player inventory
+            playerBodyTransform.GetComponent<Player>().ore[type]++;
 
-        //Update resources display
-        control.UpdateAllPlayerResourcesUI();
+            //Update resources display
+            control.UpdateAllPlayerResourcesUI();
+        }
 
         //Destroy if it hasn't been already
         if (gameObject != null) Destroy(gameObject, 0f);
