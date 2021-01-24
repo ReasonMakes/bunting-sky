@@ -118,7 +118,7 @@ public class Control : MonoBehaviour
         //FPS Target
         QualitySettings.vSyncCount = 0; //VSync
         Application.targetFrameRate = settings.targetFPS;
-        fps = (int)(1f / Time.unscaledDeltaTime);
+        fps = Mathf.RoundToInt(1f / Time.unscaledDeltaTime);
 
         //Lock cursor
         Cursor.lockState = CursorLockMode.Locked;

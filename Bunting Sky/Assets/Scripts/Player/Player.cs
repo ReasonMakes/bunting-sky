@@ -45,6 +45,8 @@ public class Player : MonoBehaviour
 
     //ICC stands for interstellar crypto currency
 
+    //Add setting to turn off music
+
     /*
      * MOVEMENT MODES:
      * sublight, for moving around asteroids, stations, and dogfighting - has a constant acceleration and drag
