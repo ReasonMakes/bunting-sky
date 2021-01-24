@@ -77,9 +77,11 @@ public class Control : MonoBehaviour
     private GameObject playerShipDirectionReticleTree;
     public GameObject playerShipDirectionReticle;
     private List<GameObject> playerShipDirectionReticleList = new List<GameObject>();
-    private short playerShipDirectionReticleListLength = 13;
+    private short playerShipDirectionReticleListLength = 22;
     private float playerShipDirectionReticleSpacing = 0.4f;
     private float playerShipDirectionReticleSpacingPower = 2f;
+    private float playerShipDirectionReticleScale = 0.05f;
+    private float playerShipDirectionReticleForwardOffset = 0.15f;
 
     //Player resources
     public bool updatePlayerResourcesUIAnimations = true;
@@ -293,7 +295,7 @@ public class Control : MonoBehaviour
             //Position in front of player ship at distance relative to index
             Vector3 reticleWorldPos = instancePlayerBodyTransform.position
                 + ((instancePlayerBodyTransform.rotation * Vector3.forward)
-                * playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)
+                * (playerShipDirectionReticleForwardOffset + (playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)) * playerShipDirectionReticleScale)
             );
 
             //Transform 3D world space to 2D canvas space

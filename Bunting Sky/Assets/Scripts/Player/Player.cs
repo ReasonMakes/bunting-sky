@@ -154,11 +154,13 @@ public class Player : MonoBehaviour
     private float fpCamYaw = 0f;
     private float fpCamRoll = 0f;
     public GameObject fpCamMount;
-    [System.NonSerialized] public Transform fpCamMountTran;
+    public GameObject centreMount;
+    [System.NonSerialized] public Transform centreMountTran;
     public GameObject tpCamMount;
     public GameObject fpCam;
     public GameObject tpCam;
     public GameObject tpModel;
+    private float fpCamClippingPlaneNear = 0.003f;
 
     public GameObject mapCam;
     #endregion
@@ -332,10 +334,11 @@ public class Player : MonoBehaviour
         binds = control.binds;
 
         //Camera
-        fpCamMountTran = fpCamMount.transform;
-        fpCamPitch = fpCamMountTran.localRotation.x;
-        fpCamYaw = fpCamMountTran.localRotation.y;
-        fpCamRoll = fpCamMountTran.localRotation.z;
+        centreMountTran = centreMount.transform;
+        fpCamPitch = centreMountTran.localRotation.x;
+        fpCamYaw = centreMountTran.localRotation.y;
+        fpCamRoll = centreMountTran.localRotation.z;
+        fpCam.GetComponent<Camera>().nearClipPlane = fpCamClippingPlaneNear;
 
         //Vitals
         //We have to work with odd-numbered multiples of the inverse of the flash rate to end smoothly (end while it is transparent)
@@ -599,13 +602,13 @@ public class Player : MonoBehaviour
             float torqueStrengthFactor = 3f;
 
             //Pitch
-            TorqueAxisRelative(torqueStrengthFactor * 500f, fpCamMountTran.forward, transform.forward);
+            TorqueAxisRelative(torqueStrengthFactor * 500f, centreMountTran.forward, transform.forward);
 
             //Yaw
-            TorqueAxisRelative(torqueStrengthFactor * 0.3f, fpCamMountTran.right, transform.right);
+            TorqueAxisRelative(torqueStrengthFactor * 0.3f, centreMountTran.right, transform.right);
 
             //Roll
-            TorqueAxisRelative(torqueStrengthFactor * 100f, fpCamMountTran.up, transform.up);
+            TorqueAxisRelative(torqueStrengthFactor * 100f, centreMountTran.up, transform.up);
 
 
             //ORIGINAL SOLUTION
@@ -764,7 +767,7 @@ public class Player : MonoBehaviour
         }
 
         //We do this outside of the menuOpen check so that the camera won't lag behind the player by one frame when the menu is opened
-        AssignMouseToCameraTransform();
+        UpdateMountPositions();
     }
     #endregion
 
@@ -931,19 +934,27 @@ public class Player : MonoBehaviour
         */
     }
 
-    private void AssignMouseToCameraTransform()
+    private void UpdateMountPositions()
     {
-        //Set the first-person camera's transform
-        fpCamMountTran.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
+        //CENTRE
+        //Set the centre mount's transform
+        centreMountTran.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
 
-        //TP Camera
+        //FIRST-PERSON
+        fpCamMount.transform.position = centreMountTran.position + (transform.forward * 0.115f) + (transform.up * 0.004f);
+
+        //fpCamMount.transform.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
+
+        //0.14 y
+        //2.5 z
+
+        //THIRD-PERSON
         //tpCamMount.transform.position = transform.position;
         tpCamMount.transform.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
 
-
         float cameraSpeedEffect = 1f; //1f + Mathf.Pow(rb.velocity.magnitude, 0.15f);
-        Vector3 cameraUp = fpCamMountTran.up * (control.settings.cameraDistance * control.settings.cameraHeight) * cameraSpeedEffect;
-        Vector3 cameraForward = fpCamMountTran.forward * control.settings.cameraDistance * cameraSpeedEffect;
+        Vector3 cameraUp = centreMountTran.up * (control.settings.cameraDistance * control.settings.cameraHeight) * cameraSpeedEffect;
+        Vector3 cameraForward = centreMountTran.forward * control.settings.cameraDistance * cameraSpeedEffect;
         tpCamMount.transform.position = transform.position + cameraUp - cameraForward; //subtracting forward results in the camera following behind the player, this should be more performant than *-1
         //tpCamMount.transform.position = (transform.position + (fpCamMountTran.up * set_tpCamFollowDistance * set_tpCamFollowHeight) - (fpCamMountTran.forward * set_tpCamFollowDistance));
     }
