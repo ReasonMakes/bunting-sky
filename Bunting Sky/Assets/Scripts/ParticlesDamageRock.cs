@@ -4,14 +4,14 @@ using UnityEngine;
 
 public class ParticlesDamageRock : MonoBehaviour
 {
-    public ParticleSystem partSysShurikenDamage;
+    public ParticleSystem particlesDamageRock;
 
     private ParticleSystem.EmitParams partSysShurikenDamageEmitParameters;
     [System.NonSerialized] public int partSysShurikenDamageEmitCount = 0;
     [System.NonSerialized] public float partSysShurikenDamageShapeRadius = 0.1f;
     [System.NonSerialized] public float partSysShurikenDamageSizeMultiplier = 1f;
 
-    public float saturationDefault = 0.78f;
+    [System.NonSerialized] public float saturationDefault = 0.78f;
 
     public void SetParticleSystemDamageColour(Transform model, float saturationMultiplier)
     {
@@ -47,15 +47,15 @@ public class ParticlesDamageRock : MonoBehaviour
         };
     }
 
-    public void EmitDamageParticles(int countMultiplier, Vector3 directionIn, Vector3 positionIn, bool destroyingEntireAsteroid)
+    public void EmitDamageParticles(int countMultiplier, Vector3 directionIn, Vector3 positionIn, bool destroyingEntireObject)
     {
         /*
-         * If destroyingEntireAsteroid flag is true:
+         * If destroyingEntireObject flag is true:
          *  - emits particles in a sphere
          *  - with larger particles
          *  - with more particles
-         *  - at a starting shape radius equal to the asteroid model radius
-         *  - all from the centre of the asteroid, ignoring the specified position
+         *  - at a starting shape radius equal to the object model radius
+         *  - all from the centre of the object, ignoring the specified position
          *  
          * Otherwise
          *  - emits 90% of particles in a cone shape
@@ -68,10 +68,10 @@ public class ParticlesDamageRock : MonoBehaviour
         float sizeMultiplier = 1f;
 
 
-        if (destroyingEntireAsteroid)
+        if (destroyingEntireObject)
         {
             //Shape radius = model radius
-            ParticleSystem.ShapeModule partSysShurikenDamageShapeModule = partSysShurikenDamage.shape;
+            ParticleSystem.ShapeModule partSysShurikenDamageShapeModule = particlesDamageRock.shape;
 
             //For some reason this method just doesn't seem to return with the correct radius
             //Vector3 modelSize = activeModel.transform.GetChild(0).GetComponent<MeshFilter>().mesh.bounds.size;
@@ -105,9 +105,9 @@ public class ParticlesDamageRock : MonoBehaviour
 
             //Direction
             float directionCurve = Random.Range(0f, 3f);
-            if (destroyingEntireAsteroid)
+            if (destroyingEntireObject)
             {
-                //Spherical because destroying entire asteroid
+                //Spherical because destroying entire object
                 directionOut = Random.insideUnitSphere.normalized;
             }
             else if (i >= loops - (loops * 0.1f))
@@ -133,7 +133,7 @@ public class ParticlesDamageRock : MonoBehaviour
             partSysShurikenDamageEmitParameters.startSize = Random.Range(0.03f * sizeMultiplier, 0.15f * sizeMultiplier);
 
             //Emit
-            partSysShurikenDamage.Emit(
+            particlesDamageRock.Emit(
                 partSysShurikenDamageEmitParameters,
                 1
             );

@@ -10,6 +10,7 @@ public class Menu : MonoBehaviour
 
     public GameObject menuContainer;
     public GameObject menuMain;
+    public GameObject menuRestartConfirm;
 
     public GameObject menuSettings;
     public TMP_InputField menuSettingsMouseSensitivityIn;
@@ -30,6 +31,7 @@ public class Menu : MonoBehaviour
         menuMain.SetActive(false);
         menuSettings.SetActive(false);
         menuKeybinds.SetActive(false);
+        menuRestartConfirm.SetActive(false);
     }
 
     private void Update()
@@ -69,6 +71,13 @@ public class Menu : MonoBehaviour
         }
     }
 
+    public void DisableAllSubMenus()
+    {
+        menuKeybinds.SetActive(false);
+        menuSettings.SetActive(false);
+        menuRestartConfirm.SetActive(false);
+    }
+
     //MAIN
     public void MenuToggle()
     {
@@ -80,8 +89,7 @@ public class Menu : MonoBehaviour
         menuMain.SetActive(menuOpenAndGamePaused);
         if (!menuOpenAndGamePaused)
         {
-            menuSettings.SetActive(false);
-            menuKeybinds.SetActive(false);
+            DisableAllSubMenus();
         }
 
         //Toggle game pause
@@ -96,17 +104,35 @@ public class Menu : MonoBehaviour
 
     public void MenuMainOpen()
     {
-        //Disable all sub menus
-        menuKeybinds.SetActive(false);
-        menuSettings.SetActive(false);
+        //Disable all sub-menus
+        DisableAllSubMenus();
 
         //Enable main menu
         menuMain.SetActive(true);
     }
 
-    public void MenuQuit()
+    public void MenuRestart()
     {
+        MenuRestartConfirmOpen();
+    }
+
+    public void MenuSaveAndQuit()
+    {
+        control.SaveGame();
         Application.Quit();
+    }
+
+    //RESTART
+    public void MenuRestartConfirmOpen()
+    {
+        menuMain.SetActive(false);
+        menuRestartConfirm.SetActive(true);
+    }
+
+    public void MenuRestartConfirmed()
+    {
+        control.GenerateScene(true);
+        MenuToggle();
     }
 
     //SETTINGS
@@ -243,8 +269,12 @@ public class Menu : MonoBehaviour
         control.settings.spotlightOn = !control.settings.spotlightOn;
         control.settings.Save();
 
-        //Not quite sure why this needs to be inverted, but it works
-        control.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(!control.settings.spotlightOn);
+        //Don't update in-game when player has been destroyed
+        if (!control.instancePlayer.GetComponentInChildren<Player>().destroyed)
+        {
+            //Not quite sure why this needs to be inverted, but it works
+            control.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(!control.settings.spotlightOn);
+        }
     }
 
     public void MenuSettingsTargetFPSSet()

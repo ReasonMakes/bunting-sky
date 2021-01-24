@@ -85,7 +85,7 @@ public class CBodyPlanetoid : MonoBehaviour
     {
         if (!Menu.menuOpenAndGamePaused)
         {
-            bool particlesFadedOut = timeSpentDisabled >= GetComponent<ParticlesDamageRock>().partSysShurikenDamage.emission.rateOverTime.constant;
+            bool particlesFadedOut = timeSpentDisabled >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
 
             Transform playerTransform = control.instancePlayer.transform.Find("Body").transform;
             bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTransform.position) >= playerTransform.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;

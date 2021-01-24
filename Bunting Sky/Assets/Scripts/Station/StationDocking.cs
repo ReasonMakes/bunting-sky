@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class StationDocking : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    private StationName stationName;
+    private HumanName humanName;
 
     private bool host = false;
 
@@ -20,7 +20,7 @@ public class StationDocking : MonoBehaviour
     private void Start()
     {
         //Get station name
-        stationName = transform.parent.GetComponent<StationName>();
+        humanName = transform.parent.GetComponent<HumanName>();
 
         //Choose ore purchase offers
         pricePlatinoid = Random.Range(1, 7) * 10f;
@@ -65,7 +65,7 @@ public class StationDocking : MonoBehaviour
             host = true;
 
             //Send name to commerce script
-            control.commerce.stationName.text = stationName.title + "'s Drydock";
+            control.commerce.stationName.text = humanName.title + "'s Drydock";
             control.commerce.pricePlatinoid = pricePlatinoid;
             control.commerce.pricePreciousMetal = pricePreciousMetal;
             control.commerce.priceWater = priceWater;

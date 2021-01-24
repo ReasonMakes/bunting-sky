@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-public class StationName : MonoBehaviour
+public class CelestialName: MonoBehaviour
 {
     [System.NonSerialized] public string title = "Error: could not load"; //default title
     string[] lines;

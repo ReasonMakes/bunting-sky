@@ -20,17 +20,20 @@ public class Control : MonoBehaviour
     public static int gravityInstanceIndex = 0;
     [System.NonSerialized] public GameObject instanceCBodyStar;
 
-    public GameObject cBodies;
-        public GameObject cBodyStar;
+    public GameObject verseSpace;
+        public GameObject cBodies;
+            public GameObject cBodyStar;
 
-        public GameObject cBodiesPlanetoids;
-            public GameObject cBodyPlanetoid;
-                public GameObject station;
+            public GameObject cBodiesPlanetoids;
+                public GameObject cBodyPlanetoid;
+                    public GameObject station;
 
-        public GameObject cBodiesAsteroids;
-            public GameObject cBodyAsteroid;
+            public GameObject cBodiesAsteroids;
+                public GameObject cBodyAsteroid;
 
-    public GameObject ore;
+        public GameObject ore;
+
+      //public GameObject weapons;
 
     //HUD
     public GameObject canvas;
@@ -103,6 +106,9 @@ public class Control : MonoBehaviour
     [System.NonSerialized] public static bool displayMap = false;
     [System.NonSerialized] public static float mapScale = 10f;
 
+    //Origin looping
+    private readonly float ORIGIN_LOOP_DISTANCE = 100f;
+
     private void Start()
     {
         //Waypoint
@@ -125,12 +131,7 @@ public class Control : MonoBehaviour
         //Lock cursor
         Cursor.lockState = CursorLockMode.Locked;
 
-        //Generate starter system
-        GenerateSystem(//Player, planetoids, asteroid clusters
-            true,
-            (byte)Random.Range(6, 10),
-            (byte)Random.Range(6, 9)
-        );
+        GenerateScene(false);
     }
 
     private void Update()
@@ -143,6 +144,10 @@ public class Control : MonoBehaviour
         {
             if (Time.frameCount % FPS_PRINT_PERIOD == 0) fps = (int)(1f / Time.unscaledDeltaTime);
             systemInfo.text = fps.ToString() + "FPS";
+            /*
+                + "\nPosition: " + instancePlayer.transform.Find("Body").position
+                + "\nPos relative verse: " + (instancePlayer.transform.Find("Body").position - verseSpace.transform.position);
+            */
         }
 
         //Unlock cursor if game not focused
@@ -160,6 +165,12 @@ public class Control : MonoBehaviour
             updatePlayerResourcesUIAnimations = false;
             UpdateAllPlayerResourcesUIAnimations();
         }
+
+        //Origin looping
+        if (instancePlayer.transform.Find("Body").position.magnitude > ORIGIN_LOOP_DISTANCE)
+        {
+            LoopWorldOrigin();
+        }
     }
 
     private void LateUpdate()
@@ -174,156 +185,6 @@ public class Control : MonoBehaviour
             UpdatePlayerShipFacingDirectionReticleUI();
         }
     }
-
-    private void UpdateWaypointAndTargetUI()
-    {
-        //Waypoint
-        renderWaypoint = false;
-        float maxDist = 10000f;
-        //Transform playerFpCamMountTran = playerInstanced.transform.GetChild(0).gameObject.GetComponent<Player>().fpCamMountTran;
-
-        Vector3 waypointRaycastOrigin;
-        Vector3 waypointRaycastDirection;
-
-        if (displayMap)
-        {
-            //Camera dimensions
-            float orthographicHeight = 2f * Camera.main.orthographicSize;
-            float orthographicWidth = orthographicHeight * Camera.main.aspect;
-
-            //Cursor coordinate conversion
-            float cursorNormalizedScreenSpaceX = ((Input.mousePosition.x - (Screen.width / 2f)) / Screen.width) * 2f;
-            float cursorNormalizedScreenSpaceY = ((Input.mousePosition.y - (Screen.height / 2f)) / Screen.height) * 2f;
-
-            float cursorWorldSpaceX = Camera.main.transform.position.x + (cursorNormalizedScreenSpaceX * orthographicWidth / 2f);
-            float cursorWorldSpaceY = Camera.main.transform.position.z + (cursorNormalizedScreenSpaceY * orthographicHeight / 2f);
-
-            //Set raycast origin
-            waypointRaycastOrigin = new Vector3(
-                cursorWorldSpaceX,
-                Camera.main.transform.position.y,
-                //we use y instead of z here because the orientation is rotated 90 degrees
-                cursorWorldSpaceY
-            );
-            waypointRaycastDirection = Vector3.down;
-
-            //Debug.Log("x: " + cursorNormalizedScreenSpaceX + "\ny: " + cursorNormalizedScreenSpaceY);
-        }
-        else
-        {
-            //Set raycast origin
-            waypointRaycastOrigin = Camera.main.transform.position;
-            waypointRaycastDirection = Camera.main.transform.forward;
-        }
-        
-        if (Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, maxDist))
-        {
-            RaycastHit hit = new RaycastHit();
-            Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, out hit, maxDist);
-            Debug.DrawRay(waypointRaycastOrigin, waypointRaycastDirection * hit.distance, Color.green, Time.deltaTime, false);
-
-            if (hit.collider.gameObject.name == cBodyStar.name + "(Clone)")
-            {
-                textWaypointType.text = "Star";
-                textWaypointTitle.text = hit.collider.gameObject.GetComponent<CBodyStarName>().title;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
-
-                SetWaypointUI(hit);
-            }
-            else if (hit.collider.gameObject.name == cBodyPlanetoid.name + "(Clone)")
-            {
-                textWaypointType.text = "Planetoid";
-                textWaypointTitle.text = hit.collider.gameObject.GetComponent<CBodyPlanetoidName>().title;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
-
-                SetWaypointUI(hit);
-            }
-            else if (!displayMap && hit.collider.gameObject.name == station.name + "(Clone)")
-            {
-                textWaypointType.text = "Station";
-                textWaypointTitle.text = hit.collider.gameObject.GetComponent<StationName>().title;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, true);
-
-                SetWaypointUI(hit);
-            }
-            else if (!displayMap && hit.collider.gameObject.name == cBodyAsteroid.name + "(Clone)")
-            {
-                textWaypointType.text = "Asteroid";
-                textWaypointTitle.text = "Class: " + hit.collider.gameObject.GetComponent<CBodyAsteroid>().sizeClassDisplay;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
-
-                SetWaypointUI(hit);
-            }
-            else
-            {
-                //Debug.Log("Undefined object " + hit.collider.gameObject.name + " hit " + hit.distance + " metres away");
-            }
-        }
-
-        if (renderWaypoint)
-        {
-            waypoint.gameObject.SetActive(true);
-            textWaypointType.gameObject.SetActive(true);
-            textWaypointTitle.gameObject.SetActive(true);
-            textWaypointBody.gameObject.SetActive(true);
-        }
-        else
-        {
-            waypoint.gameObject.SetActive(false);
-            textWaypointType.gameObject.SetActive(false);
-            textWaypointTitle.gameObject.SetActive(false);
-            textWaypointBody.gameObject.SetActive(false);
-        }
-
-        //Target
-        if (renderTarget)
-        {
-            SetPlayerTargetUI();
-        }
-    }
-
-    private void UpdatePlayerShipFacingDirectionReticleUI()
-    {
-        for (int i = 0; i <= playerShipDirectionReticleListLength - 1; i++)
-        {
-            //Get references
-            Transform instancePlayerBodyTransform = instancePlayer.transform.Find("Body");
-
-            GameObject instancePlayerShipDirectionReticle = playerShipDirectionReticleList[i];
-            DirectionReticle instancePlayerShipDirectionReticleScript = instancePlayerShipDirectionReticle.GetComponent<DirectionReticle>();
-
-            //Position in front of player ship at distance relative to index
-            Vector3 reticleWorldPos = instancePlayerBodyTransform.position
-                + ((instancePlayerBodyTransform.rotation * Vector3.forward)
-                * (playerShipDirectionReticleForwardOffset + (playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)) * playerShipDirectionReticleScale)
-            );
-
-            //Transform 3D world space to 2D canvas space
-            instancePlayerShipDirectionReticle.transform.position = Camera.main.WorldToScreenPoint(reticleWorldPos);
-
-            //Don't render when behind camera
-            if (Vector3.Dot(reticleWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
-            {
-                instancePlayerShipDirectionReticle.SetActive(false);
-            }
-            else
-            {
-                instancePlayerShipDirectionReticle.SetActive(true);
-            }
-        }
-    }
-
-    /*
-    private void OnApplicationFocus(bool hasFocus)
-    {
-        windowIsFocused = hasFocus;
-    }
-
-    private void OnApplicationPause(bool pauseStatus)
-    {
-        windowIsFocused = !pauseStatus;
-    }
-    */
 
     #region System generation
     private void GenerateSystem(bool isStarter, byte nCBodiesPlanetoids, byte nCBodiesAsteroids)
@@ -589,6 +450,52 @@ public class Control : MonoBehaviour
         
         return instanceCBodyAsteroid;
     }
+
+    private void LoopWorldOrigin()
+    {
+        /*
+         * Because we are working with vast distances in space, floating point precision errors become a massive problem very quickly
+         * To combat this, we loop everything back to the origin whenever the player's displacement is great enough
+         * The player will be placed in the centre at (0,0,0) and all verse objects will move with the player so that the distances between them remain the same
+         */
+
+        Vector3 playerOldDistanceOut = instancePlayer.transform.Find("Body").position;
+        instancePlayer.transform.Find("Body").position = Vector3.zero;
+        verseSpace.transform.position -= playerOldDistanceOut;
+    }
+
+    public void GenerateScene(bool restart)
+    {
+        if (restart)
+        {
+            //Destroy verse
+            Destroy(instanceCBodyStar, 0f);
+            DestroyAllChildren(cBodiesPlanetoids, 0f);
+            DestroyAllChildren(cBodiesAsteroids, 0f);
+            DestroyAllChildren(ore, 0f);
+            DestroyAllChildren(instancePlayer.GetComponentInChildren<Player>().playerWeaponsTreeLaser, 0f);
+
+            //Destroy player
+            playerSpawned = false;
+            instancePlayer.GetComponentInChildren<Player>().warningUIText.color = new Color(1f, 0f, 0f, 0f);
+            Destroy(instancePlayer, 0f);
+        }
+
+        //Generate starter system
+        GenerateSystem(//Player, planetoids, asteroid clusters
+            true,
+            (byte)Random.Range(6, 10),
+            (byte)Random.Range(6, 9)
+        );
+    }
+
+    private void DestroyAllChildren(GameObject parent, float timeDelay)
+    {
+        foreach (Transform child in parent.transform)
+        {
+            Destroy(child.gameObject, timeDelay);
+        }
+    }
     #endregion
 
     #region Waypoint & target UI
@@ -713,9 +620,217 @@ public class Control : MonoBehaviour
             }
         }
     }
+
+    private void UpdateWaypointAndTargetUI()
+    {
+        //Waypoint
+        renderWaypoint = false;
+        float maxDist = 10000f;
+        //Transform playerFpCamMountTran = playerInstanced.transform.GetChild(0).gameObject.GetComponent<Player>().fpCamMountTran;
+
+        Vector3 waypointRaycastOrigin;
+        Vector3 waypointRaycastDirection;
+
+        if (displayMap)
+        {
+            //Camera dimensions
+            float orthographicHeight = 2f * Camera.main.orthographicSize;
+            float orthographicWidth = orthographicHeight * Camera.main.aspect;
+
+            //Cursor coordinate conversion
+            float cursorNormalizedScreenSpaceX = ((Input.mousePosition.x - (Screen.width / 2f)) / Screen.width) * 2f;
+            float cursorNormalizedScreenSpaceY = ((Input.mousePosition.y - (Screen.height / 2f)) / Screen.height) * 2f;
+
+            float cursorWorldSpaceX = Camera.main.transform.position.x + (cursorNormalizedScreenSpaceX * orthographicWidth / 2f);
+            float cursorWorldSpaceY = Camera.main.transform.position.z + (cursorNormalizedScreenSpaceY * orthographicHeight / 2f);
+
+            //Set raycast origin
+            waypointRaycastOrigin = new Vector3(
+                cursorWorldSpaceX,
+                Camera.main.transform.position.y,
+                //we use y instead of z here because the orientation is rotated 90 degrees
+                cursorWorldSpaceY
+            );
+            waypointRaycastDirection = Vector3.down;
+
+            //Debug.Log("x: " + cursorNormalizedScreenSpaceX + "\ny: " + cursorNormalizedScreenSpaceY);
+        }
+        else
+        {
+            //Set raycast origin
+            waypointRaycastOrigin = Camera.main.transform.position;
+            waypointRaycastDirection = Camera.main.transform.forward;
+        }
+
+        if (Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, maxDist))
+        {
+            RaycastHit hit = new RaycastHit();
+            Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, out hit, maxDist);
+            Debug.DrawRay(waypointRaycastOrigin, waypointRaycastDirection * hit.distance, Color.green, Time.deltaTime, false);
+
+            if (hit.collider.gameObject.name == cBodyStar.name + "(Clone)")
+            {
+                textWaypointType.text = "Star";
+                textWaypointTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
+                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
+
+                SetWaypointUI(hit);
+            }
+            else if (hit.collider.gameObject.name == cBodyPlanetoid.name + "(Clone)")
+            {
+                textWaypointType.text = "Planetoid";
+                textWaypointTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
+                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
+
+                SetWaypointUI(hit);
+            }
+            else if (!displayMap && hit.collider.gameObject.name == station.name + "(Clone)")
+            {
+                textWaypointType.text = "Station";
+                textWaypointTitle.text = hit.collider.gameObject.GetComponent<HumanName>().title;
+                textWaypointBody.text = GetDistanceAndDeltaV(hit, true);
+
+                SetWaypointUI(hit);
+            }
+            else if (!displayMap && hit.collider.gameObject.name == cBodyAsteroid.name + "(Clone)")
+            {
+                textWaypointType.text = "Asteroid";
+                textWaypointTitle.text = "Class: " + hit.collider.gameObject.GetComponent<CBodyAsteroid>().sizeClassDisplay;
+                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
+
+                SetWaypointUI(hit);
+            }
+            else
+            {
+                //Debug.Log("Undefined object " + hit.collider.gameObject.name + " hit " + hit.distance + " metres away");
+            }
+        }
+
+        if (renderWaypoint)
+        {
+            waypoint.gameObject.SetActive(true);
+            textWaypointType.gameObject.SetActive(true);
+            textWaypointTitle.gameObject.SetActive(true);
+            textWaypointBody.gameObject.SetActive(true);
+        }
+        else
+        {
+            waypoint.gameObject.SetActive(false);
+            textWaypointType.gameObject.SetActive(false);
+            textWaypointTitle.gameObject.SetActive(false);
+            textWaypointBody.gameObject.SetActive(false);
+        }
+
+        //Target
+        if (renderTarget)
+        {
+            SetPlayerTargetUI();
+        }
+    }
+
+    private void UpdatePlayerShipFacingDirectionReticleUI()
+    {
+        for (int i = 0; i <= playerShipDirectionReticleListLength - 1; i++)
+        {
+            //Get references
+            Transform instancePlayerBodyTransform = instancePlayer.transform.Find("Body");
+
+            GameObject instancePlayerShipDirectionReticle = playerShipDirectionReticleList[i];
+            DirectionReticle instancePlayerShipDirectionReticleScript = instancePlayerShipDirectionReticle.GetComponent<DirectionReticle>();
+
+            //Position in front of player ship at distance relative to index
+            Vector3 reticleWorldPos = instancePlayerBodyTransform.position
+                + ((instancePlayerBodyTransform.rotation * Vector3.forward)
+                * (playerShipDirectionReticleForwardOffset + (playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)) * playerShipDirectionReticleScale)
+            );
+
+            //Transform 3D world space to 2D canvas space
+            instancePlayerShipDirectionReticle.transform.position = Camera.main.WorldToScreenPoint(reticleWorldPos);
+
+            //Don't render when behind camera
+            if (Vector3.Dot(reticleWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
+            {
+                instancePlayerShipDirectionReticle.SetActive(false);
+            }
+            else
+            {
+                instancePlayerShipDirectionReticle.SetActive(true);
+            }
+        }
+    }
+
+    public void ToggleMapUI()
+    {
+        Cursor.lockState = (CursorLockMode)System.Convert.ToByte(!displayMap);    //toggle cursor lock
+        reticle.SetActive(!displayMap);
+    }
+
+    public void UpdateAllPlayerResourcesUI()
+    {
+        Player playerScript = instancePlayer.transform.Find("Body").GetComponent<Player>();
+
+        //Update values and start animations on a resource if its value changed
+        UpdatePlayerResourceUI(ref textCurrency, ref imageCurrency, playerScript.currency.ToString("F2") + " ICC", playerScript.soundSourceCoins);
+        UpdatePlayerResourceUI(ref textPlatinoid, ref imagePlatinoid, playerScript.ore[0].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref textPreciousMetal, ref imagePreciousMetal, playerScript.ore[1].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref textWater, ref imageWater, playerScript.ore[2].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+
+        //Set animations to update
+        UpdateAllPlayerResourcesUIAnimations();
+    }
+
+    private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, string textNew, AudioSource clip)
+    {
+        float growAmount = 3f;
+
+        if (textMeshCurrent.text != textNew)
+        {
+            //Play sound
+            clip.Play();
+
+            //Update text
+            textMeshCurrent.text = textNew;
+
+            //Start animation (grow)
+            image.rectTransform.sizeDelta = new Vector2(
+                (image.sprite.rect.width / 2) * growAmount,
+                (image.sprite.rect.height / 2) * growAmount
+            );
+        }
+    }
+
+    public void UpdateAllPlayerResourcesUIAnimations()
+    {
+        UpdatePlayerResourcesUIAnimation(ref imageCurrency);
+        UpdatePlayerResourcesUIAnimation(ref imagePlatinoid);
+        UpdatePlayerResourcesUIAnimation(ref imagePreciousMetal);
+        UpdatePlayerResourcesUIAnimation(ref imageWater);
+    }
+
+    private void UpdatePlayerResourcesUIAnimation(ref Image imageCurrent)
+    {
+        float shrinkRate = 200f;
+
+        if (imageCurrent.rectTransform.sizeDelta.x > (imageCurrent.sprite.rect.width / 2) || imageCurrent.rectTransform.sizeDelta.y > (imageCurrent.sprite.rect.height / 2))
+        {
+            //Animate (shrink)
+            imageCurrent.rectTransform.sizeDelta = new Vector2(
+                Mathf.Max((imageCurrent.sprite.rect.width / 2), imageCurrent.rectTransform.sizeDelta.x - (Time.deltaTime * shrinkRate)),
+                Mathf.Max((imageCurrent.sprite.rect.height / 2), imageCurrent.rectTransform.sizeDelta.y - (Time.deltaTime * shrinkRate))
+            );
+
+            //Loop until animation is finished
+            updatePlayerResourcesUIAnimations = true;
+        }
+    }
     #endregion
 
-    #region General methods
+    #region Saving
+    public void SaveGame()
+    {
+
+    }
+
     public void SaveScreenshot()
     {
         string path;
@@ -751,13 +866,9 @@ public class Control : MonoBehaviour
 
         ScreenCapture.CaptureScreenshot(path);
     }
+    #endregion
 
-    public void ToggleMapUI()
-    {
-        Cursor.lockState = (CursorLockMode)System.Convert.ToByte(!displayMap);    //toggle cursor lock
-        reticle.SetActive(!displayMap);
-    }
-
+    #region Math
     private string GetDistanceAndDeltaV(RaycastHit hit, bool isStation)
     {
         Transform playerTransform = instancePlayer.transform.GetChild(0);
@@ -904,63 +1015,6 @@ public class Control : MonoBehaviour
     }
     */
 
-    public void UpdateAllPlayerResourcesUI()
-    {
-        Player playerScript = instancePlayer.transform.Find("Body").GetComponent<Player>();
-
-        //Update values and start animations on a resource if its value changed
-        UpdatePlayerResourceUI(ref textCurrency,      ref imageCurrency,      playerScript.currency.ToString("F2") + " ICC", playerScript.soundSourceCoins);
-        UpdatePlayerResourceUI(ref textPlatinoid,     ref imagePlatinoid,     playerScript.ore[0].ToString("F2")   + " g",   playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref textPreciousMetal, ref imagePreciousMetal, playerScript.ore[1].ToString("F2")   + " g",   playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref textWater,         ref imageWater,         playerScript.ore[2].ToString("F2")   + " g",   playerScript.soundSourceOreCollected);
-
-        //Set animations to update
-        UpdateAllPlayerResourcesUIAnimations();
-    }
-
-    private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, string textNew, AudioSource clip)
-    {
-        float growAmount = 3f;
-
-        if (textMeshCurrent.text != textNew)
-        {
-            //Play sound
-            clip.Play();
-
-            //Update text
-            textMeshCurrent.text = textNew;
-
-            //Start animation (grow)
-            image.rectTransform.sizeDelta = new Vector2(
-                (image.sprite.rect.width / 2) * growAmount,
-                (image.sprite.rect.height / 2) * growAmount
-            );
-        }
-    }
-
-    public void UpdateAllPlayerResourcesUIAnimations()
-    {
-        UpdatePlayerResourcesUIAnimation(ref imageCurrency);
-        UpdatePlayerResourcesUIAnimation(ref imagePlatinoid);
-        UpdatePlayerResourcesUIAnimation(ref imagePreciousMetal);
-        UpdatePlayerResourcesUIAnimation(ref imageWater);
-    }
-
-    private void UpdatePlayerResourcesUIAnimation(ref Image imageCurrent)
-    {
-        float shrinkRate = 200f;
-
-        if (imageCurrent.rectTransform.sizeDelta.x > (imageCurrent.sprite.rect.width / 2) || imageCurrent.rectTransform.sizeDelta.y > (imageCurrent.sprite.rect.height / 2))
-        {
-            //Animate (shrink)
-            imageCurrent.rectTransform.sizeDelta = new Vector2(
-                Mathf.Max((imageCurrent.sprite.rect.width / 2), imageCurrent.rectTransform.sizeDelta.x - (Time.deltaTime * shrinkRate)),
-                Mathf.Max((imageCurrent.sprite.rect.height / 2), imageCurrent.rectTransform.sizeDelta.y - (Time.deltaTime * shrinkRate))
-            );
-
-            //Loop until animation is finished
-            updatePlayerResourcesUIAnimations = true;
-        }
-    }
+    
     #endregion
 }

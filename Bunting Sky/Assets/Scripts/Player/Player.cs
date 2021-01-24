@@ -167,7 +167,7 @@ public class Player : MonoBehaviour
     public GameObject tpCam;
     public GameObject tpModel;
     public GameObject fpModel;
-    private float fpCamClippingPlaneNear = 0.003f; //0.0005f;
+    private float fpCamClippingPlaneNear = 0.002f; //0.0005f;
     private float fpCamClippingPlaneFar = 1e20f;
 
     public GameObject mapCam;
@@ -257,6 +257,7 @@ public class Player : MonoBehaviour
     //Vitals
     [System.NonSerialized] public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
+    [System.NonSerialized] public bool destroyed = false;
     [System.NonSerialized] public double vitalsFuel = 15.0;
     [System.NonSerialized] public double vitalsFuelMax = 15.0;
     [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.1;
@@ -298,7 +299,7 @@ public class Player : MonoBehaviour
     private GameObject playerWeaponsTree;
 
     //Laser
-    private GameObject playerWeaponsTreeLaser;
+    [System.NonSerialized] public GameObject playerWeaponsTreeLaser;
     public GameObject playerLaser;
     private List<GameObject> weaponLaserPool = new List<GameObject>();
     private short WeaponLaserPoolIndex = 0;
@@ -324,7 +325,7 @@ public class Player : MonoBehaviour
     #region Start
     private void Start()
     {
-        DecideFirstOrThirdPerson();
+        DecideWhichModelsToRender();
 
         skyboxStarsParticleSystem.Emit(starCount);
     }
@@ -368,7 +369,7 @@ public class Player : MonoBehaviour
         //WEAPONS
         //Weapons trees
         playerWeaponsTree = new GameObject("Weapons");
-        playerWeaponsTree.transform.parent = null;
+        playerWeaponsTree.transform.parent = control.verseSpace.transform;
 
         playerWeaponsTreeLaser = new GameObject("Laser");
         playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
@@ -406,6 +407,12 @@ public class Player : MonoBehaviour
 
         //Start rocket sound
         soundSourceRocket.Play();
+
+        //Setup particle system
+        GetComponent<ParticlesDamageRock>().SetParticleSystemDamageColour(tpModel.transform.Find("Ship").transform, 0.7f);
+        GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
+        GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.15f;
+        GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 0.2f;
     }
     #endregion
 
@@ -427,10 +434,9 @@ public class Player : MonoBehaviour
             Debug.Log("Spawned one planetoid");
         }
 
-        
         //Slow motion (useful for testing hitboxes and fast moving objects)
         /*
-        if (binds.GetInput(binds.bindPrimaryFire))
+        if (destroyed)
         {
             Time.timeScale = 0.01f;
         }
@@ -545,7 +551,9 @@ public class Player : MonoBehaviour
         //Ignore movement input if a menu is opened
         if
         (
-            !Menu.menuOpenAndGamePaused && !Commerce.menuOpen
+            !destroyed
+            && !Menu.menuOpenAndGamePaused
+            && !Commerce.menuOpen
             && (
                 binds.GetInput(binds.bindThrustForward)
                 || binds.GetInput(binds.bindThrustLeft)
@@ -838,7 +846,8 @@ public class Player : MonoBehaviour
         //Fire
         if
         (
-            Application.isFocused
+            !destroyed
+            && Application.isFocused
             && !Menu.menuOpenAndGamePaused
             && !Commerce.menuOpen
             && binds.GetInput(binds.bindPrimaryFire)
@@ -897,19 +906,30 @@ public class Player : MonoBehaviour
         //Save follow distance to user settings file
         control.settings.Save();
 
-        //Check if should be first-person
-        DecideFirstOrThirdPerson();
+        //Check if should be first-person, third-person, or no person!
+        DecideWhichModelsToRender();
     }
 
-    private void DecideFirstOrThirdPerson()
+    private void DecideWhichModelsToRender()
     {
-        bool firstPerson = control.settings.cameraDistance <= control.settings.CAMERA_DISTANCE_MIN + 0.01f;
+        //Defaults (will be values if destroyed)
+        bool firstPerson = false;
+        bool thirdPerson = false;
 
-        tpCam.SetActive(!firstPerson);
-        tpModel.SetActive(!firstPerson);
+        if (!destroyed)
+        {
+            firstPerson = control.settings.cameraDistance <= control.settings.CAMERA_DISTANCE_MIN + 0.01f;
+            thirdPerson = !firstPerson;
+        }
 
         fpCam.SetActive(firstPerson);
         fpModel.SetActive(firstPerson);
+
+        tpCam.SetActive(thirdPerson || destroyed);
+        tpModel.SetActive(thirdPerson);
+
+        transform.Find("Spotlight").gameObject.SetActive(!destroyed);
+        transform.Find("Jet Glow").gameObject.SetActive(!destroyed);
     }
 
     private void GetMouseToCameraTransform()
@@ -987,7 +1007,7 @@ public class Player : MonoBehaviour
         {
             //Ship cameras
             fpCam.SetActive(!Control.displayMap);
-            DecideFirstOrThirdPerson(); 
+            DecideWhichModelsToRender(); 
 
             //Map camera
             mapCam.SetActive(Control.displayMap);
@@ -1014,7 +1034,8 @@ public class Player : MonoBehaviour
         weaponLaserPool[WeaponLaserPoolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().velocity = rb.velocity + (weaponLaserProjectileSpeed * transform.forward);
-        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeRemainingInLife = weaponLaserLifetimeDuration;
+        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeAtWhichThisSelfDestructs = weaponLaserLifetimeDuration;
+        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeSpentAlive = 0f;
 
         //Iterate through list
         if (WeaponLaserPoolIndex < weaponLaserPoolLength - 1)
@@ -1243,12 +1264,35 @@ public class Player : MonoBehaviour
         }
     }
 
-    void DamagePlayer(double newHealthAmount, string cause)
+    public void DamagePlayer(double newHealthAmount, string cause)
     {
-        vitalsHealth = newHealthAmount;
-        UpdateVitalsDisplay(); //force a vitals update so that you can immediately see your health change
-        FlashWarning("WARNING: " + cause + "\nHull integrity compromised"); //⚠
-        //deathMessage = "You died.\nLast recorded warning message: " + cause
+        if (!destroyed)
+        {
+            vitalsHealth = newHealthAmount;
+            UpdateVitalsDisplay(); //force a vitals update so that you can immediately see your health change
+            FlashWarning("WARNING: " + cause + "\nHull integrity compromised"); //⚠
+                                                                                //deathMessage = "You died.\nLast recorded warning message: " + cause
+            
+            if (vitalsHealth <= 0f)
+            {
+                DestroyPlayer();
+            }
+        }
+    }
+
+    private void DestroyPlayer()
+    {
+        //Emit particles
+        GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, transform.position, true);
+
+        //Play sound
+        //TODO
+
+        //Remember is destroyed
+        destroyed = true;
+
+        //Hide models (after destroyed is called because their visibility is determined by that variable)
+        DecideWhichModelsToRender();
     }
     #endregion
     #endregion
