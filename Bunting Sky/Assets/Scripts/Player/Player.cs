@@ -171,8 +171,8 @@ public class Player : MonoBehaviour
     public GameObject tpCamMount;
     public GameObject fpCam;
     public GameObject fpCamInterior;
-    private float fpCamInteriorClippingPlaneNear = 0.0001f; //0.002f; //0.0005f;
-    private float fpCamInteriorClippingPlaneFar = 1f; //1e21f;
+    private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_NEAR = 0.001f; //0.002f; //0.0005f;
+    private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_FAR = 10f; //1e21f;
     public GameObject tpCam;
     public GameObject tpModel;
     public GameObject fpModel;
@@ -430,8 +430,8 @@ public class Player : MonoBehaviour
         //Teleport forward
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
         {
-            transform.position += transform.forward * 1000f;
-            Debug.Log("Teleported forward");
+            transform.position += transform.forward * 1e4f;
+            Debug.Log("Teleported forward: distance to star " + (control.instanceCBodyStar.transform.position - transform.position).magnitude);
         }
 
         //Spawn
@@ -959,7 +959,7 @@ public class Player : MonoBehaviour
         }
 
         fpCam.SetActive(firstPerson);
-        //fpCamInterior.SetActive(firstPerson);
+        fpCamInterior.SetActive(firstPerson);
         fpModel.SetActive(firstPerson);
 
         tpCam.SetActive(thirdPerson || destroyed);
@@ -1023,8 +1023,8 @@ public class Player : MonoBehaviour
     public void SetCameraSettings()
     {
         //Clip planes
-        fpCamInterior.GetComponent<Camera>().nearClipPlane = fpCamInteriorClippingPlaneNear;
-        fpCamInterior.GetComponent<Camera>().farClipPlane = fpCamInteriorClippingPlaneFar;
+        fpCamInterior.GetComponent<Camera>().nearClipPlane = FP_CAM_INTERIOR_CLIPPING_PLANE_NEAR;
+        fpCamInterior.GetComponent<Camera>().farClipPlane = FP_CAM_INTERIOR_CLIPPING_PLANE_FAR;
 
         //HFOV
         if (control.settings.hFieldOfView > 0f)

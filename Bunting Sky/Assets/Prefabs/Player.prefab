@@ -27,8 +27,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 972062234562826168}
   - {fileID: 3053305803557875750}
+  - {fileID: 972062234562826168}
   m_Father: {fileID: 3053305805317127030}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -218,7 +218,7 @@ GameObject:
   - component: {fileID: 972062234562826164}
   m_Layer: 0
   m_Name: FP Camera Interior
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -235,7 +235,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 3601951446302179107}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &972062234562826171
 Camera:
@@ -261,11 +261,11 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.01
-  far clip plane: 1
-  field of view: 94.051765
+  far clip plane: 10
+  field of view: 26.991467
   orthographic: 0
   orthographic size: 5
-  m_Depth: -1
+  m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -295,7 +295,7 @@ MonoBehaviour:
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
-  m_CameraType: 0
+  m_CameraType: 1
   m_Cameras: []
   m_RendererIndex: -1
   m_VolumeLayerMask:
@@ -7105,6 +7105,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 3601951446302179107}
     m_Modifications:
+    - target: {fileID: 3058075226167752099, guid: 33373e70b83956944a6854720acf454c, type: 3}
+      propertyPath: m_Cameras.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3058075226167752099, guid: 33373e70b83956944a6854720acf454c, type: 3}
+      propertyPath: m_Cameras.Array.data[0]
+      value: 
+      objectReference: {fileID: 972062234562826171}
     - target: {fileID: 3058075226167752104, guid: 33373e70b83956944a6854720acf454c, type: 3}
       propertyPath: m_Name
       value: FP Camera
@@ -7114,12 +7122,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3058075226167752108, guid: 33373e70b83956944a6854720acf454c, type: 3}
+      propertyPath: m_Depth
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3058075226167752108, guid: 33373e70b83956944a6854720acf454c, type: 3}
       propertyPath: near clip plane
-      value: 0.01
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 3058075226167752111, guid: 33373e70b83956944a6854720acf454c, type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3058075226167752111, guid: 33373e70b83956944a6854720acf454c, type: 3}
       propertyPath: m_LocalScale.z
