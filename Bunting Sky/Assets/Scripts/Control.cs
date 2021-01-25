@@ -55,8 +55,8 @@ public class Control : MonoBehaviour
     private float waypointXMax;
     private float waypointYMin;
     private float waypointYMax;
-    private readonly float WAYPOINT_X_OFFSET = 150f;
-    private readonly float WAYPOINT_Y_OFFSET = -75f; //48f;
+    private readonly float WAYPOINT_X_OFFSET = 200f;
+    private readonly float WAYPOINT_Y_OFFSET = -50f; //48f;
     private bool renderWaypoint = false;
     public TextMeshProUGUI textWaypointType;
     public TextMeshProUGUI textWaypointTitle;
@@ -75,6 +75,7 @@ public class Control : MonoBehaviour
     private float targetYMin;
     private float targetYMax;
     private bool renderTarget = false;
+    private string targetTypeAndTitle = "No target";
 
     //Player Ship Direction Reticle
     [System.NonSerialized] public GameObject playerShipDirectionReticleTree;
@@ -548,13 +549,22 @@ public class Control : MonoBehaviour
         textWaypointBody.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + textWaypointBody.fontSize);
 
         //Set as target too if LMB
-        if (binds.GetInputDown(binds.bindSetTarget))    SetPlayerTargetObject(hit.collider.transform.gameObject);
+        if (binds.GetInputDown(binds.bindSetTarget))
+        {
+            //Target
+            SetPlayerTargetObject(hit.collider.transform.gameObject);
+
+            //Console
+            TextMesh consoleTargetTypeAndTitleText = instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Type And Title Text").GetComponent<TextMesh>();
+            targetTypeAndTitle = textWaypointType.text + "\n" + textWaypointTitle.text;
+            consoleTargetTypeAndTitleText.text = targetTypeAndTitle;
+        }
     }
 
     private void SetPlayerTargetUI()
     {
         //Cancel and remove target if object (such as an asteroid) has been destroyed
-        if(instancePlayer.GetComponentInChildren<Player>().targetObject == null || (instancePlayer.GetComponentInChildren<Player>().targetObject.name == "CBodyAsteroid(Clone)" && instancePlayer.GetComponentInChildren<Player>().targetObject.GetComponent<CBodyAsteroid>().destroyed))
+        if (instancePlayer.GetComponentInChildren<Player>().targetObject == null || (instancePlayer.GetComponentInChildren<Player>().targetObject.name == "CBodyAsteroid(Clone)" && instancePlayer.GetComponentInChildren<Player>().targetObject.GetComponent<CBodyAsteroid>().destroyed))
         {
             target.gameObject.SetActive(false);
             renderTarget = false;
@@ -633,6 +643,10 @@ public class Control : MonoBehaviour
 
     private void UpdateWaypointAndTargetUI()
     {
+        //Console
+        TextMesh consoleTargetInfoText = instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Info Text").GetComponent<TextMesh>();
+        TextMesh consoleTargetTypeAndTitleText = instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Type And Title Text").GetComponent<TextMesh>();
+
         //Waypoint
         renderWaypoint = false;
         float maxDist = 10000f;
@@ -676,44 +690,76 @@ public class Control : MonoBehaviour
         {
             RaycastHit hit = new RaycastHit();
             Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, out hit, maxDist);
-            Debug.DrawRay(waypointRaycastOrigin, waypointRaycastDirection * hit.distance, Color.green, Time.deltaTime, false);
+            //Debug.DrawRay(waypointRaycastOrigin, waypointRaycastDirection * hit.distance, Color.green, Time.deltaTime, false);
 
             if (hit.collider.gameObject.name == cBodyStar.name + "(Clone)")
             {
+                //Waypoint
                 textWaypointType.text = "Star";
                 textWaypointTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
+                textWaypointBody.text = GetDistanceAndDeltaV(hit.collider.gameObject, false);
 
+                //Console waypoint
+                consoleTargetTypeAndTitleText.text = textWaypointType.text + "\n" + textWaypointTitle.text;
+
+                //Update UI
                 SetWaypointUI(hit);
             }
             else if (hit.collider.gameObject.name == cBodyPlanetoid.name + "(Clone)")
             {
+                //Waypoint
                 textWaypointType.text = "Planetoid";
                 textWaypointTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
+                textWaypointBody.text = GetDistanceAndDeltaV(hit.collider.gameObject, false);
 
+                //Console waypoint
+                consoleTargetTypeAndTitleText.text = textWaypointType.text + "\n" + textWaypointTitle.text;
+
+                //Update UI
                 SetWaypointUI(hit);
             }
             else if (!displayMap && hit.collider.gameObject.name == station.name + "(Clone)")
             {
+                //Waypoint
                 textWaypointType.text = "Station";
                 textWaypointTitle.text = hit.collider.gameObject.GetComponent<HumanName>().title;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, true);
+                textWaypointBody.text = GetDistanceAndDeltaV(hit.collider.gameObject, true);
 
+                //Console waypoint
+                consoleTargetTypeAndTitleText.text = textWaypointType.text + "\n" + textWaypointTitle.text;
+
+                //Update UI
                 SetWaypointUI(hit);
             }
             else if (!displayMap && hit.collider.gameObject.name == cBodyAsteroid.name + "(Clone)")
             {
+                //Waypoint
                 textWaypointType.text = "Asteroid";
                 textWaypointTitle.text = "Class: " + hit.collider.gameObject.GetComponent<CBodyAsteroid>().sizeClassDisplay;
-                textWaypointBody.text = GetDistanceAndDeltaV(hit, false);
+                textWaypointBody.text = GetDistanceAndDeltaV(hit.collider.gameObject, false);
 
+                //Console waypoint
+                consoleTargetTypeAndTitleText.text = textWaypointType.text + "\n" + textWaypointTitle.text;
+
+                //Update UI
                 SetWaypointUI(hit);
             }
             else
             {
-                //Debug.Log("Undefined object " + hit.collider.gameObject.name + " hit " + hit.distance + " metres away");
+                //Debug.Log("Undefined object " + hit.collider.gameObject.name + " hit " + hit.distance + " units away");
             }
+        }
+        else if (instancePlayer.GetComponentInChildren<Player>().targetObject != null)
+        {
+            //Console target
+            consoleTargetTypeAndTitleText.text = targetTypeAndTitle;
+            GetDistanceAndDeltaV(instancePlayer.GetComponentInChildren<Player>().targetObject, false);
+        }
+        else
+        {
+            //Console default
+            consoleTargetTypeAndTitleText.text = "No target";
+            consoleTargetInfoText.text = "\n";
         }
 
         if (renderWaypoint)
@@ -784,6 +830,13 @@ public class Control : MonoBehaviour
         UpdatePlayerResourceUI(ref textPlatinoid, ref imagePlatinoid, playerScript.ore[0].ToString("F2") + " g", playerScript.soundSourceOreCollected);
         UpdatePlayerResourceUI(ref textPreciousMetal, ref imagePreciousMetal, playerScript.ore[1].ToString("F2") + " g", playerScript.soundSourceOreCollected);
         UpdatePlayerResourceUI(ref textWater, ref imageWater, playerScript.ore[2].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+
+        //Update console
+        TextMesh consoleCargoText = instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Cargo Text").GetComponent<TextMesh>();
+        consoleCargoText.text = "Currency: " + textCurrency.text
+            + "\n" + "Platinoid: " + textPlatinoid.text
+            + "\n" + "Precious metal: " + textPreciousMetal.text
+            + "\n" + "Water ice: " + textWater.text;
 
         //Set animations to update
         UpdateAllPlayerResourcesUIAnimations();
@@ -880,43 +933,58 @@ public class Control : MonoBehaviour
     #endregion
 
     #region Math
-    private string GetDistanceAndDeltaV(RaycastHit hit, bool isStation)
+    private string GetDistanceAndDeltaV(GameObject subject, bool isStation)
     {
         Transform playerTransform = instancePlayer.transform.GetChild(0);
-        Transform hitTransform = hit.collider.gameObject.transform;
+        Transform subjectTransform = subject.transform;
         Vector3 playerVelocity = playerTransform.GetComponent<Rigidbody>().velocity;
 
         //Distance
         float conversionRatioUnitsToMetres = 4f; //1 Unity unit = 4 metres
-        float distance = Vector3.Distance(hitTransform.position, playerTransform.position) * conversionRatioUnitsToMetres;
-        string distanceDisplay;
-        if (distance >= 1000f)
+        float distance = Vector3.Distance(subjectTransform.position, playerTransform.position) * conversionRatioUnitsToMetres;
+        string distanceDisplay = " ?, ";
+        if (distance < 1e3f)
         {
-            distanceDisplay = (distance * 0.001f).ToString("F2") + " km, ";
+            distanceDisplay = Mathf.RoundToInt(distance) + " m";
         }
-        else
+        else if (distance >= 1e3f)
         {
-            distanceDisplay = (int)distance + " m, ";
+            distanceDisplay = (distance * 1e-3f).ToString("F2") + " km";
         }
-        
+        else if (distance >= 1e6f)
+        {
+            distanceDisplay = (distance * 1e-6f).ToString("F2") + " Mm";
+        }
+        else if (distance >= 1e9f)
+        {
+            distanceDisplay = (distance * 3.33564e-9f).ToString("F2") + " lightsecond";
+        }
+        else if (distance >= 5.5594e11f)
+        {
+            distanceDisplay = (distance * 5.5594e-11f).ToString("F2") + " lightminute";
+        }
+        else if (distance >= 1.057e16f)
+        {
+            distanceDisplay = (distance * 1.057e-16f).ToString("F2") + " lightyear";
+        }
 
         //DeltaV
-        Vector3 hitVelocity;
+        Vector3 subjectVelocity;
         if (isStation)
         {
-            hitVelocity = hitTransform.GetComponent<StationOrbit>().planetoidToOrbit.GetComponent<Rigidbody>().velocity;
+            subjectVelocity = subjectTransform.GetComponent<StationOrbit>().planetoidToOrbit.GetComponent<Rigidbody>().velocity;
         }
         else
         {
-            hitVelocity = hitTransform.GetComponent<Rigidbody>().velocity;
+            subjectVelocity = subjectTransform.GetComponent<Rigidbody>().velocity;
         }
-        float deltaV = (hitVelocity - playerVelocity).magnitude;
+        float deltaV = (subjectVelocity - playerVelocity).magnitude;
 
         //DeltaV direction sign
         Vector3 signPlayerPosition = Vector3.zero; //playerTransform.position - playerTransform.position = 0
-        Vector3 signHitPosition = hitTransform.position - playerTransform.position;
+        Vector3 signHitPosition = subjectTransform.position - playerTransform.position;
         Vector3 signPlayerVelocity = Vector3.zero; //playerVelocity - playerVelocity = 0
-        Vector3 signHitVelocity = hitVelocity - playerVelocity;
+        Vector3 signHitVelocity = subjectVelocity - playerVelocity;
         float signDotProduct = Vector3.Dot(
             signHitVelocity - signPlayerVelocity,
             signHitPosition - signPlayerPosition
@@ -935,11 +1003,15 @@ public class Control : MonoBehaviour
             signPrint = "";
         }
 
-        //Print
+        //Concatenate
         string deltaVDisplay = signPrint + (int)deltaV + " Δv";
 
-        //Return
-        return distanceDisplay + deltaVDisplay;
+        //Update console
+        TextMesh consoleTargetInfoText = instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Info Text").GetComponent<TextMesh>();
+        consoleTargetInfoText.text = distanceDisplay + "\n" + deltaVDisplay;
+
+        //Return (for waypoint)
+        return distanceDisplay + ", " + deltaVDisplay;
     }
 
     public Vector3 DragRelative(Vector3 velocityToSet, Vector3 otherVelocity, float dragCoefficient)
