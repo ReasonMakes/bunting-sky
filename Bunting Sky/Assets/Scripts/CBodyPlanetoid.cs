@@ -34,8 +34,15 @@ public class CBodyPlanetoid : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        //Collision with another planetoid
-        if (!disabled && collision.collider.gameObject.name == control.cBodyPlanetoid.name + "(Clone)")
+        //Fatal collisions
+        if 
+        (
+            !disabled
+            && (
+                collision.collider.gameObject.name == control.cBodyPlanetoid.name + "(Clone)"
+                || collision.collider.gameObject.name == control.cBodyStar.name + "(Clone)"
+            )
+        )
         {
             //Get other planetoid to destroy itself
             //collision.collider.gameObject.GetComponent<CBodyPlanetoid>().DestroySelf();
@@ -99,13 +106,10 @@ public class CBodyPlanetoid : MonoBehaviour
         }
     }
 
-    public Vector3 SpawnStation(bool forced)
+    public GameObject SpawnStation(bool forced)
     {
         //Remember that this planetoid has a station oribting it
         hasStation = true;
-
-        //Offset the station from the host cBody
-        Vector3 stationCoords = new Vector3(transform.position.x + 10f, transform.position.y + 10f, transform.position.z + 10f);
 
         //4 in 5 chance of having a space station. Option to force-spawn the station
         if (forced || Random.Range(0f, 4f) >= 1f)
@@ -113,7 +117,7 @@ public class CBodyPlanetoid : MonoBehaviour
             instancedStation = Instantiate
             (
                 station,
-                stationCoords,
+                transform.position + new Vector3(10f, 10f, 10f),
                 Quaternion.Euler(270f, 0f, 270f)
             );
 
@@ -131,6 +135,6 @@ public class CBodyPlanetoid : MonoBehaviour
         }
 
         //Return coords so that player can spawn near station
-        return stationCoords;
+        return gameObject;
     }
 }

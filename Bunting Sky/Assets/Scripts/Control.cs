@@ -16,7 +16,7 @@ public class Control : MonoBehaviour
     public GameObject playerPrefab;
     [System.NonSerialized] public GameObject instancePlayer;
     private bool playerSpawned = false;
-    private Vector3 playerSpawnCoords;
+    private GameObject playerSpawnPlanetoid;
     public static int gravityInstanceIndex = 0;
     [System.NonSerialized] public GameObject instanceCBodyStar;
 
@@ -77,7 +77,7 @@ public class Control : MonoBehaviour
     private bool renderTarget = false;
 
     //Player Ship Direction Reticle
-    private GameObject playerShipDirectionReticleTree;
+    [System.NonSerialized] public GameObject playerShipDirectionReticleTree;
     public GameObject playerShipDirectionReticle;
     private List<GameObject> playerShipDirectionReticleList = new List<GameObject>();
     private short playerShipDirectionReticleListLength = 16;
@@ -195,8 +195,7 @@ public class Control : MonoBehaviour
         instanceCBodyStar.transform.parent = cBodies.transform;
 
         //Planetoids
-        playerSpawnCoords = GenerateCBodiesPlanetoidsAndGetPlayerCoords(nCBodiesPlanetoids, instanceCBodyStar);
-        playerSpawnCoords += new Vector3(-1f, 2f, -5f);
+        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(nCBodiesPlanetoids, instanceCBodyStar);
 
         //Asteroids
         GenerateCBodiesAsteroids(nCBodiesAsteroids, instanceCBodyStar);
@@ -214,8 +213,9 @@ public class Control : MonoBehaviour
         );
 
         Transform instancePlayerBodyTransform = instancePlayer.transform.Find("Body").transform;
-        instancePlayerBodyTransform.position = playerSpawnCoords;
-        instancePlayerBodyTransform.rotation = Quaternion.Euler(15f, 20f, 0f); //x = pitch, y = yaw, z = roll
+        instancePlayerBodyTransform.position = playerSpawnPlanetoid.transform.position + new Vector3(6f, 14f, 2f);
+        instancePlayerBodyTransform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
+        instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnPlanetoid.GetComponent<Rigidbody>().velocity;
 
         Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
@@ -241,6 +241,7 @@ public class Control : MonoBehaviour
         //Create ship direction reticles
         playerShipDirectionReticleTree = new GameObject("Player Direction Reticle Tree");
         playerShipDirectionReticleTree.transform.parent = canvas.transform.Find("HUD Centre");
+        playerShipDirectionReticleTree.transform.SetSiblingIndex(0); //Make sure this is drawn underneath everything else
 
         for (int i = 0; i < playerShipDirectionReticleListLength; i++)
         {
@@ -264,9 +265,9 @@ public class Control : MonoBehaviour
         }
     }
 
-    private Vector3 GenerateCBodiesPlanetoidsAndGetPlayerCoords(byte nCBodiesPlanetoids, GameObject centreCBodyStar)
+    private GameObject GenerateCBodiesPlanetoidsAndGetPlayerCoords(byte nCBodiesPlanetoids, GameObject centreCBodyStar)
     {
-        Vector3 outPlayerSpawnCoords = new Vector3(0f,0f,0f);
+        GameObject outPlayerSpawnPlanetoid = null;
 
         //Properties
         float minimumDistanceBetweenCBodies = 150f;
@@ -315,7 +316,7 @@ public class Control : MonoBehaviour
             if (i == 0)
             {
                 //Force a station to spawn and return those coords to spawn the player there
-                outPlayerSpawnCoords = instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(true);
+                outPlayerSpawnPlanetoid = instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(true);
             }
             else
             {
@@ -323,7 +324,7 @@ public class Control : MonoBehaviour
             }
         }
 
-        return outPlayerSpawnCoords;
+        return outPlayerSpawnPlanetoid;
     }
 
     private void GenerateCBodiesAsteroids(byte nCBodiesAsteroidClusters, GameObject centreCBodyStar)
@@ -454,14 +455,23 @@ public class Control : MonoBehaviour
     private void LoopWorldOrigin()
     {
         /*
+         * The floating origin solution:
+         * 
          * Because we are working with vast distances in space, floating point precision errors become a massive problem very quickly
          * To combat this, we loop everything back to the origin whenever the player's displacement is great enough
          * The player will be placed in the centre at (0,0,0) and all verse objects will move with the player so that the distances between them remain the same
          */
 
         Vector3 playerOldDistanceOut = instancePlayer.transform.Find("Body").position;
+        
+        //Player
         instancePlayer.transform.Find("Body").position = Vector3.zero;
+
+        //Verse space
         verseSpace.transform.position -= playerOldDistanceOut;
+
+        //Map camera
+        instancePlayer.transform.Find("Position Mount").Find("Map Camera").position -= new Vector3(playerOldDistanceOut.x, 0f, playerOldDistanceOut.z);
     }
 
     public void GenerateScene(bool restart)
@@ -828,7 +838,8 @@ public class Control : MonoBehaviour
     #region Saving
     public void SaveGame()
     {
-
+        //Save
+        Debug.Log("Saved");
     }
 
     public void SaveScreenshot()

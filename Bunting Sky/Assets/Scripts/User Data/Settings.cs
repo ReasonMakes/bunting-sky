@@ -15,6 +15,8 @@ public class Settings : MonoBehaviour
     //Definitions
     public readonly float MOUSE_SENSITIVITY_MIN = 0.001f;
     public readonly float MOUSE_SENSITIVITY_MAX = 1000f;
+    public readonly float H_FIELD_OF_VIEW_MIN = 0.1f;
+    public readonly float H_FIELD_OF_VIEW_MAX = 142f;
     public readonly float CAMERA_DISTANCE_MIN = 0.18f;
     public readonly float CAMERA_DISTANCE_MAX = 2.4f;
     public readonly float CAMERA_HEIGHT_MIN = 0f;
@@ -24,6 +26,7 @@ public class Settings : MonoBehaviour
 
     //Settings initializations
     [System.NonSerialized] public float mouseSensitivity;
+    [System.NonSerialized] public float hFieldOfView;
     [System.NonSerialized] public float cameraDistance;
     [System.NonSerialized] public float cameraHeight;
     [System.NonSerialized] public bool displayFPS;
@@ -51,6 +54,7 @@ public class Settings : MonoBehaviour
         {
             //Set defaults
             mouseSensitivity = 3f,
+            hFieldOfView = 103f,
             cameraFollowDistance = 1.0f, //0.025 increments from scroll wheel
             cameraFollowHeight = 0.2f,
             displayFPS = false,
@@ -64,6 +68,7 @@ public class Settings : MonoBehaviour
     {
         //Set all io buffer settings to the loaded settings
         ioBuffer.mouseSensitivity = mouseSensitivity;
+        ioBuffer.hFieldOfView = hFieldOfView;
         ioBuffer.cameraFollowDistance = cameraDistance;
         ioBuffer.cameraFollowHeight = cameraHeight;
         ioBuffer.displayFPS = displayFPS;
@@ -76,6 +81,7 @@ public class Settings : MonoBehaviour
     {
         //Set all settings to the io buffer's settings
         mouseSensitivity = ioBuffer.mouseSensitivity;
+        hFieldOfView = ioBuffer.hFieldOfView;
         cameraDistance = ioBuffer.cameraFollowDistance;
         cameraHeight = ioBuffer.cameraFollowHeight;
         displayFPS = ioBuffer.displayFPS;
@@ -89,6 +95,7 @@ public class Settings : MonoBehaviour
     {
         //Settings initializations
         public float mouseSensitivity;
+        public float hFieldOfView;
         public float cameraFollowDistance;
         public float cameraFollowHeight;
         public bool displayFPS;

@@ -126,7 +126,7 @@ public class Gravity : MonoBehaviour
         //This method runs into issues
         //Possibly because distance and speed units in unity don't have the same ratios as irl SI units do
         //Bandaid fixed using a dirty approximate compensation coefficient
-        float dirtyApproxCompCoeff = 0.06f;
+        float dirtyApproxCompCoeff = 0.05f; //0.06f;
 
         Vector3 orbitalVector = bodyToOrbit.transform.position - transform.position; 
         float orbitalRadius = orbitalVector.magnitude;                               //r = |oV|

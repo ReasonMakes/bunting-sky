@@ -45,6 +45,8 @@ public class Player : MonoBehaviour
 
     //ICC stands for interstellar crypto currency
 
+    //Asteroids should automatically destroy themselves is far enough away from the player and there is an overrage (AND NOT TARGETTED OR NEAR A TARGETTED OBJECT)
+    //Asteroids should automatically generate if there aren't enough in the verse
     //Add setting to turn off music
     //Add auto-saving
     //Fix ship auto-torquing
@@ -157,21 +159,23 @@ public class Player : MonoBehaviour
 
     #region Init fields: Camera
     //Camera
+    private bool fovSet = false;
     private readonly float MOUSE_SENS_COEFF = 1f;
     public GameObject positionMount;
-    private float fpCamPitch = 0f;
-    private float fpCamYaw = 0f;
-    private float fpCamRoll = 0f;
+    private float centreMountPitch = 0f;
+    private float centreMountYaw = 0f;
+    private float centreMountRoll = 0f;
     public GameObject fpCamMount;
     public GameObject centreMount;
     [System.NonSerialized] public Transform centreMountTran;
     public GameObject tpCamMount;
     public GameObject fpCam;
+    public GameObject fpCamInterior;
+    private float fpCamInteriorClippingPlaneNear = 0.0001f; //0.002f; //0.0005f;
+    private float fpCamInteriorClippingPlaneFar = 1f; //1e21f;
     public GameObject tpCam;
     public GameObject tpModel;
     public GameObject fpModel;
-    private float fpCamClippingPlaneNear = 0.002f; //0.0005f;
-    private float fpCamClippingPlaneFar = 1e20f;
 
     public GameObject mapCam;
     #endregion
@@ -350,12 +354,11 @@ public class Player : MonoBehaviour
 
         //Camera
         centreMountTran = centreMount.transform;
-        fpCamPitch = centreMountTran.localRotation.x;
-        fpCamYaw = centreMountTran.localRotation.y;
-        fpCamRoll = centreMountTran.localRotation.z;
-        fpCam.GetComponent<Camera>().nearClipPlane = fpCamClippingPlaneNear;
-        fpCam.GetComponent<Camera>().farClipPlane = fpCamClippingPlaneFar;
-
+        centreMountPitch = centreMountTran.localRotation.x;
+        centreMountYaw = centreMountTran.localRotation.y;
+        centreMountRoll = centreMountTran.localRotation.z;
+        SetCameraSettings();
+        
         //Vitals
         //We have to work with odd-numbered multiples of the inverse of the flash rate to end smoothly (end while it is transparent)
         warningUIFlashTotalDuration *= (1f / WARNING_UI_FLASH_RATE);
@@ -424,22 +427,32 @@ public class Player : MonoBehaviour
     {
         //DEBUG
         //---------------------------------------------------
-        //Spawning
+        //Teleport forward
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
+        {
+            transform.position += transform.forward * 1000f;
+            Debug.Log("Teleported forward");
+        }
+
+        //Spawn
+        if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
             control.SpawnAsteroidManually(transform.position + transform.forward * 2f, rb.velocity, true);
             Debug.Log("Spawned one asteroid");
         }
-
+        
+        /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
             control.SpawnPlanetoidManually(transform.position + transform.forward * 20f, rb.velocity);
             Debug.Log("Spawned one planetoid");
         }
+        */
+        
 
-        //Slow motion (useful for testing hitboxes and fast moving objects)
+        //Slow motion
         /*
-        if (destroyed)
+        if (binds.GetInput(binds.bindPrimaryFire))
         {
             Time.timeScale = 0.01f;
         }
@@ -459,6 +472,12 @@ public class Player : MonoBehaviour
 
         //Have the position mount follow the player position
         positionMount.transform.position = transform.position;
+
+        //Setup the camera
+        if (!fovSet)
+        {
+            SetCameraSettings();
+        }
 
         //AUDIO
         UpdateAudio();
@@ -590,9 +609,17 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementDrag()
     {
-        //At an arbitrary distance threshold, switch from drag-relative-to-universe to drag-relative-to-cbody
-        
-        //Can set the relative drag to only happen when not moving to allow for more realistic acceleration by surrounding this with an if (!moving) check
+        /*
+         * Drag-relative-to-object if possible, otherwise drag-relative-to-universe
+         * 
+         * Which object we drag relative to is based on this hierarchy:
+         * - Planetoids
+         * - Asteroids
+         * - Target
+         * - System/Centre Star
+         * 
+         * Can set the relative drag to only happen when not moving to allow for more realistic (but less intuitive) acceleration by surrounding this with an if (!moving) check
+         */
 
         if (closestPlanetoidTransform != null && distToClosestPlanetoid <= ORBITAL_DRAG_MODE_THRESHOLD)
         {
@@ -604,9 +631,14 @@ public class Player : MonoBehaviour
             //Asteroid-relative drag (we check if the transform is null because asteroids are destructible)
             rb.velocity = control.DragRelative(rb.velocity, closestAsteroidTransform.GetComponent<Rigidbody>().velocity, DRAG);
         }
+        else if (targetObject != null)
+        {
+            //Target-relative drag
+            rb.velocity = control.DragRelative(rb.velocity, targetObject.GetComponent<Rigidbody>().velocity, DRAG);
+        }
         else
         {
-            //System-relative drag
+            //System/centre star-relative drag
             rb.velocity *= (1f - (DRAG * Time.deltaTime));
         }
     }
@@ -853,6 +885,7 @@ public class Player : MonoBehaviour
             && Application.isFocused
             && !Menu.menuOpenAndGamePaused
             && !Commerce.menuOpen
+            && !Control.displayMap
             && binds.GetInput(binds.bindPrimaryFire)
             && weaponLaserSingleCooldownCurrent <= 0f
             && weaponLaserClipCooldownCurrent <= 0f
@@ -926,6 +959,7 @@ public class Player : MonoBehaviour
         }
 
         fpCam.SetActive(firstPerson);
+        //fpCamInterior.SetActive(firstPerson);
         fpModel.SetActive(firstPerson);
 
         tpCam.SetActive(thirdPerson || destroyed);
@@ -933,6 +967,7 @@ public class Player : MonoBehaviour
 
         transform.Find("Spotlight").gameObject.SetActive(!destroyed);
         transform.Find("Jet Glow").gameObject.SetActive(!destroyed);
+        control.playerShipDirectionReticleTree.SetActive(!destroyed);
     }
 
     private void GetMouseToCameraTransform()
@@ -940,34 +975,34 @@ public class Player : MonoBehaviour
         //Debug.LogFormat("Pitch {0}, Yaw {1}", fpCamPitch, fpCamYaw);
 
         //Pitch
-        fpCamPitch += -Input.GetAxisRaw("Mouse Y") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
+        centreMountPitch -= Input.GetAxisRaw("Mouse Y") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         //Yaw
-        if (fpCamPitch >= 90 && fpCamPitch < 270)
+        if (centreMountPitch >= 90 && centreMountPitch < 270)
         {
             //Normal
-            fpCamYaw += -Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
+            centreMountYaw -= Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         }
         else
         {
             //Inverted
-            fpCamYaw += Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
+            centreMountYaw += Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         }
         //Roll
-        fpCamRoll = 0f;
+        centreMountRoll = 0f;
 
-        Control.LoopEulerAngle(fpCamYaw);
-        Control.LoopEulerAngle(fpCamPitch);
-        Control.LoopEulerAngle(fpCamRoll);
+        Control.LoopEulerAngle(centreMountYaw);
+        Control.LoopEulerAngle(centreMountPitch);
+        Control.LoopEulerAngle(centreMountRoll);
     }
 
     private void UpdateMountPositions()
     {
         //CENTRE
         //Set the centre mount's transform
-        centreMountTran.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
+        centreMountTran.localRotation = Quaternion.Euler(centreMountPitch, centreMountYaw, 0f);
 
         //FIRST-PERSON
-        fpCamMount.transform.position = centreMountTran.position + (transform.forward * 0.115f) + (transform.up * 0.004f);
+        fpCamMount.transform.position = centreMountTran.position + (transform.forward * 0.115f) + (transform.up * 0.008f);
 
         //fpCamMount.transform.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
 
@@ -976,13 +1011,30 @@ public class Player : MonoBehaviour
 
         //THIRD-PERSON
         //tpCamMount.transform.position = transform.position;
-        tpCamMount.transform.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
+        tpCamMount.transform.localRotation = Quaternion.Euler(centreMountPitch, centreMountYaw, 0f);
 
         float cameraSpeedEffect = 1f; //1f + Mathf.Pow(rb.velocity.magnitude, 0.15f);
         Vector3 cameraUp = centreMountTran.up * (control.settings.cameraDistance * control.settings.cameraHeight) * cameraSpeedEffect;
         Vector3 cameraForward = centreMountTran.forward * control.settings.cameraDistance * cameraSpeedEffect;
         tpCamMount.transform.position = transform.position + cameraUp - cameraForward; //subtracting forward results in the camera following behind the player, this should be more performant than *-1
         //tpCamMount.transform.position = (transform.position + (fpCamMountTran.up * set_tpCamFollowDistance * set_tpCamFollowHeight) - (fpCamMountTran.forward * set_tpCamFollowDistance));
+    }
+
+    public void SetCameraSettings()
+    {
+        //Clip planes
+        fpCamInterior.GetComponent<Camera>().nearClipPlane = fpCamInteriorClippingPlaneNear;
+        fpCamInterior.GetComponent<Camera>().farClipPlane = fpCamInteriorClippingPlaneFar;
+
+        //HFOV
+        if (control.settings.hFieldOfView > 0f)
+        {
+            fpCamInterior.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView, fpCamInterior.GetComponent<Camera>().aspect);
+            fpCam.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView, fpCam.GetComponent<Camera>().aspect);
+            tpCam.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView, tpCam.GetComponent<Camera>().aspect);
+
+            fovSet = true;
+        }
     }
     
     private void ToggleMapView()
@@ -1248,6 +1300,7 @@ public class Player : MonoBehaviour
         if (impactDeltaV.magnitude >= impactIntoleranceThreshold)
         {
             //Play sound effect
+            soundSourceCollision.volume = 0.05f;
             soundSourceCollision.pitch = UnityEngine.Random.Range(0.8f, 1.2f);
             soundSourceCollision.Play();
 
@@ -1264,6 +1317,13 @@ public class Player : MonoBehaviour
                 newHealthAmount,
                 "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv"
             );
+        }
+        else
+        {
+            //Play sound effect
+            soundSourceCollision.volume = 0.01f;
+            soundSourceCollision.pitch = UnityEngine.Random.Range(0.4f, 0.8f);
+            soundSourceCollision.Play();
         }
     }
 

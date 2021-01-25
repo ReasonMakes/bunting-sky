@@ -14,6 +14,7 @@ public class Menu : MonoBehaviour
 
     public GameObject menuSettings;
     public TMP_InputField menuSettingsMouseSensitivityIn;
+    public TMP_InputField menuSettingsHFieldOfViewIn;
     public TMP_InputField menuSettingsCameraDistanceIn;
     public TMP_InputField menuSettingsCameraHeightIn;
     public TMP_InputField menuSettingsTargetFPSIn;
@@ -143,6 +144,7 @@ public class Menu : MonoBehaviour
 
         //Display current settings
         menuSettingsMouseSensitivityIn.text = control.settings.mouseSensitivity.ToString();
+        menuSettingsHFieldOfViewIn.text = control.settings.hFieldOfView.ToString();
         menuSettingsCameraDistanceIn.text = control.settings.cameraDistance.ToString();
         menuSettingsCameraHeightIn.text = control.settings.cameraHeight.ToString();
         menuSettingsTargetFPSIn.text = control.settings.targetFPS.ToString();
@@ -173,6 +175,33 @@ public class Menu : MonoBehaviour
 
             //Update in menu
             menuSettingsMouseSensitivityIn.text = inputField.ToString();
+        }
+    }
+
+    public void MenuSettingsHFieldOfViewSet()
+    {
+        //Ensure input is a float
+        if (float.TryParse(menuSettingsHFieldOfViewIn.text, out float inputField))
+        {
+            //Ensure input value is within specified parameters
+            if (inputField < control.settings.H_FIELD_OF_VIEW_MIN)
+            {
+                inputField = control.settings.H_FIELD_OF_VIEW_MIN;
+            }
+            else if (inputField > control.settings.H_FIELD_OF_VIEW_MAX)
+            {
+                inputField = control.settings.H_FIELD_OF_VIEW_MAX;
+            }
+
+            //Set in settings and save
+            control.settings.hFieldOfView = inputField;
+            control.settings.Save();
+
+            //Update in menu
+            menuSettingsHFieldOfViewIn.text = inputField.ToString();
+
+            //Update in game
+            control.instancePlayer.GetComponentInChildren<Player>().SetCameraSettings();
         }
     }
 

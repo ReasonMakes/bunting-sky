@@ -181,8 +181,8 @@ public class CBodyAsteroid : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        //Collision with planetoid
-        if (collision.collider.gameObject.name == control.cBodyPlanetoid.name + "(Clone)")
+        //Fatal collisions
+        if (collision.collider.gameObject.name == control.cBodyPlanetoid.name + "(Clone)" || collision.collider.gameObject.name == control.cBodyStar.name + "(Clone)")
         {
             //Destroy self
             Damage(health, Vector3.zero, transform.position);

@@ -48,21 +48,24 @@ public class PlayerLaser : MonoBehaviour
     private void UpdateCollisionDetection()
     {
         /*
-         * Unit's collision detection system is great for some things,
+         * Unity's collision detection system is great for some things,
          * But for weapon projectiles it often doesn't do a good enough job at detecting them
          * So we use this custom method instead
          * 
-         * Here we use raycasting to check the space in front of the projectile for collideables
+         * Here we use raycasting to check the space in front of the projectile for collidables
          * The distance we check ahead increases with the projectile's speed to prevent phasing
          * 
          * We also have to be careful to ignore the trigger colliders since those are used for the waypoint and target system
          * 
          * In the raycast, we cast out from the transform.right direction since the model is rotated
-         */ 
+         */
 
-        float raycastDistance = 2f * rb.velocity.magnitude * Time.deltaTime;
+        float minimumRaycastDistance = 20f; //this value must be high enough that the projectile does not phase through objects directly in front of the player
+        float raycastDistance = minimumRaycastDistance * rb.velocity.magnitude * Time.deltaTime;
 
+        //Debug.Log(raycastDistance);
         //Debug.DrawRay(transform.position, transform.right * raycastDistance, Color.red);
+
         //if (Physics.Raycast(transform.position, transform.right, out RaycastHit hit, raycastDistance))
 
         LayerMask someLayerMask = -1;
