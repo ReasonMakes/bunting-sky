@@ -66,6 +66,7 @@ public class Control : MonoBehaviour
     public KeyBinds binds;
     public Settings settings;
     public static string userDataFolder = "/user";
+    public static string userLevelSaveFile = "/level.rd";
     public static string screenshotsFolder = "/screenshots";
 
     //Target
@@ -108,7 +109,10 @@ public class Control : MonoBehaviour
     [System.NonSerialized] public static float mapScale = 10f;
 
     //Origin looping
-    private readonly float ORIGIN_LOOP_DISTANCE = 100f;
+    private readonly float ORIGIN_LOOP_DISTANCE = 20f;
+
+    //Saving
+    private readonly float AUTO_SAVE_FREQUENCY = 10f; //30f;
 
     private void Start()
     {
@@ -132,11 +136,17 @@ public class Control : MonoBehaviour
         //Lock cursor
         Cursor.lockState = CursorLockMode.Locked;
 
-        GenerateScene(false);
+        //Auto load
+        LoadGame();
+
+        //Auto saving
+        //SaveGame();
+        InvokeRepeating("SaveGame", AUTO_SAVE_FREQUENCY, AUTO_SAVE_FREQUENCY);
     }
 
     private void Update()
     {
+
         //FPS target
         if (settings.targetFPS != Application.targetFrameRate) Application.targetFrameRate = settings.targetFPS;
 
@@ -191,9 +201,7 @@ public class Control : MonoBehaviour
     private void GenerateSystem(bool isStarter, byte nCBodiesPlanetoids, byte nCBodiesAsteroids)
     {
         //CENTRE STAR CELESTIAL BODY
-        instanceCBodyStar = Instantiate(cBodyStar, new Vector3(0f, 0f, 0f), Quaternion.Euler(0f, 0f, 0f));
-        //Put in CBodies tree
-        instanceCBodyStar.transform.parent = cBodies.transform;
+        GenerateCBodyStar(null);
 
         //Planetoids
         playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(nCBodiesPlanetoids, instanceCBodyStar);
@@ -202,7 +210,25 @@ public class Control : MonoBehaviour
         GenerateCBodiesAsteroids(nCBodiesAsteroids, instanceCBodyStar);
 
         //Player
-        if (isStarter)  SpawnPlayer();
+        if (isStarter)
+        {
+            SpawnPlayer();
+        }
+    }
+
+    private void GenerateCBodyStar(string titleOverride)
+    {
+        //Instantiate
+        instanceCBodyStar = Instantiate(cBodyStar, new Vector3(0f, 0f, 0f), Quaternion.Euler(0f, 0f, 0f));
+
+        //Put in CBodies tree
+        instanceCBodyStar.transform.parent = cBodies.transform;
+
+        //Set name
+        if (titleOverride != null)
+        {
+            instanceCBodyStar.GetComponent<CelestialName>().title = titleOverride;
+        }
     }
 
     private void SpawnPlayer()
@@ -475,7 +501,7 @@ public class Control : MonoBehaviour
         instancePlayer.transform.Find("Position Mount").Find("Map Camera").position -= new Vector3(playerOldDistanceOut.x, 0f, playerOldDistanceOut.z);
     }
 
-    public void GenerateScene(bool restart)
+    public void GenerateLevel(bool restart)
     {
         if (restart)
         {
@@ -891,8 +917,99 @@ public class Control : MonoBehaviour
     #region Saving
     public void SaveGame()
     {
-        //Save
-        Debug.Log("Saved");
+        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+
+        //World properties
+        //Verse
+        float[] controlScriptVersePosition = new float[3];
+        controlScriptVersePosition[0] = verseSpace.transform.position.x;
+        controlScriptVersePosition[1] = verseSpace.transform.position.y;
+        controlScriptVersePosition[2] = verseSpace.transform.position.z;
+
+        //Player
+        float[] playerScriptPlayerPosition = new float[3];
+        playerScriptPlayerPosition[0] = playerScript.transform.position.x;
+        playerScriptPlayerPosition[1] = playerScript.transform.position.y;
+        playerScriptPlayerPosition[2] = playerScript.transform.position.z;
+
+        LevelData.Data data = new LevelData.Data
+        {
+            //World properties
+            centreStarName = instanceCBodyStar.GetComponent<CelestialName>().title,
+            controlVerseSpacePosition = controlScriptVersePosition,
+            playerPosition = playerScriptPlayerPosition,
+
+            //Player properties
+            playerThrustEngineWarmupMultiplierMax = playerScript.thrustEngineWarmupMultiplierMax,
+
+            playerVitalsHealth = playerScript.vitalsHealth,
+            playerVitalsHealthMax = playerScript.vitalsHealthMax,
+            playerDestroyed = playerScript.destroyed,
+
+            playerVitalsFuel = playerScript.vitalsFuel,
+            playerVitalsFuelMax = playerScript.vitalsFuelMax,
+            playerVitalsFuelConsumptionRate = playerScript.vitalsFuelConsumptionRate,
+
+            playerCurrency = playerScript.currency,
+            playerOre = playerScript.ore
+        };
+
+        LevelData.SaveGame(Application.persistentDataPath + userDataFolder + userLevelSaveFile, data);
+    }
+
+    public void LoadGame()
+    {
+        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+
+        LevelData.Data data = LevelData.LoadGame(Application.persistentDataPath + userDataFolder + userLevelSaveFile);
+
+        //Only load if a save file exists. If a save file doesn't exist, generate a new game
+        if (data == null)
+        {
+            //Procedural generation
+            GenerateLevel(false);
+        }
+        else
+        {
+            //World properties
+            //System
+            //Centre Star
+            GenerateCBodyStar(data.centreStarName);
+            //Planetoids
+
+            //TODO LOAD IN STAR, PLANETOIDS, AND STATIONS
+
+            //Verse position relative to origin
+            verseSpace.transform.position = new Vector3(
+                data.controlVerseSpacePosition[0],
+                data.controlVerseSpacePosition[1],
+                data.controlVerseSpacePosition[2]
+            );
+
+            //Player position relative to origin
+            playerScript.transform.position = new Vector3(
+                data.playerPosition[0],
+                data.playerPosition[1],
+                data.playerPosition[2]
+            );
+
+            //Player properties
+            playerScript.thrustEngineWarmupMultiplierMax = data.playerThrustEngineWarmupMultiplierMax;
+
+            playerScript.vitalsHealth = data.playerVitalsHealth;
+            playerScript.vitalsHealthMax = data.playerVitalsHealthMax;
+            playerScript.destroyed = data.playerDestroyed;
+
+            playerScript.vitalsFuel = data.playerVitalsFuel;
+            playerScript.vitalsFuelMax = data.playerVitalsFuelMax;
+            playerScript.vitalsFuelConsumptionRate = data.playerVitalsFuelConsumptionRate;
+            
+            playerScript.currency = data.playerCurrency;
+            playerScript.ore = data.playerOre;
+        }
+
+        //Update UI to reflect loaded data
+        UpdateAllPlayerResourcesUI();
     }
 
     public void SaveScreenshot()

@@ -45,12 +45,22 @@ public class Player : MonoBehaviour
 
     //ICC stands for interstellar crypto currency
 
+    //!!!!!TOP PRIORITY!!!!!
+    //Add auto-saving
+
+    //Implement upgrades
+    //Add seismic charge weapon
+
     //Asteroids should automatically destroy themselves is far enough away from the player and there is an overrage (AND NOT TARGETTED OR NEAR A TARGETTED OBJECT)
     //Asteroids should automatically generate if there aren't enough in the verse
+
+    //Add menu scrolling
     //Add setting to turn off music
-    //Add auto-saving
+    //Add keybinds menu
+
     //Fix ship auto-torquing
-    //Implement upgrades
+
+    //!!!!!!!!!!
 
     /*
      * MOVEMENT MODES:
@@ -186,17 +196,14 @@ public class Player : MonoBehaviour
     #region Init fields: Movement
     //Movement
     public Rigidbody rb;
-    private Vector3 playerThrustVector;
-    //private readonly float PLAYER_THRUST_WARP = 11222.211f;
-    //private readonly float PLAYER_THRUST_SUBLIGHT = 8416.65825f;
-    //private readonly float PLAYER_THRUST_COMBAT = 8416.65825f;
-    private float playerThrust = 8416.65825f;
-    private float playerThrustEngineWarmupMultiplier = 1f;
-    [System.NonSerialized] public float playerThrustEngineWarmupMultiplierMax = 16f;
-    private float playerThrustEngineWarmupSpeed = 0.5f; //3f;
-    private float playerThrustEngineCooldownSpeed = 12f;
-    private float playerThrustForwardMultiplier = 1.1f;
-    private float playerThrustMultiplier = 1f;
+    private Vector3 thrustVector;
+    private readonly float THRUST = 8416.65825f;
+    private float thrustEngineWarmupMultiplier = 1f;
+    [System.NonSerialized] public float thrustEngineWarmupMultiplierMax = 16f;
+    private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.5f; //3f;
+    private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
+    private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f;
+    private float thrustMultiplier = 1f;
     private float engineBrightness = 0f;
     public Material engineGlowMat;
     private Color engineEmissionColor = new Color(191, 102, 43);
@@ -535,7 +542,7 @@ public class Player : MonoBehaviour
         UpdatePlayerMovementDrag();         //Drag the ship relative to either the system or the nearest planetoid, depending on distance to nearest planetoid
 
         //Add thrust on/off to engine effect brightness (should be run AFTER UpdatePlayerMovementThrust)
-        engineBrightness = Math.Max(engineBrightness, Math.Min(1f, engineBrightness + (playerThrustVector.normalized.magnitude / 40f)));
+        engineBrightness = Math.Max(engineBrightness, Math.Min(1f, engineBrightness + (thrustVector.normalized.magnitude / 40f)));
     }
 
     private void LateUpdate()
@@ -758,7 +765,7 @@ public class Player : MonoBehaviour
         //Debug.Log(playerThrustEngineWarmupMultiplier);
 
         //Reset vector
-        playerThrustVector = Vector3.zero;
+        thrustVector = Vector3.zero;
 
         //Move if fuel
         if (vitalsFuel > 0.0)
@@ -767,23 +774,23 @@ public class Player : MonoBehaviour
             if (binds.GetInput(binds.bindThrustForward))
             {
                 //Add forward to thrust vector
-                playerThrustVector += transform.forward;
+                thrustVector += transform.forward;
 
                 //Engine warmup jerk (increasing acceleration)
-                playerThrustEngineWarmupMultiplier = Mathf.Min(playerThrustEngineWarmupMultiplierMax,
-                    playerThrustEngineWarmupMultiplier + (playerThrustEngineWarmupMultiplier * playerThrustEngineWarmupSpeed * Time.deltaTime));
+                thrustEngineWarmupMultiplier = Mathf.Min(thrustEngineWarmupMultiplierMax,
+                    thrustEngineWarmupMultiplier + (thrustEngineWarmupMultiplier * THRUST_ENGINE_WARMUP_SPEED * Time.deltaTime));
                 
                 //Total multiplier
-                playerThrustMultiplier = playerThrustForwardMultiplier * playerThrustEngineWarmupMultiplier;
+                thrustMultiplier = THRUST_FORWARD_MULTIPLIER * thrustEngineWarmupMultiplier;
             }
             else
             {
                 //Engine warmup
-                playerThrustEngineWarmupMultiplier = Mathf.Max(1f,
-                    playerThrustEngineWarmupMultiplier - (Time.deltaTime * playerThrustEngineCooldownSpeed));
+                thrustEngineWarmupMultiplier = Mathf.Max(1f,
+                    thrustEngineWarmupMultiplier - (Time.deltaTime * THRUST_ENGINE_COOLDOWN_SPEED));
 
                 //Total multiplier
-                playerThrustMultiplier = 1f;
+                thrustMultiplier = 1f;
             }
             
             //We don't want the player to be able to move if the moving check fails
@@ -791,13 +798,13 @@ public class Player : MonoBehaviour
             //We exclude the above from this check as some parts like the engine warmup must be able to decrement even when unable to move
             if (canAndIsMoving)
             {
-                if (binds.GetInput(binds.bindThrustBackward)) playerThrustVector += -transform.forward;
-                if (binds.GetInput(binds.bindThrustLeft)) playerThrustVector += -transform.right;
-                if (binds.GetInput(binds.bindThrustRight)) playerThrustVector += transform.right;
-                if (binds.GetInput(binds.bindThrustUp)) playerThrustVector += transform.up;
-                if (binds.GetInput(binds.bindThrustDown)) playerThrustVector += -transform.up;
+                if (binds.GetInput(binds.bindThrustBackward)) thrustVector += -transform.forward;
+                if (binds.GetInput(binds.bindThrustLeft)) thrustVector += -transform.right;
+                if (binds.GetInput(binds.bindThrustRight)) thrustVector += transform.right;
+                if (binds.GetInput(binds.bindThrustUp)) thrustVector += transform.up;
+                if (binds.GetInput(binds.bindThrustDown)) thrustVector += -transform.up;
 
-                rb.AddForce(playerThrustVector.normalized * playerThrust * playerThrustMultiplier * Time.deltaTime);
+                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * Time.deltaTime);
             }
         }
     }

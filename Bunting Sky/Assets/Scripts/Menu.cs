@@ -132,7 +132,8 @@ public class Menu : MonoBehaviour
 
     public void MenuRestartConfirmed()
     {
-        control.GenerateScene(true);
+        control.GenerateLevel(true);
+        control.SaveGame();
         MenuToggle();
     }
 
