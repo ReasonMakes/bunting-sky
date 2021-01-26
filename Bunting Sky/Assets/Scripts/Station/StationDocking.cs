@@ -11,16 +11,28 @@ public class StationDocking : MonoBehaviour
 
     private bool host = false;
 
-    [System.NonSerialized] public string[,] upgradeButton;
-    
+    [System.NonSerialized] public int[] upgradeIndexOfButton;
+    [System.NonSerialized] public static int upgradeButtons = 4;
+
     [System.NonSerialized] public float pricePlatinoid = 30f;
     [System.NonSerialized] public float pricePreciousMetal = 60f;
     [System.NonSerialized] public float priceWater = 10f;
+
+    private bool initialized = false;
+
+    private void Awake()
+    {
+        //Init upgrade array
+        upgradeIndexOfButton = new int[upgradeButtons];
+    }
 
     private void Start()
     {
         //Get station name
         humanName = transform.parent.GetComponent<HumanName>();
+
+        //Remember is initialized
+        initialized = true;
     }
 
     public void GenerateCommerceOffers()
@@ -31,27 +43,19 @@ public class StationDocking : MonoBehaviour
         priceWater = Random.Range(1, 16);
 
         //Choose which upgrades this station has for sale
-        upgradeButton = new string[4, 3];
-        for (int i = 0; i < upgradeButton.GetLength(0); i++)
+        for (int i = 0; i < upgradeButtons; i++)
         {
             //Generate random index
-            int upgradeSelected = Random.Range(1, control.commerce.upgradeDictionary.GetLength(0));
-
-            //Assign upgrade at index
-            upgradeButton[i, 0] = control.commerce.upgradeDictionary[upgradeSelected, 0]; //Name
-            upgradeButton[i, 1] = control.commerce.upgradeDictionary[upgradeSelected, 1]; //Price
-            upgradeButton[i, 2] = control.commerce.upgradeDictionary[upgradeSelected, 2]; //Description
-
+            upgradeIndexOfButton[i] = Random.Range(1, control.commerce.upgradeDictionary.GetLength(0));
             //Check if upgrade is a duplicate of a previous upgrade
             if (i > 0) //if we are at the first iteration, it is impossible to be a duplicate
             {
                 for (int i2 = 0; i2 < i; i2++)
                 {
-                    if (upgradeButton[i, 0] == upgradeButton[i2, 0])
+                    if (upgradeIndexOfButton[i] == upgradeIndexOfButton[i2])
                     {
-                        upgradeButton[i, 0] = "Sold out";                                       //Name
-                        upgradeButton[i, 1] = control.commerce.priceUpgradeMax.ToString();      //Price
-                        upgradeButton[i, 2] = "Item is out of stock";                           //Description
+                        //Sold out
+                        upgradeIndexOfButton[i] = 0;
                     }
                 }
             }
@@ -60,32 +64,35 @@ public class StationDocking : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        //Debug.Log("Enter: " + other.gameObject.name);
-
-        if (!Commerce.menuOpen && other.gameObject.name == "Body")
+        if (initialized)
         {
-            //Is host
-            host = true;
+            //Debug.Log("Enter: " + other.gameObject.name);
 
-            //Send name to commerce script
-            control.commerce.stationName.text = humanName.title + "'s Drydock";
-            control.commerce.pricePlatinoid = pricePlatinoid;
-            control.commerce.pricePreciousMetal = pricePreciousMetal;
-            control.commerce.priceWater = priceWater;
+            if (!Commerce.menuOpen && other.gameObject.name == "Body")
+            {
+                //Is host
+                host = true;
 
-            //Send ore purchase offers to commerce script
-            control.commerce.pricePlatinoid = pricePlatinoid;
-            control.commerce.pricePreciousMetal = pricePreciousMetal;
-            control.commerce.priceWater = priceWater;
+                //Send name to commerce script
+                control.commerce.stationName.text = humanName.title + "'s Drydock";
+                control.commerce.pricePlatinoid = pricePlatinoid;
+                control.commerce.pricePreciousMetal = pricePreciousMetal;
+                control.commerce.priceWater = priceWater;
 
-            //Send upgrades to commerce script
-            SendUpgradeButtonsToCommerce(0, control.commerce.menuButtonUpgrade1, out control.commerce.priceUpgrade1);
-            SendUpgradeButtonsToCommerce(1, control.commerce.menuButtonUpgrade2, out control.commerce.priceUpgrade2);
-            SendUpgradeButtonsToCommerce(2, control.commerce.menuButtonUpgrade3, out control.commerce.priceUpgrade3);
-            SendUpgradeButtonsToCommerce(3, control.commerce.menuButtonUpgrade4, out control.commerce.priceUpgrade4);
-            
-            //Open commerce menu
-            control.commerce.MenuToggle();
+                //Send ore purchase offers to commerce script
+                control.commerce.pricePlatinoid = pricePlatinoid;
+                control.commerce.pricePreciousMetal = pricePreciousMetal;
+                control.commerce.priceWater = priceWater;
+
+                //Send upgrades to commerce script
+                SendUpgradeButtonsToCommerce(0, control.commerce.menuButtonUpgrade1, out control.commerce.priceUpgrade1);
+                SendUpgradeButtonsToCommerce(1, control.commerce.menuButtonUpgrade2, out control.commerce.priceUpgrade2);
+                SendUpgradeButtonsToCommerce(2, control.commerce.menuButtonUpgrade3, out control.commerce.priceUpgrade3);
+                SendUpgradeButtonsToCommerce(3, control.commerce.menuButtonUpgrade4, out control.commerce.priceUpgrade4);
+
+                //Open commerce menu
+                control.commerce.MenuToggle();
+            }
         }
     }
 
@@ -117,27 +124,31 @@ public class StationDocking : MonoBehaviour
         }
     }
 
-    private void SendUpgradeButtonsToCommerce(int stationUpgradeIndex, Button commerceButton, out float commercePrice)
+    private void SendUpgradeButtonsToCommerce(int buttonIndex, Button commerceButton, out float commercePrice)
     {
         //Type
-        commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[stationUpgradeIndex, 0];
+        commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = control.commerce.upgradeDictionary[upgradeIndexOfButton[buttonIndex], 0];
         
         //Text color and additions
         TextMeshProUGUI priceDisplay = commerceButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>();
-        if (float.Parse(upgradeButton[stationUpgradeIndex, 1]) >= control.commerce.priceUpgradeMax)
+        if (upgradeIndexOfButton[buttonIndex] == 0) //Sold out
         {
             commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = control.commerce.colorTextDisabled;
             priceDisplay.text = "N/A";
             priceDisplay.color = control.commerce.colorTextDisabled;
+
+            //Price internal
+            commercePrice = control.commerce.PRICE_UPGRADE_MAX;
         }
-        else
+        else //Not sold out
         {
             commerceButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = control.commerce.colorTextEnabled;
-            priceDisplay.text = "$" + upgradeButton[stationUpgradeIndex, 1] + " ea";
+            priceDisplay.text = "$" + control.commerce.upgradeDictionary[upgradeIndexOfButton[buttonIndex], 1] + " ea";
             priceDisplay.color = control.commerce.colorTextEnabled;
-        }
 
-        //Price internal
-        commercePrice = float.Parse(upgradeButton[stationUpgradeIndex, 1]);
+            //Price internal
+            //Debug.LogFormat("buttonIndex: {0}, upgradeIndexOfButton[buttonIndex]: {1}, control.commerce.upgradeDictionary[upgradeIndexOfButton[buttonIndex], 1]: {2}", buttonIndex, upgradeIndexOfButton[buttonIndex], control.commerce.upgradeDictionary[upgradeIndexOfButton[buttonIndex], 1]);
+            commercePrice = float.Parse(control.commerce.upgradeDictionary[upgradeIndexOfButton[buttonIndex], 1]);
+        }
     }
 }

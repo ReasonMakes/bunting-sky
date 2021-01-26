@@ -14,7 +14,7 @@ public class CBodyPlanetoid : MonoBehaviour
     private float timeSpentDisabled = 0f;
 
     public bool hasStation = false;
-    private GameObject instancedStation;
+    [System.NonSerialized] public GameObject instancedStation;
 
     private void Start()
     {
@@ -106,7 +106,7 @@ public class CBodyPlanetoid : MonoBehaviour
         }
     }
 
-    public GameObject SpawnStation(bool forced, string titleOverride, bool generateOffers)
+    public GameObject SpawnStation(bool forced, string titleOverride, bool generateOffers, float pricePlatinoid, float pricePreciousMetal, float priceWater, int[] upgradeIndex)
     {
         //Remember that this planetoid has a station oribting it
         hasStation = true;
@@ -121,6 +121,8 @@ public class CBodyPlanetoid : MonoBehaviour
                 Quaternion.Euler(270f, 0f, 270f)
             );
 
+            StationDocking scriptStationDocking = instancedStation.GetComponentInChildren<StationDocking>();
+
             //Set orbit
             instancedStation.GetComponent<StationOrbit>().planetoidToOrbit = gameObject;
             instancedStation.GetComponent<Rigidbody>().velocity = rb.velocity;
@@ -130,7 +132,7 @@ public class CBodyPlanetoid : MonoBehaviour
             instancedStation.transform.parent = transform.parent;
 
             //Give control references
-            instancedStation.GetComponentInChildren<StationDocking>().control = control;
+            scriptStationDocking.control = control;
             instancedStation.GetComponentInChildren<StationOrbit>().control = control;
 
             //Generate name
@@ -146,10 +148,18 @@ public class CBodyPlanetoid : MonoBehaviour
             //Offers
             if (generateOffers)
             {
-                instancedStation.GetComponent<StationDocking>().GenerateCommerceOffers();
+                scriptStationDocking.GenerateCommerceOffers();
             }
+            else
+            {
+                //Ore purchase offers
+                scriptStationDocking.pricePlatinoid = pricePlatinoid;
+                scriptStationDocking.pricePreciousMetal = pricePreciousMetal;
+                scriptStationDocking.priceWater = priceWater;
 
-            //TODO ADD SECTION HERE TO PASS OFFERS IN FROM CONTROL GAME LOAD
+                //Upgrades
+                scriptStationDocking.upgradeIndexOfButton = upgradeIndex;
+            }
         }
 
         //Return coords so that player can spawn near station

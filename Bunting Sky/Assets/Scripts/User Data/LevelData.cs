@@ -16,6 +16,13 @@ public static class LevelData
         [SerializeField] public float[,] controlPlanetoidVelocity;
         [SerializeField] public string[] controlPlanetoidName;
         [SerializeField] public bool[] controlPlanetoidHasStation;
+
+        [SerializeField] public string[] controlPlanetoidStationTitle;
+        [SerializeField] public float[] controlPlanetoidStationPricePlatinoid;
+        [SerializeField] public float[] controlPlanetoidStationPricePreciousMetal;
+        [SerializeField] public float[] controlPlanetoidStationPriceWater;
+        [SerializeField] public int[,] controlPlanetoidStationUpgradeIndex;
+
         [SerializeField] public string controlCentreStarName;
         //Verse space
         [SerializeField] public float[] controlVerseSpacePosition;

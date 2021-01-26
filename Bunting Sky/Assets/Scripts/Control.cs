@@ -147,7 +147,6 @@ public class Control : MonoBehaviour
         LoadGame();
 
         //Auto saving
-        //SaveGame();
         InvokeRepeating("SaveGame", AUTO_SAVE_FREQUENCY, AUTO_SAVE_FREQUENCY);
     }
 
@@ -385,11 +384,11 @@ public class Control : MonoBehaviour
             if (i == 0)
             {
                 //Force a station to spawn and return those coords to spawn the player there
-                outPlayerSpawnPlanetoid = instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(true);
+                outPlayerSpawnPlanetoid = instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(true, null, true, 0f, 0f, 0f, null);
             }
             else
             {
-                instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(false);
+                instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(false, null, true, 0f, 0f, 0f, null);
             }
         }
 
@@ -457,7 +456,7 @@ public class Control : MonoBehaviour
         }
     }
 
-    public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity, string titleOverride, bool hasStation)
+    public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity, string titleOverride, bool stationForced, string stationTitleOverride, bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
     {
         GameObject instanceCBodyPlanetoid = Instantiate(
                 cBodyPlanetoid,
@@ -490,10 +489,16 @@ public class Control : MonoBehaviour
         }
 
         //Spawn station?
-        if (hasStation)
+        if (stationForced)
         {
             instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(
-                true
+                stationForced,
+                stationTitleOverride,
+                stationGenerateOffers,
+                stationPricePlatinoid,
+                stationPricePreciousMetal,
+                stationPriceWater,
+                stationUpgradeIndex
             );
         }
 
@@ -965,6 +970,12 @@ public class Control : MonoBehaviour
         string[] controlScriptPlanetoidName = new string[planetoidArray.Length];
         bool[] controlScriptPlanetoidHasStation = new bool[planetoidArray.Length];
 
+        string[] controlScriptPlanetoidStationTitle = new string[planetoidArray.Length];
+        float[] controlScriptPlanetoidPricePlatinoid = new float[planetoidArray.Length];
+        float[] controlScriptPlanetoidPricePreciousMetal = new float[planetoidArray.Length];
+        float[] controlScriptPlanetoidPriceWater = new float[planetoidArray.Length];
+        int[,] controlScriptPlanetoidStationUpgradeIndex = new int[planetoidArray.Length, StationDocking.upgradeButtons];
+
         byte planetoidArrayIndex = 0;
         foreach (CBodyPlanetoid planetoid in planetoidArray)
         {
@@ -983,7 +994,32 @@ public class Control : MonoBehaviour
 
             //Station
             controlScriptPlanetoidHasStation[planetoidArrayIndex] = planetoid.GetComponent<CBodyPlanetoid>().hasStation;
-
+            if (planetoid.hasStation && planetoid.instancedStation != null)
+            {
+                controlScriptPlanetoidStationTitle[planetoidArrayIndex] = planetoid.instancedStation.GetComponent<HumanName>().title;
+                controlScriptPlanetoidPricePlatinoid[planetoidArrayIndex] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().pricePlatinoid;
+                controlScriptPlanetoidPricePreciousMetal[planetoidArrayIndex] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().pricePreciousMetal;
+                controlScriptPlanetoidPriceWater[planetoidArrayIndex] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().priceWater;
+                //Concatenate the array so that we have the planetoid data along with the data for each upgrade offer's index
+                for (int i = 0; i < StationDocking.upgradeButtons; i++)
+                {
+                    controlScriptPlanetoidStationUpgradeIndex[planetoidArrayIndex, i] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().upgradeIndexOfButton[i];
+                }
+            }
+            else
+            {
+                controlScriptPlanetoidStationTitle[planetoidArrayIndex] = null;
+                controlScriptPlanetoidPricePlatinoid[planetoidArrayIndex] = 0f;
+                controlScriptPlanetoidPricePreciousMetal[planetoidArrayIndex] = 0f;
+                controlScriptPlanetoidPriceWater[planetoidArrayIndex] = 0f;
+                //Concatenate the array so that we have the planetoid data along with the data for each upgrade offer's index
+                for (int i = 0; i < StationDocking.upgradeButtons; i++)
+                {
+                    controlScriptPlanetoidStationUpgradeIndex[planetoidArrayIndex, i] = 0;
+                }
+            }
+            
+            
             //Increment
             planetoidArrayIndex++;
         }
@@ -1008,8 +1044,16 @@ public class Control : MonoBehaviour
             controlPlanetoidVelocity = controlScriptPlanetoidVelocity,
             controlPlanetoidName = controlScriptPlanetoidName,
             controlPlanetoidHasStation = controlScriptPlanetoidHasStation,
+
+            controlPlanetoidStationTitle = controlScriptPlanetoidStationTitle,
+            controlPlanetoidStationPricePlatinoid = controlScriptPlanetoidPricePlatinoid,
+            controlPlanetoidStationPricePreciousMetal = controlScriptPlanetoidPricePreciousMetal,
+            controlPlanetoidStationPriceWater = controlScriptPlanetoidPriceWater,
+            controlPlanetoidStationUpgradeIndex = controlScriptPlanetoidStationUpgradeIndex,
+
             controlCentreStarName = instanceCBodyStar.GetComponent<CelestialName>().title,
             controlVerseSpacePosition = controlScriptVersePosition,
+
             playerPosition = playerScriptPlayerPosition,
 
             //Player properties
@@ -1058,20 +1102,59 @@ public class Control : MonoBehaviour
             //Planetoids
             for (byte i = 0; i < data.controlPlanetoidQuantity; i++)
             {
-                SpawnPlanetoidManually(
-                    new Vector3(
-                        data.controlPlanetoidPosition[i, 0],
-                        data.controlPlanetoidPosition[i, 1],
-                        data.controlPlanetoidPosition[i, 2]
-                    ),
-                    new Vector3(
-                        data.controlPlanetoidVelocity[i, 0],
-                        data.controlPlanetoidVelocity[i, 1],
-                        data.controlPlanetoidVelocity[i, 2]
-                    ),
-                    data.controlPlanetoidName[i],
-                    data.controlPlanetoidHasStation[i]
-                );
+                if (data.controlPlanetoidHasStation[i])
+                {
+                    //Slice the array so that we have only the upgrade offers' indexes (since we are already looping through each planetoid)
+                    int[] controlScriptPlanetoidStationUpgradeIndex = new int[StationDocking.upgradeButtons];
+                    for(int i2 = 0; i2 < StationDocking.upgradeButtons; i2++)
+                    {
+                        controlScriptPlanetoidStationUpgradeIndex[i2] = data.controlPlanetoidStationUpgradeIndex[i, i2];
+                    }
+
+                    SpawnPlanetoidManually(
+                        new Vector3(
+                            data.controlPlanetoidPosition[i, 0],
+                            data.controlPlanetoidPosition[i, 1],
+                            data.controlPlanetoidPosition[i, 2]
+                        ),
+                        new Vector3(
+                            data.controlPlanetoidVelocity[i, 0],
+                            data.controlPlanetoidVelocity[i, 1],
+                            data.controlPlanetoidVelocity[i, 2]
+                        ),
+                        data.controlPlanetoidName[i],
+                        data.controlPlanetoidHasStation[i],
+                        data.controlPlanetoidStationTitle[i],
+                        false, //generate offers?
+                        data.controlPlanetoidStationPricePlatinoid[i],
+                        data.controlPlanetoidStationPricePreciousMetal[i],
+                        data.controlPlanetoidStationPriceWater[i],
+                        controlScriptPlanetoidStationUpgradeIndex
+                    );
+                }
+                else
+                {
+                    SpawnPlanetoidManually(
+                        new Vector3(
+                            data.controlPlanetoidPosition[i, 0],
+                            data.controlPlanetoidPosition[i, 1],
+                            data.controlPlanetoidPosition[i, 2]
+                        ),
+                        new Vector3(
+                            data.controlPlanetoidVelocity[i, 0],
+                            data.controlPlanetoidVelocity[i, 1],
+                            data.controlPlanetoidVelocity[i, 2]
+                        ),
+                        data.controlPlanetoidName[i],
+                        data.controlPlanetoidHasStation[i],
+                        null,
+                        false, //generate offers?
+                        0f,
+                        0f,
+                        0f,
+                        null
+                    );
+                }
             }
 
             //PLAYER

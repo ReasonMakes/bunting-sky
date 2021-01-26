@@ -46,7 +46,7 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //!!!!!TOP PRIORITY!!!!!
-    //TODO ADD SECTION IN CBODYPLANITOID STATION GENERATION TO PASS OFFERS IN FROM CONTROL GAME LOAD
+    //TODO ADD SECTION IN CBODYPLANETOID STATION GENERATION TO PASS OFFERS IN FROM CONTROL GAME LOAD
 
     //Implement upgrades
     //Add seismic charge weapon
@@ -426,6 +426,9 @@ public class Player : MonoBehaviour
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.15f;
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 0.2f;
+
+        //Upgrades
+        upgradeLevels = new int[control.commerce.upgradeDictionary.GetLength(0)];
     }
     #endregion
 
