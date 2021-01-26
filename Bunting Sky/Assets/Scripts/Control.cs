@@ -19,6 +19,13 @@ public class Control : MonoBehaviour
     private GameObject playerSpawnPlanetoid;
     public static int gravityInstanceIndex = 0;
     [System.NonSerialized] public GameObject instanceCBodyStar;
+    private int planetoidsRangeLow = 6;
+    private int planetoidsRangeHigh = 10;
+    private int asteroidClustersRangeLow = 6;
+    private int asteroidClustersRangeHigh = 9;
+    [System.NonSerialized] public readonly int GENERATION_TYPE_NEW_GAME = 0;
+    [System.NonSerialized] public readonly int GENERATION_TYPE_LOADED_GAME = 1;
+    [System.NonSerialized] public readonly int GENERATION_TYPE_RESTARTED_GAME = 2;
 
     public GameObject verseSpace;
         public GameObject cBodies;
@@ -66,7 +73,7 @@ public class Control : MonoBehaviour
     public KeyBinds binds;
     public Settings settings;
     public static string userDataFolder = "/user";
-    public static string userLevelSaveFile = "/level.rd";
+    public static string userLevelSaveFile = "/verse.bss"; //Bunting Sky Save
     public static string screenshotsFolder = "/screenshots";
 
     //Target
@@ -198,52 +205,82 @@ public class Control : MonoBehaviour
     }
 
     #region System generation
-    private void GenerateSystem(bool isStarter, byte nCBodiesPlanetoids, byte nCBodiesAsteroids)
+    public void GenerateGame(int generationType)
     {
+        if (generationType == GENERATION_TYPE_RESTARTED_GAME)
+        {
+            //Destroy verse
+            Destroy(instanceCBodyStar, 0f);
+            DestroyAllChildren(cBodiesPlanetoids, 0f);
+            DestroyAllChildren(cBodiesAsteroids, 0f);
+            DestroyAllChildren(ore, 0f);
+            DestroyAllChildren(instancePlayer.GetComponentInChildren<Player>().playerWeaponsTreeLaser, 0f);
+
+            //Destroy player
+            playerSpawned = false;
+            instancePlayer.GetComponentInChildren<Player>().warningUIText.color = new Color(1f, 0f, 0f, 0f);
+            Destroy(instancePlayer, 0f);
+        }
+
         //CENTRE STAR CELESTIAL BODY
-        GenerateCBodyStar(null);
+        SpawnCBodyStar(Vector3.zero, null);
 
         //Planetoids
-        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(nCBodiesPlanetoids, instanceCBodyStar);
+        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(Random.Range(planetoidsRangeLow, planetoidsRangeHigh), instanceCBodyStar); ;
 
         //Asteroids
-        GenerateCBodiesAsteroids(nCBodiesAsteroids, instanceCBodyStar);
+        GenerateCBodiesAsteroids(Random.Range(asteroidClustersRangeLow, asteroidClustersRangeHigh), instanceCBodyStar);
 
         //Player
-        if (isStarter)
-        {
-            SpawnPlayer();
-        }
+        SpawnPlayer(
+            generationType,
+            playerSpawnPlanetoid.transform.position + new Vector3(6f, 14f, 2f)
+        );
+
+        //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
+        SaveGame();
     }
 
-    private void GenerateCBodyStar(string titleOverride)
+    private void SpawnCBodyStar(Vector3 position, string titleOverride)
     {
         //Instantiate
-        instanceCBodyStar = Instantiate(cBodyStar, new Vector3(0f, 0f, 0f), Quaternion.Euler(0f, 0f, 0f));
+        instanceCBodyStar = Instantiate(
+            cBodyStar,
+            position,
+            Quaternion.Euler(0f, 0f, 0f)
+        );
 
         //Put in CBodies tree
         instanceCBodyStar.transform.parent = cBodies.transform;
 
         //Set name
-        if (titleOverride != null)
+        if (titleOverride == null)
+        {
+            instanceCBodyStar.GetComponent<CelestialName>().GenerateName();
+        }
+        else
         {
             instanceCBodyStar.GetComponent<CelestialName>().title = titleOverride;
         }
     }
 
-    private void SpawnPlayer()
+    private void SpawnPlayer(int generationType, Vector3 position)
     {
+        //Instantiate at position, rotation, velocity
         instancePlayer = Instantiate(
             playerPrefab,
             Vector3.zero,
             Quaternion.identity
         );
+        instancePlayer.transform.Find("Body").transform.position = position;
 
-        Transform instancePlayerBodyTransform = instancePlayer.transform.Find("Body").transform;
-        instancePlayerBodyTransform.position = playerSpawnPlanetoid.transform.position + new Vector3(6f, 14f, 2f);
-        instancePlayerBodyTransform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
-        instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnPlanetoid.GetComponent<Rigidbody>().velocity;
-
+        if (generationType == GENERATION_TYPE_NEW_GAME || generationType == GENERATION_TYPE_RESTARTED_GAME)
+        {
+            instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
+            instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnPlanetoid.GetComponent<Rigidbody>().velocity;
+        }
+        
+        //Script properties
         Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.control = this;
@@ -256,8 +293,10 @@ public class Control : MonoBehaviour
 
         playerScript.LateStart();
 
+        //UI
         CreatePlayerShipDirectionReticles();
 
+        //Remember
         playerSpawned = true;
     }
 
@@ -292,7 +331,7 @@ public class Control : MonoBehaviour
         }
     }
 
-    private GameObject GenerateCBodiesPlanetoidsAndGetPlayerCoords(byte nCBodiesPlanetoids, GameObject centreCBodyStar)
+    private GameObject GenerateCBodiesPlanetoidsAndGetPlayerCoords(int nCBodiesPlanetoids, GameObject centreCBodyStar)
     {
         GameObject outPlayerSpawnPlanetoid = null;
 
@@ -339,6 +378,9 @@ public class Control : MonoBehaviour
             //Spin
             instanceCBodyPlanetoid.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
 
+            //Generate name
+            instanceCBodyPlanetoid.GetComponent<CelestialName>().GenerateName();
+
             //Spawn station
             if (i == 0)
             {
@@ -354,7 +396,7 @@ public class Control : MonoBehaviour
         return outPlayerSpawnPlanetoid;
     }
 
-    private void GenerateCBodiesAsteroids(byte nCBodiesAsteroidClusters, GameObject centreCBodyStar)
+    private void GenerateCBodiesAsteroids(int nCBodiesAsteroidClusters, GameObject centreCBodyStar)
     {
         //Properties
         float minimumDistanceBetweenClusters = 100f;
@@ -415,7 +457,7 @@ public class Control : MonoBehaviour
         }
     }
 
-    public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity)
+    public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity, string titleOverride)
     {
         GameObject instanceCBodyPlanetoid = Instantiate(
                 cBodyPlanetoid,
@@ -436,6 +478,16 @@ public class Control : MonoBehaviour
 
         //Set velocity
         instanceCBodyPlanetoid.GetComponent<Rigidbody>().velocity = velocity;
+
+        //Override title
+        if (titleOverride == null)
+        {
+            instanceCBodyPlanetoid.GetComponent<CelestialName>().GenerateName();
+        }
+        else
+        {
+            instanceCBodyPlanetoid.GetComponent<CelestialName>().title = titleOverride;
+        }
 
         return instanceCBodyPlanetoid;
     }
@@ -499,31 +551,6 @@ public class Control : MonoBehaviour
 
         //Map camera
         instancePlayer.transform.Find("Position Mount").Find("Map Camera").position -= new Vector3(playerOldDistanceOut.x, 0f, playerOldDistanceOut.z);
-    }
-
-    public void GenerateLevel(bool restart)
-    {
-        if (restart)
-        {
-            //Destroy verse
-            Destroy(instanceCBodyStar, 0f);
-            DestroyAllChildren(cBodiesPlanetoids, 0f);
-            DestroyAllChildren(cBodiesAsteroids, 0f);
-            DestroyAllChildren(ore, 0f);
-            DestroyAllChildren(instancePlayer.GetComponentInChildren<Player>().playerWeaponsTreeLaser, 0f);
-
-            //Destroy player
-            playerSpawned = false;
-            instancePlayer.GetComponentInChildren<Player>().warningUIText.color = new Color(1f, 0f, 0f, 0f);
-            Destroy(instancePlayer, 0f);
-        }
-
-        //Generate starter system
-        GenerateSystem(//Player, planetoids, asteroid clusters
-            true,
-            (byte)Random.Range(6, 10),
-            (byte)Random.Range(6, 9)
-        );
     }
 
     private void DestroyAllChildren(GameObject parent, float timeDelay)
@@ -917,9 +944,38 @@ public class Control : MonoBehaviour
     #region Saving
     public void SaveGame()
     {
+        Debug.Log("Saving game");
+
         Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
         //World properties
+        //Planetoids
+        CBodyPlanetoid[] planetoidArray = FindObjectsOfType<CBodyPlanetoid>();
+
+        float[,] controlScriptPlanetoidPosition = new float[planetoidArray.Length, 3];
+        float[,] controlScriptPlanetoidVelocity = new float[planetoidArray.Length, 3];
+        string[] controlScriptPlanetoidName = new string[planetoidArray.Length];
+
+        byte planetoidArrayIndex = 0;
+        foreach (CBodyPlanetoid planetoid in planetoidArray)
+        {
+            //Position
+            controlScriptPlanetoidPosition[planetoidArrayIndex, 0] = planetoid.transform.position.x;
+            controlScriptPlanetoidPosition[planetoidArrayIndex, 1] = planetoid.transform.position.y;
+            controlScriptPlanetoidPosition[planetoidArrayIndex, 2] = planetoid.transform.position.z;
+
+            //Velocity
+            controlScriptPlanetoidVelocity[planetoidArrayIndex, 0] = planetoid.GetComponent<Rigidbody>().velocity.x;
+            controlScriptPlanetoidVelocity[planetoidArrayIndex, 1] = planetoid.GetComponent<Rigidbody>().velocity.y;
+            controlScriptPlanetoidVelocity[planetoidArrayIndex, 2] = planetoid.GetComponent<Rigidbody>().velocity.z;
+
+            //Name
+            controlScriptPlanetoidName[planetoidArrayIndex] = planetoid.GetComponent<CelestialName>().title;
+
+            //Increment
+            planetoidArrayIndex++;
+        }
+
         //Verse
         float[] controlScriptVersePosition = new float[3];
         controlScriptVersePosition[0] = verseSpace.transform.position.x;
@@ -935,7 +991,11 @@ public class Control : MonoBehaviour
         LevelData.Data data = new LevelData.Data
         {
             //World properties
-            centreStarName = instanceCBodyStar.GetComponent<CelestialName>().title,
+            controlPlanetoidQuantity = (byte)planetoidArray.Length,
+            controlPlanetoidPosition = controlScriptPlanetoidPosition,
+            controlPlanetoidVelocity = controlScriptPlanetoidVelocity,
+            controlPlanetoidName = controlScriptPlanetoidName,
+            controlCentreStarName = instanceCBodyStar.GetComponent<CelestialName>().title,
             controlVerseSpacePosition = controlScriptVersePosition,
             playerPosition = playerScriptPlayerPosition,
 
@@ -959,25 +1019,21 @@ public class Control : MonoBehaviour
 
     public void LoadGame()
     {
-        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
-
         LevelData.Data data = LevelData.LoadGame(Application.persistentDataPath + userDataFolder + userLevelSaveFile);
 
         //Only load if a save file exists. If a save file doesn't exist, generate a new game
         if (data == null)
         {
-            //Procedural generation
-            GenerateLevel(false);
+            Debug.Log("No save exists; generating new game");
+            GenerateGame(GENERATION_TYPE_NEW_GAME);
         }
         else
         {
-            //World properties
-            //System
-            //Centre Star
-            GenerateCBodyStar(data.centreStarName);
-            //Planetoids
+            Debug.Log("Save exists; loading game");
 
-            //TODO LOAD IN STAR, PLANETOIDS, AND STATIONS
+            //VERSE
+            //Centre Star
+            SpawnCBodyStar(Vector3.zero, data.controlCentreStarName);
 
             //Verse position relative to origin
             verseSpace.transform.position = new Vector3(
@@ -986,12 +1042,36 @@ public class Control : MonoBehaviour
                 data.controlVerseSpacePosition[2]
             );
 
-            //Player position relative to origin
-            playerScript.transform.position = new Vector3(
-                data.playerPosition[0],
-                data.playerPosition[1],
-                data.playerPosition[2]
+            //Planetoids
+            for (byte i = 0; i < data.controlPlanetoidQuantity; i++)
+            {
+                SpawnPlanetoidManually(
+                    new Vector3(
+                        data.controlPlanetoidPosition[i, 0],
+                        data.controlPlanetoidPosition[i, 1],
+                        data.controlPlanetoidPosition[i, 2]
+                    ),
+                    new Vector3(
+                        data.controlPlanetoidVelocity[i, 0],
+                        data.controlPlanetoidVelocity[i, 1],
+                        data.controlPlanetoidVelocity[i, 2]
+                    ),
+                    data.controlPlanetoidName[i]
+                );
+            }
+
+            
+
+            //PLAYER
+            SpawnPlayer(
+                GENERATION_TYPE_LOADED_GAME,
+                new Vector3(
+                    data.playerPosition[0],
+                    data.playerPosition[1],
+                    data.playerPosition[2]
+                )
             );
+            Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
             //Player properties
             playerScript.thrustEngineWarmupMultiplierMax = data.playerThrustEngineWarmupMultiplierMax;

@@ -11,7 +11,11 @@ public static class LevelData
     {
         //World properties
         //System
-        [SerializeField] public string centreStarName;
+        [SerializeField] public byte controlPlanetoidQuantity;
+        [SerializeField] public float[,] controlPlanetoidPosition;
+        [SerializeField] public float[,] controlPlanetoidVelocity;
+        [SerializeField] public string[] controlPlanetoidName;
+        [SerializeField] public string controlCentreStarName;
         //Verse space
         [SerializeField] public float[] controlVerseSpacePosition;
         //Player
@@ -39,14 +43,10 @@ public static class LevelData
 
         formatter.Serialize(stream, data);
         stream.Close();
-
-        Debug.Log("Saved at " + Time.time);
     }
 
     public static Data LoadGame(string path)
     {
-        Debug.Log("Loaded at " + Time.time);
-
         if (File.Exists(path))
         {
             BinaryFormatter formatter = new BinaryFormatter();
@@ -59,7 +59,6 @@ public static class LevelData
         }
         else
         {
-            Debug.Log("No save file found in " + path);
             return null;
         }
     }

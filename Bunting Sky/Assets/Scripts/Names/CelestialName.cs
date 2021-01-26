@@ -11,7 +11,7 @@ public class CelestialName: MonoBehaviour
     string main = "";
     string suffix = "";
 
-    void Start()
+    public void GenerateName()
     {
         /*
         prefix = "";

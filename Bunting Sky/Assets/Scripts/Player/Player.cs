@@ -451,7 +451,7 @@ public class Player : MonoBehaviour
         /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
-            control.SpawnPlanetoidManually(transform.position + transform.forward * 20f, rb.velocity);
+            control.SpawnPlanetoidManually(transform.position + transform.forward * 20f, rb.velocity, null);
             Debug.Log("Spawned one planetoid");
         }
         */
