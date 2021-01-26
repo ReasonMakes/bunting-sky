@@ -13,7 +13,7 @@ public class CBodyPlanetoid : MonoBehaviour
     [System.NonSerialized] public bool disabled = false;
     private float timeSpentDisabled = 0f;
 
-    private bool hasStation = false;
+    public bool hasStation = false;
     private GameObject instancedStation;
 
     private void Start()
@@ -106,13 +106,13 @@ public class CBodyPlanetoid : MonoBehaviour
         }
     }
 
-    public GameObject SpawnStation(bool forced)
+    public GameObject SpawnStation(bool forced, string titleOverride, bool generateOffers)
     {
         //Remember that this planetoid has a station oribting it
         hasStation = true;
 
         //4 in 5 chance of having a space station. Option to force-spawn the station
-        if (forced || Random.Range(0f, 4f) >= 1f)
+        if (forced || Random.Range(0, 6) >= 1)
         {
             instancedStation = Instantiate
             (
@@ -132,6 +132,24 @@ public class CBodyPlanetoid : MonoBehaviour
             //Give control references
             instancedStation.GetComponentInChildren<StationDocking>().control = control;
             instancedStation.GetComponentInChildren<StationOrbit>().control = control;
+
+            //Generate name
+            if (titleOverride == null)
+            {
+                instancedStation.GetComponent<HumanName>().GenerateName();
+            }
+            else
+            {
+                instancedStation.GetComponent<HumanName>().title = titleOverride;
+            }
+
+            //Offers
+            if (generateOffers)
+            {
+                instancedStation.GetComponent<StationDocking>().GenerateCommerceOffers();
+            }
+
+            //TODO ADD SECTION HERE TO PASS OFFERS IN FROM CONTROL GAME LOAD
         }
 
         //Return coords so that player can spawn near station

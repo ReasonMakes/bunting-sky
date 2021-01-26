@@ -11,7 +11,7 @@ public class HumanName : MonoBehaviour
     private string partOne = "";
     private string partTwo = "";
 
-    void Start()
+    public void GenerateName()
     {
         //Part one
         if(Random.Range(0, 2) >= 1)

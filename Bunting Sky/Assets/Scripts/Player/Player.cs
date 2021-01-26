@@ -46,7 +46,7 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //!!!!!TOP PRIORITY!!!!!
-    //Add auto-saving
+    //TODO ADD SECTION IN CBODYPLANITOID STATION GENERATION TO PASS OFFERS IN FROM CONTROL GAME LOAD
 
     //Implement upgrades
     //Add seismic charge weapon

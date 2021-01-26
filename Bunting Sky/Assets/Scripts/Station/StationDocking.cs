@@ -21,7 +21,10 @@ public class StationDocking : MonoBehaviour
     {
         //Get station name
         humanName = transform.parent.GetComponent<HumanName>();
+    }
 
+    public void GenerateCommerceOffers()
+    {
         //Choose ore purchase offers
         pricePlatinoid = Random.Range(1, 7) * 10f;
         pricePreciousMetal = Random.Range(2, 13) * 10f;
@@ -81,25 +84,12 @@ public class StationDocking : MonoBehaviour
             SendUpgradeButtonsToCommerce(2, control.commerce.menuButtonUpgrade3, out control.commerce.priceUpgrade3);
             SendUpgradeButtonsToCommerce(3, control.commerce.menuButtonUpgrade4, out control.commerce.priceUpgrade4);
             
-            /*
-            control.commerce.menuButtonUpgrade2.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[1, 0];                        //Name
-            control.commerce.menuButtonUpgrade2.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeButton[1, 1] + " ea";  //Price display
-            control.commerce.priceUpgrade2 = float.Parse(upgradeButton[1, 1]);                                                                            //Price internal
-            
-            control.commerce.menuButtonUpgrade3.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[2, 0];                        //Name
-            control.commerce.menuButtonUpgrade3.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeButton[2, 1] + " ea";  //Price display
-            control.commerce.priceUpgrade3 = float.Parse(upgradeButton[2, 1]);                                                                            //Price internal
-
-            control.commerce.menuButtonUpgrade4.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeButton[3, 0];                        //Name
-            control.commerce.menuButtonUpgrade4.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeButton[3, 1] + " ea";  //Price display
-            control.commerce.priceUpgrade4 = float.Parse(upgradeButton[3, 1]);                                                                            //Price internal
-            */
-
             //Open commerce menu
             control.commerce.MenuToggle();
         }
     }
 
+    /*
     private void OnTriggerEXit(Collider other)
     {
         //Debug.Log("Exit: " + other.gameObject.name);
@@ -113,6 +103,7 @@ public class StationDocking : MonoBehaviour
             Commerce.menuLocked = false;
         }
     }
+    */
 
     private void Update()
     {

@@ -457,7 +457,7 @@ public class Control : MonoBehaviour
         }
     }
 
-    public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity, string titleOverride)
+    public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity, string titleOverride, bool hasStation)
     {
         GameObject instanceCBodyPlanetoid = Instantiate(
                 cBodyPlanetoid,
@@ -487,6 +487,14 @@ public class Control : MonoBehaviour
         else
         {
             instanceCBodyPlanetoid.GetComponent<CelestialName>().title = titleOverride;
+        }
+
+        //Spawn station?
+        if (hasStation)
+        {
+            instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(
+                true
+            );
         }
 
         return instanceCBodyPlanetoid;
@@ -955,6 +963,7 @@ public class Control : MonoBehaviour
         float[,] controlScriptPlanetoidPosition = new float[planetoidArray.Length, 3];
         float[,] controlScriptPlanetoidVelocity = new float[planetoidArray.Length, 3];
         string[] controlScriptPlanetoidName = new string[planetoidArray.Length];
+        bool[] controlScriptPlanetoidHasStation = new bool[planetoidArray.Length];
 
         byte planetoidArrayIndex = 0;
         foreach (CBodyPlanetoid planetoid in planetoidArray)
@@ -971,6 +980,9 @@ public class Control : MonoBehaviour
 
             //Name
             controlScriptPlanetoidName[planetoidArrayIndex] = planetoid.GetComponent<CelestialName>().title;
+
+            //Station
+            controlScriptPlanetoidHasStation[planetoidArrayIndex] = planetoid.GetComponent<CBodyPlanetoid>().hasStation;
 
             //Increment
             planetoidArrayIndex++;
@@ -995,6 +1007,7 @@ public class Control : MonoBehaviour
             controlPlanetoidPosition = controlScriptPlanetoidPosition,
             controlPlanetoidVelocity = controlScriptPlanetoidVelocity,
             controlPlanetoidName = controlScriptPlanetoidName,
+            controlPlanetoidHasStation = controlScriptPlanetoidHasStation,
             controlCentreStarName = instanceCBodyStar.GetComponent<CelestialName>().title,
             controlVerseSpacePosition = controlScriptVersePosition,
             playerPosition = playerScriptPlayerPosition,
@@ -1056,11 +1069,10 @@ public class Control : MonoBehaviour
                         data.controlPlanetoidVelocity[i, 1],
                         data.controlPlanetoidVelocity[i, 2]
                     ),
-                    data.controlPlanetoidName[i]
+                    data.controlPlanetoidName[i],
+                    data.controlPlanetoidHasStation[i]
                 );
             }
-
-            
 
             //PLAYER
             SpawnPlayer(
