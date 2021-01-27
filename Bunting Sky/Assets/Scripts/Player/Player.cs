@@ -441,7 +441,7 @@ public class Player : MonoBehaviour
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
         {
             transform.position += transform.forward * 1e4f;
-            Debug.Log("Teleported forward: distance to star " + (control.generation.instanceCBodyStar.transform.position - transform.position).magnitude);
+            Debug.Log("Teleported forward: distance to star " + (control.generation.instanceCentreStar.transform.position - transform.position).magnitude);
         }
 
         //Spawn
@@ -509,12 +509,19 @@ public class Player : MonoBehaviour
             }
 
             //Warn on loop if out of fuel
-            if (vitalsFuel <= 0 && warningUIFlashTime <= 0f)
+            if (vitalsFuel <= 0d && warningUIFlashTime <= 0f)
             {
                 FlashWarning("Fuel reserves empty");
 
                 //Loop smoothly and indefinitely
                 warningUIFlashTime = warningUIFlashTotalDuration * 100f;
+            }
+
+            //Without this it would be possible for the out of fuel warning to flash indefinitely if you ran out of fuel right as you entered a station
+            if (vitalsFuel > 0d && warningUIText.text == "Fuel reserves empty")
+            {
+                warningUIFlashTime = 0f;
+                warningUIFlashPosition = 1f;
             }
 
             //Update map player ship position

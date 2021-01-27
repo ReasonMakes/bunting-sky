@@ -6,7 +6,7 @@ public class Gravity : MonoBehaviour
 {
     public Rigidbody rb;
     [System.NonSerialized] public Control control;
-    
+
     //smooth out gravitate addForce by adding a bit of the planned force every fixed update
     //basically on every gravitate call, calculate the amount of force to add, then in fixed update add that force divided by the amount of time in between updates
 
@@ -15,8 +15,9 @@ public class Gravity : MonoBehaviour
     //But calculating distance may be intensive too
     public readonly short GRAVITY_SLOW_UPDATE_PERIOD = 90;
     [System.NonSerialized] public int gravityInstanceIndex;
-    private float timeAtLastGravitate = 0f;
-    private float deltaTimeSinceLastGravitate = 0f;
+    private float gravityTimePoint = 0f;
+    private float gravityDeltaTime = 0f;
+    private Vector3 gravityForceVector = Vector3.zero;
 
     [System.NonSerialized] public bool gravitateTowardCentreStarOnly = false;
 
@@ -36,6 +37,11 @@ public class Gravity : MonoBehaviour
             {
                 SlowFixedUpdate();
             }
+
+            //Add gravitation (semi) constantly at vector calculated intermittently
+            rb.AddForce(gravityForceVector * Time.fixedDeltaTime);
+
+            //Debug.Log(deltaTimeSinceLastGravitate);
         }
     }
 
@@ -47,14 +53,17 @@ public class Gravity : MonoBehaviour
     public void GravitateTowardAllCBodies()
     {
         //Keep track of time
-        deltaTimeSinceLastGravitate = Time.time - timeAtLastGravitate;
-        timeAtLastGravitate = Time.time;
+        gravityDeltaTime = Time.time - gravityTimePoint;
+        gravityTimePoint = Time.time;
+
+        //Reset force vector
+        gravityForceVector = Vector3.zero;
 
         //Gravitate
         //Debug.Log(gameObject.name);
         if (gravitateTowardCentreStarOnly)
         {
-            GravitateTowardOneCBody(control.generation.instanceCBodyStar.GetComponent<Gravity>());
+            gravityForceVector += GetInstantaneousGravityFromOneCBody(control.generation.instanceCentreStar.GetComponent<Gravity>());
         }
         else
         {
@@ -82,13 +91,13 @@ public class Gravity : MonoBehaviour
                         }
                     }
 
-                    GravitateTowardOneCBody(cBody);
+                    gravityForceVector += GetInstantaneousGravityFromOneCBody(cBody);
                 }
             }
         }
     }
 
-    private void GravitateTowardOneCBody(Gravity cBody)
+    private Vector3 GetInstantaneousGravityFromOneCBody(Gravity cBody)
     {
         //Gravitate toward a celestial body
         /*
@@ -106,9 +115,9 @@ public class Gravity : MonoBehaviour
 
         //F = G * (m1 * m2 / r^2)
         float forceMagnitude = Control.GRAVITATIONAL_CONSTANT * ((rb.mass * cBody.rb.mass) / forceDistanceSquared);
-        
+
         //Manually factor-in deltaTime since last method call since this is in SlowUpdate()
-        rb.AddForce(forceMagnitude * forceDirection * deltaTimeSinceLastGravitate);
+        return forceMagnitude * forceDirection;// * gravityDeltaTime;
     }
 
     public void SetVelocityToOrbit(GameObject bodyToOrbit, float angleToStar)
@@ -125,8 +134,9 @@ public class Gravity : MonoBehaviour
 
         //This method runs into issues
         //Possibly because distance and speed units in unity don't have the same ratios as irl SI units do
+        //Or possibly because we aren't applying a constant force - we are applying it in steps
         //Bandaid fixed using a dirty approximate compensation coefficient
-        float dirtyApproxCompCoeff = 0.05f; //0.06f;
+        float dirtyApproxCompCoeff = 0.04f; //0.06f;
 
         Vector3 orbitalVector = bodyToOrbit.transform.position - transform.position; 
         float orbitalRadius = orbitalVector.magnitude;                               //r = |oV|

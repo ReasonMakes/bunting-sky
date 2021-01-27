@@ -61,6 +61,7 @@ public class CBodyPlanetoid : MonoBehaviour
         GetComponent<SphereCollider>().enabled = false; //Disable waypoint trigger
         rb.detectCollisions = false;
         model.SetActive(false);
+        transform.Find("Map Model").gameObject.SetActive(false);
 
         //Disable Station
         if (hasStation)

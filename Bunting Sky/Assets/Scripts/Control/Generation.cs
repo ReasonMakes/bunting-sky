@@ -23,12 +23,14 @@ public class Generation : MonoBehaviour
     public static int gravityInstanceIndex = 0;
 
     //CBodies
-    [System.NonSerialized] public GameObject instanceCBodyStar;
-    private int planetoidsRangeLow = 6;
-    private int planetoidsRangeHigh = 10;
-    private int asteroidClustersRangeLow = 6;
-    private int asteroidClustersRangeHigh = 9;
-    
+    [System.NonSerialized] public GameObject instanceCentreStar;
+    private readonly int PLANETOIDS_RANGE_LOW = 6;
+    private readonly int PLANETOIDS_RANGE_HIGH = 10;
+    private readonly int ASTEROID_CLUSTERS_RANGE_LOW = 6;
+    private readonly int ASTEROID_CLUSTERS_RANGE_HIGH = 9;
+    private readonly int ASTEROIDS_CONCURRENT_MINIMUM = 16;
+    private readonly int ASTEROIDS_CONCURRENT_MAXIMUM = 50;
+
     //Verse hierarchy
     public GameObject verseSpace;
         [System.NonSerialized] public GameObject cBodies;
@@ -63,13 +65,45 @@ public class Generation : MonoBehaviour
         InvokeRepeating("SaveGame", control.AUTO_SAVE_FREQUENCY, control.AUTO_SAVE_FREQUENCY);
     }
 
+    private void Update()
+    {
+        //Slow update
+        if (Time.frameCount % 20 == 0)
+        {
+            SlowUpdate();
+        }
+    }
+
+    private void SlowUpdate()
+    {
+        //Asteroid count manager
+        //Minimum
+        if (cBodiesAsteroids.transform.childCount < ASTEROIDS_CONCURRENT_MINIMUM)
+        {
+            //Debug.Log("Under-limit");
+
+            GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
+        }
+
+        //Limit
+        if (cBodiesAsteroids.transform.childCount >= ASTEROIDS_CONCURRENT_MAXIMUM)
+        {
+            //Debug.Log("Over-limit");
+
+            GameObject asteroidToDestroy = cBodiesAsteroids.transform.GetChild(Random.Range(0, cBodiesAsteroids.transform.childCount)).gameObject;
+            Destroy(asteroidToDestroy, 0f);
+        }
+
+        //Debug.Log(cBodiesAsteroids.transform.childCount);
+    }
+
     #region Procedural generation
     public void GenerateGame(int generationType)
     {
         if (generationType == GENERATION_TYPE_RESTARTED_GAME)
         {
             //Destroy verse
-            Destroy(instanceCBodyStar, 0f);
+            Destroy(instanceCentreStar, 0f);
             Control.DestroyAllChildren(cBodiesPlanetoids, 0f);
             Control.DestroyAllChildren(cBodiesAsteroids, 0f);
             Control.DestroyAllChildren(ores, 0f);
@@ -85,10 +119,10 @@ public class Generation : MonoBehaviour
         SpawnCBodyStar(Vector3.zero, null);
 
         //Planetoids
-        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(Random.Range(planetoidsRangeLow, planetoidsRangeHigh), instanceCBodyStar); ;
+        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(Random.Range(PLANETOIDS_RANGE_LOW, PLANETOIDS_RANGE_HIGH), instanceCentreStar); ;
 
         //Asteroids
-        GenerateCBodiesAsteroids(Random.Range(asteroidClustersRangeLow, asteroidClustersRangeHigh), instanceCBodyStar);
+        GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
 
         //Player
         SpawnPlayer(
@@ -103,23 +137,23 @@ public class Generation : MonoBehaviour
     private void SpawnCBodyStar(Vector3 position, string titleOverride)
     {
         //Instantiate
-        instanceCBodyStar = Instantiate(
+        instanceCentreStar = Instantiate(
             cBodyStar,
             position,
             Quaternion.Euler(0f, 0f, 0f)
         );
 
         //Put in CBodies tree
-        instanceCBodyStar.transform.parent = cBodies.transform;
+        instanceCentreStar.transform.parent = cBodies.transform;
 
         //Set name
         if (titleOverride == null)
         {
-            instanceCBodyStar.GetComponent<CelestialName>().GenerateName();
+            instanceCentreStar.GetComponent<CelestialName>().GenerateName();
         }
         else
         {
-            instanceCBodyStar.GetComponent<CelestialName>().title = titleOverride;
+            instanceCentreStar.GetComponent<CelestialName>().title = titleOverride;
         }
     }
 
@@ -471,7 +505,7 @@ public class Generation : MonoBehaviour
             controlPlanetoidStationPriceWater = controlScriptPlanetoidPriceWater,
             controlPlanetoidStationUpgradeIndex = controlScriptPlanetoidStationUpgradeIndex,
 
-            controlCentreStarName = instanceCBodyStar.GetComponent<CelestialName>().title,
+            controlCentreStarName = instanceCentreStar.GetComponent<CelestialName>().title,
             controlVerseSpacePosition = controlScriptVersePosition,
 
             playerPosition = playerScriptPlayerPosition,
@@ -601,6 +635,9 @@ public class Generation : MonoBehaviour
 
             playerScript.currency = data.playerCurrency;
             playerScript.ore = data.playerOre;
+
+            //Asteroids (generate)
+            GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
         }
 
         //Update UI to reflect loaded data
