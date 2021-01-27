@@ -457,7 +457,7 @@ public class Generation : MonoBehaviour
                 //Concatenate the array so that we have the planetoid data along with the data for each upgrade offer's index
                 for (int i = 0; i < StationDocking.upgradeButtons; i++)
                 {
-                    controlScriptPlanetoidStationUpgradeIndex[planetoidArrayIndex, i] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().upgradeIndexOfButton[i];
+                    controlScriptPlanetoidStationUpgradeIndex[planetoidArrayIndex, i] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().upgradeIndexAtButton[i];
                 }
             }
             else
@@ -511,15 +511,12 @@ public class Generation : MonoBehaviour
             playerPosition = playerScriptPlayerPosition,
 
             //Player properties
-            playerThrustEngineWarmupMultiplierMax = playerScript.thrustEngineWarmupMultiplierMax,
+            playerUpgrades = playerScript.upgradeLevels,
 
             playerVitalsHealth = playerScript.vitalsHealth,
-            playerVitalsHealthMax = playerScript.vitalsHealthMax,
             playerDestroyed = playerScript.destroyed,
 
             playerVitalsFuel = playerScript.vitalsFuel,
-            playerVitalsFuelMax = playerScript.vitalsFuelMax,
-            playerVitalsFuelConsumptionRate = playerScript.vitalsFuelConsumptionRate,
 
             playerCurrency = playerScript.currency,
             playerOre = playerScript.ore
@@ -623,15 +620,12 @@ public class Generation : MonoBehaviour
             Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
             //Player properties
-            playerScript.thrustEngineWarmupMultiplierMax = data.playerThrustEngineWarmupMultiplierMax;
+            playerScript.upgradeLevels = data.playerUpgrades;
 
             playerScript.vitalsHealth = data.playerVitalsHealth;
-            playerScript.vitalsHealthMax = data.playerVitalsHealthMax;
             playerScript.destroyed = data.playerDestroyed;
 
             playerScript.vitalsFuel = data.playerVitalsFuel;
-            playerScript.vitalsFuelMax = data.playerVitalsFuelMax;
-            playerScript.vitalsFuelConsumptionRate = data.playerVitalsFuelConsumptionRate;
 
             playerScript.currency = data.playerCurrency;
             playerScript.ore = data.playerOre;

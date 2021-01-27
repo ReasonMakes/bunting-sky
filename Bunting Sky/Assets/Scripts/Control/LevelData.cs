@@ -30,15 +30,12 @@ public static class LevelData
         [SerializeField] public float[] playerPosition;
 
         //Player properties
-        [SerializeField] public float playerThrustEngineWarmupMultiplierMax;
+        [SerializeField] public int[] playerUpgrades;
 
         [SerializeField] public double playerVitalsHealth;
-        [SerializeField] public double playerVitalsHealthMax;
         [SerializeField] public bool playerDestroyed;
 
         [SerializeField] public double playerVitalsFuel;
-        [SerializeField] public double playerVitalsFuelMax;
-        [SerializeField] public double playerVitalsFuelConsumptionRate;
 
         [SerializeField] public double playerCurrency;
         [SerializeField] public double[] playerOre;

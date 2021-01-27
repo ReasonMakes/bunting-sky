@@ -46,8 +46,6 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //!!!!!TOP PRIORITY!!!!!
-    //MAKE RESTART GENERATE ASTEROIDS
-
     //Implement upgrades
     //Add seismic charge weapon
 
@@ -199,7 +197,8 @@ public class Player : MonoBehaviour
     private Vector3 thrustVector;
     private readonly float THRUST = 8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
-    [System.NonSerialized] public float thrustEngineWarmupMultiplierMax = 16f;
+    private float thrustEngineWarmupMultiplierMax;
+    private readonly float THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER = 16f;
     private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.5f; //3f;
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f;
@@ -271,9 +270,11 @@ public class Player : MonoBehaviour
     //Vitals
     [System.NonSerialized] public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
+    private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
     [System.NonSerialized] public bool destroyed = false;
-    [System.NonSerialized] public double vitalsFuel = 15.0;
-    [System.NonSerialized] public double vitalsFuelMax = 15.0;
+    [System.NonSerialized] public double vitalsFuel;
+    [System.NonSerialized] public double vitalsFuelMax;
+    private readonly double VITALS_FUEL_MAX_STARTER = 15.0;
     [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.1;
     [System.NonSerialized] public GameObject vitalsHealthUI;
     [System.NonSerialized] public TextMeshProUGUI vitalsHealthUIText;
@@ -288,7 +289,7 @@ public class Player : MonoBehaviour
 
     #region Init fields: Cargo
     //Cargo (displayed on map screen or when trading at a station)
-    [System.NonSerialized] public double currency = 100.0;
+    [System.NonSerialized] public double currency = 0.0;
     //public double resWater = 0.0;
     //public double resPreciousMetal = 0.0;
     //public double resPlatinoids = 0.0;
@@ -315,20 +316,21 @@ public class Player : MonoBehaviour
     //Laser
     [System.NonSerialized] public GameObject playerWeaponsTreeLaser;
     public GameObject playerLaser;
-    private List<GameObject> weaponLaserPool = new List<GameObject>();
+    private readonly List<GameObject> WEAPON_LASER_POOL = new List<GameObject>();
     private short WeaponLaserPoolIndex = 0;
-    private short weaponLaserPoolLength = 16;
+    private readonly short WEAPON_LASER_POOL_LENGTH = 16;
     
-    private short weaponLaserClipSize = 16;
-    private short weaponLaserClipRemaining = 16;
-    private float weaponLaserClipCooldownDuration = 1.5f; //reload period
+    private short weaponLaserClipSize;
+    private readonly short WEAPON_LASER_CLIP_SIZE_STARTER = 16;
+    private short weaponLaserClipRemaining;
+    private readonly float WEAPON_LASER_CLIP_COOLDOWN_DURATION = 1.5f; //reload period
     private float weaponLaserClipCooldownCurrent = 0f;
 
-    private float weaponLaserSingleCooldownDuration = 0.2f;
+    private readonly float WEAPON_LASER_SINGLE_COOLDOWN_DURATION = 0.2f;
     private float weaponLaserSingleCooldownCurrent = 0f;
     
-    private float weaponLaserProjectileSpeed = 120f;
-    private float weaponLaserLifetimeDuration = 2f;
+    private readonly float WEAPON_LASER_PROJECTILE_SPEED = 120f;
+    private readonly float WEAPON_LASER_LIFETIME_DURATION = 2f;
     #endregion
 
     //Skybox stars
@@ -388,10 +390,10 @@ public class Player : MonoBehaviour
         playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
 
         //Set up object pooling
-        for (int i = 0; i < weaponLaserPoolLength; i++)
+        for (int i = 0; i < WEAPON_LASER_POOL_LENGTH; i++)
         {
             GameObject instancePlayerLaser = Instantiate(playerLaser, Vector3.zero, Quaternion.identity);
-            weaponLaserPool.Add(instancePlayerLaser);
+            WEAPON_LASER_POOL.Add(instancePlayerLaser);
             instancePlayerLaser.SetActive(false);
 
             //Put in weapons tree
@@ -429,6 +431,7 @@ public class Player : MonoBehaviour
 
         //Upgrades
         upgradeLevels = new int[control.commerce.upgradeDictionary.GetLength(0)];
+        UpdateUpgrades();
     }
     #endregion
 
@@ -437,12 +440,22 @@ public class Player : MonoBehaviour
     {
         //DEBUG
         //---------------------------------------------------
+        //Infinite money
+        if (binds.GetInputDown(binds.bindThrustVectorIncrease))
+        {
+            currency += 1000;
+            Debug.Log("Show me the money. " + currency);
+            control.ui.UpdateAllPlayerResourcesUI();
+        }
+
         //Teleport forward
+        /*
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
         {
             transform.position += transform.forward * 1e4f;
             Debug.Log("Teleported forward: distance to star " + (control.generation.instanceCentreStar.transform.position - transform.position).magnitude);
         }
+        */
 
         //Spawn
         /*
@@ -452,7 +465,7 @@ public class Player : MonoBehaviour
             Debug.Log("Spawned one asteroid");
         }
         */
-        
+
         /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
@@ -460,7 +473,7 @@ public class Player : MonoBehaviour
             Debug.Log("Spawned one planetoid");
         }
         */
-        
+
 
         //Slow motion
         /*
@@ -505,7 +518,7 @@ public class Player : MonoBehaviour
             //Decrement fuel
             if (canAndIsMoving)
             {
-                vitalsFuel = Math.Max(0.0, vitalsFuel - (vitalsFuelConsumptionRate * Time.deltaTime));
+                vitalsFuel = Math.Max(0.0, vitalsFuel - ((vitalsFuelConsumptionRate / (1 + upgradeLevels[control.commerce.UPGRADE_FUEL_EFFICIENCY])) * Time.deltaTime));
             }
 
             //Warn on loop if out of fuel
@@ -894,8 +907,11 @@ public class Player : MonoBehaviour
     #region Methods called in update: Weapons
     private void UpdatePlayerWeapons()
     {
+        //UI
+        UpdatePlayerWeaponsUI();
+
         //Cooldowns
-        playerWeaponCooldowns();
+        UpdatePlayerWeaponCooldowns();
         
         //Fire
         if
@@ -929,6 +945,29 @@ public class Player : MonoBehaviour
     #endregion
 
     #region General methods
+    #region General methods: Upgrades
+    public void UpdateUpgrades()
+    {
+        //Vitals
+        vitalsHealthMax = VITALS_HEALTH_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_REINFORCED_HULL]);
+        vitalsHealth = vitalsHealthMax;
+
+        vitalsFuelMax = VITALS_FUEL_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
+        vitalsFuel = vitalsFuelMax;
+
+        UpdateVitalsDisplay();
+
+        //Movement
+        thrustEngineWarmupMultiplierMax = THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_RAPTOR_ENGINES]);
+
+        //Weapons
+        weaponLaserClipSize = (short)(WEAPON_LASER_CLIP_SIZE_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_DUAL_BATTERIES]));
+        weaponLaserClipRemaining = weaponLaserClipSize;
+
+        UpdatePlayerWeaponsUI();
+    }
+    #endregion
+
     #region General methods: Movement
     private void TorqueAxisRelative(float torque, Vector3 cameraDirection, Vector3 playerShipDirection)
     {
@@ -1099,20 +1138,20 @@ public class Player : MonoBehaviour
     private void FireWeaponLaser()
     {
         //Pooling
-        weaponLaserPool[WeaponLaserPoolIndex].SetActive(true);
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].SetActive(true);
         //Ignore collisions between the laser and the player (this does not seem necessary)
         //Physics.IgnoreCollision(weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Collider>(), transform.GetComponent<Collider>());
         //Reset weapon instance
-        weaponLaserPool[WeaponLaserPoolIndex].transform.position = transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f);
-        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
-        weaponLaserPool[WeaponLaserPoolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
-        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Rigidbody>().velocity = rb.velocity + (weaponLaserProjectileSpeed * transform.forward);
-        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeAtWhichThisSelfDestructs = weaponLaserLifetimeDuration;
-        weaponLaserPool[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeSpentAlive = 0f;
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].transform.position = transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f);
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<Rigidbody>().velocity = rb.velocity + (WEAPON_LASER_PROJECTILE_SPEED * transform.forward);
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeAtWhichThisSelfDestructs = WEAPON_LASER_LIFETIME_DURATION;
+        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeSpentAlive = 0f;
 
         //Iterate through list
-        if (WeaponLaserPoolIndex < weaponLaserPoolLength - 1)
+        if (WeaponLaserPoolIndex < WEAPON_LASER_POOL_LENGTH - 1)
         {
             WeaponLaserPoolIndex++;
         }
@@ -1122,12 +1161,13 @@ public class Player : MonoBehaviour
         }
 
         //Cooldown & ammo
-        weaponLaserSingleCooldownCurrent = weaponLaserSingleCooldownDuration;
+        weaponLaserSingleCooldownCurrent = WEAPON_LASER_SINGLE_COOLDOWN_DURATION;
         weaponLaserClipRemaining--;
 
         //UI
-        control.ui.weaponSelectedClipRemainingText.text = "" + weaponLaserClipRemaining;
-        
+        //Deprecated as this is called in Update() now anyway
+        //UpdatePlayerWeaponsUI();
+
         //Play sound effect
         switch (soundSourceLaserArrayIndex)
         {
@@ -1150,7 +1190,7 @@ public class Player : MonoBehaviour
         if (soundSourceLaserArrayIndex > soundSourceLaserArrayLength - 1) soundSourceLaserArrayIndex = 0;
     }
 
-    private void playerWeaponCooldowns()
+    private void UpdatePlayerWeaponCooldowns()
     {
         //Reload
         if (binds.GetInputDown(binds.bindPrimaryReload) && weaponLaserClipRemaining != weaponLaserClipSize)
@@ -1169,10 +1209,6 @@ public class Player : MonoBehaviour
         {
             weaponLaserClipCooldownCurrent -= Time.deltaTime;
         }
-        else
-        {
-            control.ui.weaponSelectedClipRemainingText.text = "" + weaponLaserClipRemaining;
-        }
 
         //Reloading
         if (weaponLaserClipRemaining == 0)
@@ -1180,16 +1216,29 @@ public class Player : MonoBehaviour
             //Play sound
             soundSourceLaserReload.Play();
             //Start cooldown
-            weaponLaserClipCooldownCurrent = weaponLaserClipCooldownDuration;
+            weaponLaserClipCooldownCurrent = WEAPON_LASER_CLIP_COOLDOWN_DURATION;
             //Reset clip
             weaponLaserClipRemaining = weaponLaserClipSize;
         }
 
         //UI
+        //Deprecated as this is called in Update() now anyway
+        //UpdatePlayerWeaponsUI();
+    }
+
+    private void UpdatePlayerWeaponsUI()
+    {
+        //Clip max text
+        control.ui.weaponSelectedClipSizeText.text = weaponLaserClipSize.ToString();
+
+        //Clip remaining text
+        control.ui.weaponSelectedClipRemainingText.text = weaponLaserClipRemaining.ToString();
+
+        //Single and clip joint-cooldown bar
         control.ui.weaponCooldown.fillAmount = Mathf.Max(
             0f,
-            weaponLaserSingleCooldownCurrent / weaponLaserSingleCooldownDuration,
-            weaponLaserClipCooldownCurrent / weaponLaserClipCooldownDuration
+            weaponLaserSingleCooldownCurrent / WEAPON_LASER_SINGLE_COOLDOWN_DURATION,
+            weaponLaserClipCooldownCurrent / WEAPON_LASER_CLIP_COOLDOWN_DURATION
         );
     }
     #endregion

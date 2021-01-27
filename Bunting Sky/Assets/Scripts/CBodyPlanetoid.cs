@@ -159,7 +159,7 @@ public class CBodyPlanetoid : MonoBehaviour
                 scriptStationDocking.priceWater = priceWater;
 
                 //Upgrades
-                scriptStationDocking.upgradeIndexOfButton = upgradeIndex;
+                scriptStationDocking.upgradeIndexAtButton = upgradeIndex;
             }
         }
 
