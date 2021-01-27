@@ -29,7 +29,7 @@ public class Ore : MonoBehaviour
         deathTime = Time.time + DEATH_DELAY + Random.Range(0f, 2f);
 
         //Get player data
-        playerBodyTransform = control.instancePlayer.transform.Find("Body").transform;
+        playerBodyTransform = control.generation.instancePlayer.transform.Find("Body").transform;
         //playerVAtInit = playerTransform.GetComponent<Rigidbody>().velocity;
 
         //Assign material equal to type
@@ -139,7 +139,7 @@ public class Ore : MonoBehaviour
         //rb.velocity = control.DragRelative(rb.velocity, playerTransform.GetComponent<Rigidbody>().velocity, DRAG);
 
         //Drag relative to parent asteroid velocity
-        rb.velocity = control.DragRelative(rb.velocity, parentVelocity, DRAG);
+        rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, parentVelocity, DRAG);
 
         //Drag relative to the system
         //rb.velocity *= (1f - (DRAG * Time.deltaTime));
@@ -157,7 +157,7 @@ public class Ore : MonoBehaviour
             playerBodyTransform.GetComponent<Player>().ore[type]++;
 
             //Update resources display
-            control.UpdateAllPlayerResourcesUI();
+            control.ui.UpdateAllPlayerResourcesUI();
         }
 
         //Destroy if it hasn't been already

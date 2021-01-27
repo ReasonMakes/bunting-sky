@@ -41,7 +41,7 @@ public class CBodyAsteroid : MonoBehaviour
 
     private void Start()
     {
-        playerTran = control.instancePlayer.transform.Find("Body");
+        playerTran = control.generation.instancePlayer.transform.Find("Body");
     }
 
     private void Update()
@@ -182,7 +182,7 @@ public class CBodyAsteroid : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         //Fatal collisions
-        if (collision.collider.gameObject.name == control.cBodyPlanetoid.name + "(Clone)" || collision.collider.gameObject.name == control.cBodyStar.name + "(Clone)")
+        if (collision.collider.gameObject.name == control.generation.cBodyPlanetoid.name + "(Clone)" || collision.collider.gameObject.name == control.generation.cBodyStar.name + "(Clone)")
         {
             //Destroy self
             Damage(health, Vector3.zero, transform.position);
@@ -250,7 +250,7 @@ public class CBodyAsteroid : MonoBehaviour
     {
         //Instantiate at parent position, plus some randomness
         GameObject instanceCBodyAsteroid = Instantiate(
-            control.cBodyAsteroid,
+            control.generation.cBodyAsteroid,
             transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)),
             Quaternion.Euler(
                 Random.Range(0f, 360f),
@@ -259,7 +259,7 @@ public class CBodyAsteroid : MonoBehaviour
             )
         );
         //Put in CBodies tree
-        instanceCBodyAsteroid.transform.parent = control.cBodiesAsteroids.transform;
+        instanceCBodyAsteroid.transform.parent = control.generation.cBodiesAsteroids.transform;
 
         //Pass control reference
         instanceCBodyAsteroid.GetComponent<Gravity>().control = control;
@@ -300,7 +300,7 @@ public class CBodyAsteroid : MonoBehaviour
             Quaternion.identity
         );
         //Put in Ore tree
-        instanceOre.transform.parent = control.ore.transform;
+        instanceOre.transform.parent = control.generation.ores.transform;
 
         //Rigidbody
         Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();

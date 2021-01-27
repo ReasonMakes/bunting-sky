@@ -39,8 +39,8 @@ public class CBodyPlanetoid : MonoBehaviour
         (
             !disabled
             && (
-                collision.collider.gameObject.name == control.cBodyPlanetoid.name + "(Clone)"
-                || collision.collider.gameObject.name == control.cBodyStar.name + "(Clone)"
+                collision.collider.gameObject.name == control.generation.cBodyPlanetoid.name + "(Clone)"
+                || collision.collider.gameObject.name == control.generation.cBodyStar.name + "(Clone)"
             )
         )
         {
@@ -75,7 +75,7 @@ public class CBodyPlanetoid : MonoBehaviour
         for(int i = 0; i < 7; i++)
         {
             //Spawn
-            GameObject asteroid = control.SpawnAsteroidManually(transform.position, rb.velocity, false);
+            GameObject asteroid = control.generation.SpawnAsteroidManually(transform.position, rb.velocity, false);
 
             //Spread out
             asteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);
@@ -94,7 +94,7 @@ public class CBodyPlanetoid : MonoBehaviour
         {
             bool particlesFadedOut = timeSpentDisabled >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
 
-            Transform playerTransform = control.instancePlayer.transform.Find("Body").transform;
+            Transform playerTransform = control.generation.instancePlayer.transform.Find("Body").transform;
             bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTransform.position) >= playerTransform.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
 
             if (disabled && particlesFadedOut && playerBeyondArbitraryDistance)

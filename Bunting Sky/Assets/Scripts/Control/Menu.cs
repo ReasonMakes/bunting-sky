@@ -100,7 +100,7 @@ public class Menu : MonoBehaviour
         Cursor.lockState = menuOpenAndGamePaused ? CursorLockMode.None : CursorLockMode.Locked;
 
         //Toggle reticle
-        control.reticle.SetActive(!menuOpenAndGamePaused);
+        control.ui.cameraReticle.SetActive(!menuOpenAndGamePaused);
     }
 
     public void MenuMainOpen()
@@ -119,7 +119,7 @@ public class Menu : MonoBehaviour
 
     public void MenuSaveAndQuit()
     {
-        control.SaveGame();
+        control.generation.SaveGame();
         Application.Quit();
     }
 
@@ -132,7 +132,7 @@ public class Menu : MonoBehaviour
 
     public void MenuRestartConfirmed()
     {
-        control.GenerateGame(control.GENERATION_TYPE_RESTARTED_GAME);
+        control.generation.GenerateGame(control.generation.GENERATION_TYPE_RESTARTED_GAME);
         MenuToggle();
     }
 
@@ -201,7 +201,7 @@ public class Menu : MonoBehaviour
             menuSettingsHFieldOfViewIn.text = inputField.ToString();
 
             //Update in game
-            control.instancePlayer.GetComponentInChildren<Player>().SetCameraSettings();
+            control.generation.instancePlayer.GetComponentInChildren<Player>().SetCameraSettings();
         }
     }
 
@@ -262,7 +262,7 @@ public class Menu : MonoBehaviour
         //Update in game
         if (!control.settings.displayFPS)
         {
-            control.systemInfo.text = "";
+            control.ui.systemInfo.text = "";
         }
     }
 
@@ -273,12 +273,12 @@ public class Menu : MonoBehaviour
         control.settings.Save();
 
         //Update in game
-        control.canvas.transform.Find("HUD Centre").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("HUD Top-Left").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("HUD Top").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("HUD Top-Right").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("HUD Bottom-Right").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("HUD Bottom-Left").gameObject.SetActive(control.settings.displayHUD);
+        control.ui.canvas.transform.Find("HUD Centre").gameObject.SetActive(control.settings.displayHUD);
+        control.ui.canvas.transform.Find("HUD Top-Left").gameObject.SetActive(control.settings.displayHUD);
+        control.ui.canvas.transform.Find("HUD Top").gameObject.SetActive(control.settings.displayHUD);
+        control.ui.canvas.transform.Find("HUD Top-Right").gameObject.SetActive(control.settings.displayHUD);
+        control.ui.canvas.transform.Find("HUD Bottom-Right").gameObject.SetActive(control.settings.displayHUD);
+        control.ui.canvas.transform.Find("HUD Bottom-Left").gameObject.SetActive(control.settings.displayHUD);
 
         //control.canvas.transform.Find("HUD").gameObject.SetActive(control.settings.displayHUD);
 
@@ -299,10 +299,10 @@ public class Menu : MonoBehaviour
         control.settings.Save();
 
         //Don't update in-game when player has been destroyed
-        if (!control.instancePlayer.GetComponentInChildren<Player>().destroyed)
+        if (!control.generation.instancePlayer.GetComponentInChildren<Player>().destroyed)
         {
             //Not quite sure why this needs to be inverted, but it works
-            control.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(!control.settings.spotlightOn);
+            control.generation.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(!control.settings.spotlightOn);
         }
     }
 

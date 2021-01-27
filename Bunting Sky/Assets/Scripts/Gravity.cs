@@ -54,7 +54,7 @@ public class Gravity : MonoBehaviour
         //Debug.Log(gameObject.name);
         if (gravitateTowardCentreStarOnly)
         {
-            GravitateTowardOneCBody(control.instanceCBodyStar.GetComponent<Gravity>());
+            GravitateTowardOneCBody(control.generation.instanceCBodyStar.GetComponent<Gravity>());
         }
         else
         {
@@ -157,10 +157,10 @@ public class Gravity : MonoBehaviour
 
         //Debug.Log(gameObject.name + ": " + Control.gravityInstanceIndex);
 
-        gravityInstanceIndex = Control.gravityInstanceIndex;
+        gravityInstanceIndex = Generation.gravityInstanceIndex;
         //Increment
-        Control.gravityInstanceIndex += (int)(GRAVITY_SLOW_UPDATE_PERIOD * 0.161803398874989484820458683436f);
+        Generation.gravityInstanceIndex += (int)(GRAVITY_SLOW_UPDATE_PERIOD * 0.161803398874989484820458683436f);
         //Wrap
-        if (Control.gravityInstanceIndex >= GRAVITY_SLOW_UPDATE_PERIOD) Control.gravityInstanceIndex -= GRAVITY_SLOW_UPDATE_PERIOD;
+        if (Generation.gravityInstanceIndex >= GRAVITY_SLOW_UPDATE_PERIOD) Generation.gravityInstanceIndex -= GRAVITY_SLOW_UPDATE_PERIOD;
     }
 }

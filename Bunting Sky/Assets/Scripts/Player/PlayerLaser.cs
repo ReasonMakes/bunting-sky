@@ -14,7 +14,7 @@ public class PlayerLaser : MonoBehaviour
     private void Start()
     {
         rb.detectCollisions = false;
-        playerBody = control.instancePlayer.transform.Find("Body");
+        playerBody = control.generation.instancePlayer.transform.Find("Body");
     }
 
     private void Update()

@@ -116,7 +116,7 @@ public class StationDocking : MonoBehaviour
     {
         if (Commerce.menuOpen && host)
         {
-            control.instancePlayer.transform.Find("Body").transform.position = transform.position;
+            control.generation.instancePlayer.transform.Find("Body").transform.position = transform.position;
         }
         else
         {

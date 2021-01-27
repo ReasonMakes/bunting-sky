@@ -46,7 +46,7 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //!!!!!TOP PRIORITY!!!!!
-    //TODO ADD SECTION IN CBODYPLANETOID STATION GENERATION TO PASS OFFERS IN FROM CONTROL GAME LOAD
+    //MAKE RESTART GENERATE ASTEROIDS
 
     //Implement upgrades
     //Add seismic charge weapon
@@ -374,7 +374,7 @@ public class Player : MonoBehaviour
         ore = new double[3]; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
         //Update resources UI
-        control.UpdateAllPlayerResourcesUI();
+        control.ui.UpdateAllPlayerResourcesUI();
 
         //Collection sound
         soundSourceOreCollected.clip = soundClipOreCollected;
@@ -382,7 +382,7 @@ public class Player : MonoBehaviour
         //WEAPONS
         //Weapons trees
         playerWeaponsTree = new GameObject("Weapons");
-        playerWeaponsTree.transform.parent = control.verseSpace.transform;
+        playerWeaponsTree.transform.parent = control.generation.verseSpace.transform;
 
         playerWeaponsTreeLaser = new GameObject("Laser");
         playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
@@ -402,7 +402,7 @@ public class Player : MonoBehaviour
         }
 
         //UI
-        control.weaponSelectedClipSizeText.text = "" + weaponLaserClipSize;
+        control.ui.weaponSelectedClipSizeText.text = "" + weaponLaserClipSize;
 
         //AUDIO
         //Play the first song 0 to 30 seconds after startup
@@ -441,15 +441,17 @@ public class Player : MonoBehaviour
         if (binds.GetInputDown(binds.bindThrustVectorIncrease))
         {
             transform.position += transform.forward * 1e4f;
-            Debug.Log("Teleported forward: distance to star " + (control.instanceCBodyStar.transform.position - transform.position).magnitude);
+            Debug.Log("Teleported forward: distance to star " + (control.generation.instanceCBodyStar.transform.position - transform.position).magnitude);
         }
 
         //Spawn
+        /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
-            control.SpawnAsteroidManually(transform.position + transform.forward * 2f, rb.velocity, true);
+            control.generation.SpawnAsteroidManually(transform.position + transform.forward * 2f, rb.velocity, true);
             Debug.Log("Spawned one asteroid");
         }
+        */
         
         /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
@@ -634,17 +636,17 @@ public class Player : MonoBehaviour
         if (closestPlanetoidTransform != null && distToClosestPlanetoid <= ORBITAL_DRAG_MODE_THRESHOLD)
         {
             //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
-            rb.velocity = control.DragRelative(rb.velocity, closestPlanetoidTransform.GetComponent<Rigidbody>().velocity, DRAG);
+            rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestPlanetoidTransform.GetComponent<Rigidbody>().velocity, DRAG);
         }
         else if (closestAsteroidTransform != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)
         {
             //Asteroid-relative drag (we check if the transform is null because asteroids are destructible)
-            rb.velocity = control.DragRelative(rb.velocity, closestAsteroidTransform.GetComponent<Rigidbody>().velocity, DRAG);
+            rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestAsteroidTransform.GetComponent<Rigidbody>().velocity, DRAG);
         }
         else if (targetObject != null)
         {
             //Target-relative drag
-            rb.velocity = control.DragRelative(rb.velocity, targetObject.GetComponent<Rigidbody>().velocity, DRAG);
+            rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, targetObject.GetComponent<Rigidbody>().velocity, DRAG);
         }
         else
         {
@@ -820,7 +822,7 @@ public class Player : MonoBehaviour
         {
             //Map
             if (binds.GetInputDown(binds.bindToggleMap)) ToggleMapView();
-            if (Control.displayMap)
+            if (UI.displayMap)
             {
                 mapCam.transform.position = Vector3.zero + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
             }
@@ -895,7 +897,7 @@ public class Player : MonoBehaviour
             && Application.isFocused
             && !Menu.menuOpenAndGamePaused
             && !Commerce.menuOpen
-            && !Control.displayMap
+            && !UI.displayMap
             && binds.GetInput(binds.bindPrimaryFire)
             && weaponLaserSingleCooldownCurrent <= 0f
             && weaponLaserClipCooldownCurrent <= 0f
@@ -977,7 +979,7 @@ public class Player : MonoBehaviour
 
         transform.Find("Spotlight").gameObject.SetActive(!destroyed);
         transform.Find("Jet Glow").gameObject.SetActive(!destroyed);
-        control.playerShipDirectionReticleTree.SetActive(!destroyed);
+        control.ui.playerShipDirectionReticleTree.SetActive(!destroyed);
     }
 
     private void GetMouseToCameraTransform()
@@ -1049,39 +1051,39 @@ public class Player : MonoBehaviour
     
     private void ToggleMapView()
     {
-        Control.displayMap = !Control.displayMap;
+        UI.displayMap = !UI.displayMap;
 
-        control.ToggleMapUI();
+        control.ui.ToggleMapUI();
 
-        if (Control.displayMap)
+        if (UI.displayMap)
         {
             //Ship cameras
-            fpCam.SetActive(!Control.displayMap);
-            tpCam.SetActive(!Control.displayMap);
+            fpCam.SetActive(!UI.displayMap);
+            tpCam.SetActive(!UI.displayMap);
 
             //Map camera
-            mapCam.SetActive(Control.displayMap);
+            mapCam.SetActive(UI.displayMap);
 
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = mapCam.transform;
 
             //Map ship model
-            transform.parent.Find("Ship Map Model").gameObject.SetActive(Control.displayMap);
+            transform.parent.Find("Ship Map Model").gameObject.SetActive(UI.displayMap);
         }
         else
         {
             //Ship cameras
-            fpCam.SetActive(!Control.displayMap);
+            fpCam.SetActive(!UI.displayMap);
             DecideWhichModelsToRender(); 
 
             //Map camera
-            mapCam.SetActive(Control.displayMap);
+            mapCam.SetActive(UI.displayMap);
 
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = positionMount.transform;
 
             //Map ship model
-            transform.parent.Find("Ship Map Model").gameObject.SetActive(Control.displayMap);
+            transform.parent.Find("Ship Map Model").gameObject.SetActive(UI.displayMap);
         }
     }
     #endregion
@@ -1117,7 +1119,7 @@ public class Player : MonoBehaviour
         weaponLaserClipRemaining--;
 
         //UI
-        control.weaponSelectedClipRemainingText.text = "" + weaponLaserClipRemaining;
+        control.ui.weaponSelectedClipRemainingText.text = "" + weaponLaserClipRemaining;
         
         //Play sound effect
         switch (soundSourceLaserArrayIndex)
@@ -1162,7 +1164,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            control.weaponSelectedClipRemainingText.text = "" + weaponLaserClipRemaining;
+            control.ui.weaponSelectedClipRemainingText.text = "" + weaponLaserClipRemaining;
         }
 
         //Reloading
@@ -1177,7 +1179,7 @@ public class Player : MonoBehaviour
         }
 
         //UI
-        control.weaponCooldown.fillAmount = Mathf.Max(
+        control.ui.weaponCooldown.fillAmount = Mathf.Max(
             0f,
             weaponLaserSingleCooldownCurrent / weaponLaserSingleCooldownDuration,
             weaponLaserClipCooldownCurrent / weaponLaserClipCooldownDuration

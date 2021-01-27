@@ -26,6 +26,6 @@ public class StationOrbit : MonoBehaviour
 
         //Drag
         float drag = 50f;
-        rb.velocity = control.DragRelative(rb.velocity, planetoidToOrbit.GetComponent<Rigidbody>().velocity, drag);
+        rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, planetoidToOrbit.GetComponent<Rigidbody>().velocity, drag);
     }
 }

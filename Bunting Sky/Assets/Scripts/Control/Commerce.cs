@@ -95,18 +95,18 @@ public class Commerce : MonoBehaviour
         Cursor.lockState = menuOpen ? CursorLockMode.None : CursorLockMode.Locked;
 
         //Toggle reticle
-        control.reticle.SetActive(!menuOpen);
+        control.ui.cameraReticle.SetActive(!menuOpen);
     }
 
     private void UpdatePlayerResourcesAndCommerceMenuUI()
     {
-        control.UpdateAllPlayerResourcesUI();
+        control.ui.UpdateAllPlayerResourcesUI();
         UpdateCommerceMenuUI();
     }
 
     private void UpdateCommerceMenuUI()
     {
-        Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         //Sell
         menuButtonSellAllPlatinoid.interactable = playerScript.ore[0] > 0.0;
@@ -132,7 +132,7 @@ public class Commerce : MonoBehaviour
 
     public void SellAllPlatinoid()
     {
-        Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[0] * pricePlatinoid;
         playerScript.ore[0] = 0.0;
@@ -142,7 +142,7 @@ public class Commerce : MonoBehaviour
 
     public void SellAllPreciousMetal()
     {
-        Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[1] * pricePreciousMetal;
         playerScript.ore[1] = 0.0;
@@ -152,7 +152,7 @@ public class Commerce : MonoBehaviour
 
     public void SellAllWater()
     {
-        Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.currency += playerScript.ore[2] * priceWater;
         playerScript.ore[2] = 0.0;
@@ -162,7 +162,7 @@ public class Commerce : MonoBehaviour
 
     public void Repair()
     {
-        Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         if ((playerScript.currency >= priceRepair) && (playerScript.vitalsHealth < playerScript.vitalsHealthMax))
         {
@@ -175,7 +175,7 @@ public class Commerce : MonoBehaviour
 
     public void Refuel()
     {
-        Player playerScript = control.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         if ((playerScript.currency >= priceRefuel) && (playerScript.vitalsFuel < playerScript.vitalsFuelMax))
         {

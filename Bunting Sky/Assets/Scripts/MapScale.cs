@@ -13,6 +13,6 @@ public class MapScale : MonoBehaviour
 
     private void Update()
     {
-        mapModel.SetActive(Control.displayMap);
+        mapModel.SetActive(UI.displayMap);
     }
 }
