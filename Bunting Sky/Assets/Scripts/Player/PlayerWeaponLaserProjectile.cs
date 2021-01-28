@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerLaser : MonoBehaviour
+public class PlayerWeaponLaserProjectile : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
     public Rigidbody rb;

@@ -128,7 +128,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[3, UPGRADE_DESCRIPTION] = "Doubles outer hull integrity";
         upgradeDictionary[4, UPGRADE_DESCRIPTION] = "Increases maximum forward thrust output by 1.5x";
         upgradeDictionary[5, UPGRADE_DESCRIPTION] = "Doubles the mining laser's maximum ammunition per cycle";
-        upgradeDictionary[6, UPGRADE_DESCRIPTION] = "Automatically processes water ice in cargo into usable jet fuel";
+        upgradeDictionary[6, UPGRADE_DESCRIPTION] = "Automatically processes water ice cargo into usable jet fuel (toggle in settings)";
         //upgradeDictionary[7, UPGRADE_DESCRIPTION] = "Enables extra-dimensional interstellar travel through the bulk";
         upgradeDictionary[7, UPGRADE_DESCRIPTION] = "Explosive weapon. Useful for mining clusters of small asteroids";
 
@@ -188,15 +188,15 @@ public class Commerce : MonoBehaviour
         TextMeshProUGUI sellAllWaterPrice           = menuButtonSellAllWater.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>();
 
         //Interactable
-        menuButtonSellAllPlatinoid.interactable     = playerScript.ore[0] > 0.0;
-        menuButtonSellAllPreciousMetal.interactable = playerScript.ore[1] > 0.0;
-        menuButtonSellAllWater.interactable         = playerScript.ore[2] > 0.0;
+        menuButtonSellAllPlatinoid.interactable     = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0;
+        menuButtonSellAllPreciousMetal.interactable = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0;
+        menuButtonSellAllWater.interactable         = playerScript.ore[playerScript.ORE_WATER] > 0.0;
 
         //Display
         //Text
-        sellAllPlatinoidText.text       = playerScript.ore[0] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
-        sellAllPreciousMetalText.text   = playerScript.ore[0] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
-        sellAllWaterText.text           = playerScript.ore[0] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllPlatinoidText.text       = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllPreciousMetalText.text   = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllWaterText.text           = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
 
         //Price
         sellAllPlatinoidPrice.text      = "$" + pricePlatinoid + " / g";
@@ -204,14 +204,14 @@ public class Commerce : MonoBehaviour
         sellAllWaterPrice.text          = "$" + priceWater + " / g";
 
         //Colour
-        sellAllPlatinoidText.color      = playerScript.ore[0] > 0.0 ? colorTextEnabled : colorTextDisabled;
-        sellAllPlatinoidPrice.color     = playerScript.ore[0] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllPlatinoidText.color      = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllPlatinoidPrice.color     = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? colorTextEnabled : colorTextDisabled;
 
-        sellAllPreciousMetalText.color  = playerScript.ore[0] > 0.0 ? colorTextEnabled : colorTextDisabled;
-        sellAllPreciousMetalPrice.color = playerScript.ore[0] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllPreciousMetalText.color  = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllPreciousMetalPrice.color = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? colorTextEnabled : colorTextDisabled;
 
-        sellAllWaterText.color          = playerScript.ore[0] > 0.0 ? colorTextEnabled : colorTextDisabled;
-        sellAllWaterPrice.color         = playerScript.ore[0] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllWaterText.color          = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllWaterPrice.color         = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? colorTextEnabled : colorTextDisabled;
 
         //UPGRADE
         //Interactable

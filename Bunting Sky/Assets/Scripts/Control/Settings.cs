@@ -33,6 +33,7 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool displayHUD;
     [System.NonSerialized] public int targetFPS;
     [System.NonSerialized] public bool spotlightOn;
+    [System.NonSerialized] public bool refine;
 
     public void Start()
     {
@@ -60,7 +61,8 @@ public class Settings : MonoBehaviour
             displayFPS = false,
             displayHUD = true,
             targetFPS = 300,
-            spotlightOn = true
+            spotlightOn = true,
+            refine = true
         };
     }
 
@@ -75,6 +77,7 @@ public class Settings : MonoBehaviour
         ioBuffer.displayHUD = displayHUD;
         ioBuffer.targetFPS = targetFPS;
         ioBuffer.spotlightOn = spotlightOn;
+        ioBuffer.refine = refine;
     }
 
     public void SetSettingsToIOBuffer()
@@ -88,6 +91,7 @@ public class Settings : MonoBehaviour
         displayHUD = ioBuffer.displayHUD;
         targetFPS = ioBuffer.targetFPS;
         spotlightOn = ioBuffer.spotlightOn;
+        refine = ioBuffer.refine;
     }
 
     //This entire object is what we save/load. It must contain duplicates for all settings definitions that its parent class has
@@ -102,6 +106,7 @@ public class Settings : MonoBehaviour
         public bool displayHUD;
         public int targetFPS;
         public bool spotlightOn;
+        public bool refine;
     }
 
     #region Save/load

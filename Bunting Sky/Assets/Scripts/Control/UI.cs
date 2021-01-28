@@ -575,22 +575,35 @@ public class UI : MonoBehaviour
     #endregion
 
     #region UI: Player resources
+    public void UpdatePlayerVitalsDisplay()
+    {
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+
+        playerScript.vitalsHealthUI.GetComponent<Image>().fillAmount = (float)(playerScript.vitalsHealth / playerScript.vitalsHealthMax);
+        playerScript.vitalsHealthUIText.text = playerScript.vitalsHealth.ToString("F2");
+        playerScript.vitalsFuelUI.GetComponent<Image>().fillAmount = (float)(playerScript.vitalsFuel / playerScript.vitalsFuelMax);
+        playerScript.vitalsFuelUIText.text = playerScript.vitalsFuel.ToString("F2");
+    }
+
+    public void UpdatePlayerOreWaterText()
+    {
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+
+        resourcesTextWater.text = playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " g";
+    }
+
     public void UpdateAllPlayerResourcesUI()
     {
-        Player playerScript = control.generation.instancePlayer.transform.Find("Body").GetComponent<Player>();
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         //Update values and start animations on a resource if its value changed
         UpdatePlayerResourceUI(ref resourcesTextCurrency, ref resourcesImageCurrency, playerScript.currency.ToString("F2") + " ICC", playerScript.soundSourceCoins);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid, ref resourcesImagePlatinoid, playerScript.ore[0].ToString("F2") + " g", playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal, ref resourcesImagePreciousMetal, playerScript.ore[1].ToString("F2") + " g", playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater, ref resourcesImageWater, playerScript.ore[2].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid, ref resourcesImagePlatinoid, playerScript.ore[playerScript.ORE_PLATINOID].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal, ref resourcesImagePreciousMetal, playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater, ref resourcesImageWater, playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " g", playerScript.soundSourceOreCollected);
 
         //Update console
-        TextMesh consoleCargoText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Cargo Text").GetComponent<TextMesh>();
-        consoleCargoText.text = "Currency: " + resourcesTextCurrency.text
-            + "\n" + "Platinoid: " + resourcesTextPlatinoid.text
-            + "\n" + "Precious metal: " + resourcesTextPreciousMetal.text
-            + "\n" + "Water ice: " + resourcesTextWater.text;
+        UpdatePlayerConsole();
 
         //Set animations to update
         UpdateAllPlayerResourcesUIAnimations();
@@ -639,6 +652,15 @@ public class UI : MonoBehaviour
             //Loop until animation is finished
             updatePlayerResourcesUIAnimations = true;
         }
+    }
+
+    private void UpdatePlayerConsole()
+    {
+        TextMesh consoleCargoText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Cargo Text").GetComponent<TextMesh>();
+        consoleCargoText.text = "Currency: " + resourcesTextCurrency.text
+            + "\n" + "Platinoid: " + resourcesTextPlatinoid.text
+            + "\n" + "Precious metal: " + resourcesTextPreciousMetal.text
+            + "\n" + "Water ice: " + resourcesTextWater.text;
     }
     #endregion
 }

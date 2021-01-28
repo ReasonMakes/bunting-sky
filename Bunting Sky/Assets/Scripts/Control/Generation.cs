@@ -59,7 +59,7 @@ public class Generation : MonoBehaviour
     private void Start()
     {
         //Auto load
-        LoadGame();
+        TryLoadGameElseNewGame();
 
         //Auto saving
         InvokeRepeating("SaveGame", control.AUTO_SAVE_FREQUENCY, control.AUTO_SAVE_FREQUENCY);
@@ -107,8 +107,8 @@ public class Generation : MonoBehaviour
             Control.DestroyAllChildren(cBodiesPlanetoids, 0f);
             Control.DestroyAllChildren(cBodiesAsteroids, 0f);
             Control.DestroyAllChildren(ores, 0f);
-            Control.DestroyAllChildren(instancePlayer.GetComponentInChildren<Player>().playerWeaponsTreeLaser, 0f);
-
+            instancePlayer.GetComponentInChildren<Player>().WeaponsDestroyTrees();
+            
             //Destroy player
             playerSpawned = false;
             instancePlayer.GetComponentInChildren<Player>().warningUIText.color = new Color(1f, 0f, 0f, 0f);
@@ -167,6 +167,14 @@ public class Generation : MonoBehaviour
         );
         instancePlayer.transform.Find("Body").transform.position = position;
 
+        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+
+        if (generationType == GENERATION_TYPE_NEW_GAME)
+        {
+            playerScript.vitalsHealth = playerScript.vitalsHealthMax;
+            playerScript.vitalsFuel = playerScript.vitalsFuelMax;
+        }
+
         if (generationType == GENERATION_TYPE_NEW_GAME || generationType == GENERATION_TYPE_RESTARTED_GAME)
         {
             instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
@@ -174,7 +182,8 @@ public class Generation : MonoBehaviour
         }
 
         //Script properties
-        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+        instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().control = control;
+        instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().player = instancePlayer.GetComponentInChildren<Player>();
 
         playerScript.control = control;
         playerScript.cBodies = cBodies;
@@ -411,7 +420,7 @@ public class Generation : MonoBehaviour
     #region: Saving and loading
     public void SaveGame()
     {
-        Debug.Log("Saving game");
+        //Debug.Log("Saving game");
 
         Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
@@ -525,19 +534,19 @@ public class Generation : MonoBehaviour
         LevelData.SaveGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile, data);
     }
 
-    public void LoadGame()
+    public void TryLoadGameElseNewGame()
     {
         LevelData.Data data = LevelData.LoadGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile);
 
         //Only load if a save file exists. If a save file doesn't exist, generate a new game
         if (data == null)
         {
-            Debug.Log("No save exists; generating new game");
+            //Debug.Log("No save exists; generating new game");
             GenerateGame(GENERATION_TYPE_NEW_GAME);
         }
         else
         {
-            Debug.Log("Save exists; loading game");
+            //Debug.Log("Save exists; loading game");
 
             //VERSE
             //Centre Star
@@ -621,6 +630,7 @@ public class Generation : MonoBehaviour
 
             //Player properties
             playerScript.upgradeLevels = data.playerUpgrades;
+            playerScript.UpdateUpgrades();
 
             playerScript.vitalsHealth = data.playerVitalsHealth;
             playerScript.destroyed = data.playerDestroyed;

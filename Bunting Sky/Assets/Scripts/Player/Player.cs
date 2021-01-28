@@ -46,15 +46,20 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //!!!!!TOP PRIORITY!!!!!
-    //Implement upgrades
     //Add seismic charge weapon
 
-    //Asteroids should automatically destroy themselves is far enough away from the player and there is an overrage (AND NOT TARGETTED OR NEAR A TARGETTED OBJECT)
-    //Asteroids should automatically generate if there aren't enough in the verse
-
     //Add menu scrolling
+    //Add setting in menu to toggle refinery
     //Add setting to turn off music
     //Add keybinds menu
+
+    //Add planetoid variations
+
+    //Map screen should be less janky
+    //- scroll wheel to zoom in and out
+    //- centres around player without skipping forward tons
+    //- displays background stars
+    //- doesn't render destroyed planetoids
 
     //Fix ship auto-torquing
 
@@ -240,17 +245,17 @@ public class Player : MonoBehaviour
     //Audio: Sound Effects
     public AudioSource soundSourceRocket;
     public AudioClip soundClipRocket;
-    private float soundRocketVolumeDeltaRate = 0.1f;
-    private float soundRocketMaxVolume = 0.02f;
-    private float soundRocketMaxPitch = 1.5f;
-    private float soundRocketPitchDeltaRate = 0.2f;
+    private readonly float SOUND_ROCKET_MAX_VOLUME = 0.02f;
+    private readonly float SOUND_ROCKET_VOLUME_DELTA_RATE = 0.1f;
+    private readonly float SOUND_ROCKET_MAX_PITCH = 1.5f;
+    private readonly float SOUND_ROCKET_PITCH_DELTA_RATE = 0.2f;
 
     public AudioSource soundSourceLaser0;
     public AudioSource soundSourceLaser1;
     public AudioSource soundSourceLaser2;
     public AudioSource soundSourceLaser3;
-    private byte soundSourceLaserArrayIndex = 0;
-    private byte soundSourceLaserArrayLength = 4;
+    [System.NonSerialized] public byte soundSourceLaserArrayIndex = 0;
+    [System.NonSerialized] public byte soundSourceLaserArrayLength = 4;
     public AudioClip soundClipLaser;
 
     public AudioSource soundSourceLaserReload;
@@ -272,8 +277,8 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
     private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
     [System.NonSerialized] public bool destroyed = false;
-    [System.NonSerialized] public double vitalsFuel;
-    [System.NonSerialized] public double vitalsFuelMax;
+    [System.NonSerialized] public double vitalsFuel = 15.0;
+    [System.NonSerialized] public double vitalsFuelMax = 15.0;
     private readonly double VITALS_FUEL_MAX_STARTER = 15.0;
     [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.1;
     [System.NonSerialized] public GameObject vitalsHealthUI;
@@ -289,11 +294,14 @@ public class Player : MonoBehaviour
 
     #region Init fields: Cargo
     //Cargo (displayed on map screen or when trading at a station)
-    [System.NonSerialized] public double currency = 0.0;
+    [System.NonSerialized] public double currency = 100.0;
     //public double resWater = 0.0;
     //public double resPreciousMetal = 0.0;
     //public double resPlatinoids = 0.0;
-    [System.NonSerialized] public double[] ore; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
+    [System.NonSerialized] public double[] ore;
+    [System.NonSerialized] public readonly int ORE_PLATINOID = 0;
+    [System.NonSerialized] public readonly int ORE_PRECIOUS_METAL = 1;
+    [System.NonSerialized] public readonly int ORE_WATER = 2;
 
     /* 
      * Water ice doesn't sell for much BUT can be used in situ for fuel & oxygen if upgrade acquired
@@ -307,43 +315,56 @@ public class Player : MonoBehaviour
      */
 
     [System.NonSerialized] public int[] upgradeLevels;
+    private readonly double REFINERY_ORE_WATER_IN_RATE = 0.18d;
+    private readonly double REFINERY_FUEL_OUT_RATE = 0.09d;
+    private readonly float REFINERY_TIME_BETWEEN_REFINES = 1.5f;
+    private float refineryTimeAtLastRefine = 0f;
     #endregion
 
     #region Init fields: Weapons
     //Tree
-    private GameObject playerWeaponsTree;
-
-    //Laser
+    [System.NonSerialized] public GameObject playerWeaponsTree;
+    
+    private PlayerWeaponLaser playerWeaponLaser;
     [System.NonSerialized] public GameObject playerWeaponsTreeLaser;
-    public GameObject playerLaser;
-    private readonly List<GameObject> WEAPON_LASER_POOL = new List<GameObject>();
-    private short WeaponLaserPoolIndex = 0;
-    private readonly short WEAPON_LASER_POOL_LENGTH = 16;
-    
-    private short weaponLaserClipSize;
-    private readonly short WEAPON_LASER_CLIP_SIZE_STARTER = 16;
-    private short weaponLaserClipRemaining;
-    private readonly float WEAPON_LASER_CLIP_COOLDOWN_DURATION = 1.5f; //reload period
-    private float weaponLaserClipCooldownCurrent = 0f;
 
-    private readonly float WEAPON_LASER_SINGLE_COOLDOWN_DURATION = 0.2f;
-    private float weaponLaserSingleCooldownCurrent = 0f;
-    
-    private readonly float WEAPON_LASER_PROJECTILE_SPEED = 120f;
-    private readonly float WEAPON_LASER_LIFETIME_DURATION = 2f;
+    [System.NonSerialized] public string selectedWeapon = "Laser";
+
+    private short weaponSelectedClipSize;
+    private short weaponSelectedClipRemaining;
+    private float weaponSelectedClipCooldownDuration;
+    private float weaponSelectedClipCooldownCurrent;
+
+    private float weaponSelectedSingleCooldownDuration;
+    private float weaponSelectedSingleCooldownCurrent;
     #endregion
 
     //Skybox stars
     public ParticleSystem skyboxStarsParticleSystem;
-    private int starCount = 400;
+    private readonly int SKYBOX_STARS_COUNT = 400;
     #endregion
 
     #region Start
+    private void Awake()
+    {
+        //REFERENCES
+        playerWeaponLaser = GetComponent<PlayerWeaponLaser>();
+
+        //WEAPONS TREES
+        //Main
+        playerWeaponsTree = new GameObject("Weapons");
+        //playerWeaponsTree.transform.parent = control.generation.verseSpace.transform;
+
+        //Laser
+        playerWeaponsTreeLaser = new GameObject("Laser");
+        //playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
+    }
+
     private void Start()
     {
         DecideWhichModelsToRender();
 
-        skyboxStarsParticleSystem.Emit(starCount);
+        skyboxStarsParticleSystem.Emit(SKYBOX_STARS_COUNT);
     }
 
     public void LateStart()
@@ -382,29 +403,7 @@ public class Player : MonoBehaviour
         soundSourceOreCollected.clip = soundClipOreCollected;
 
         //WEAPONS
-        //Weapons trees
-        playerWeaponsTree = new GameObject("Weapons");
-        playerWeaponsTree.transform.parent = control.generation.verseSpace.transform;
-
-        playerWeaponsTreeLaser = new GameObject("Laser");
-        playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
-
-        //Set up object pooling
-        for (int i = 0; i < WEAPON_LASER_POOL_LENGTH; i++)
-        {
-            GameObject instancePlayerLaser = Instantiate(playerLaser, Vector3.zero, Quaternion.identity);
-            WEAPON_LASER_POOL.Add(instancePlayerLaser);
-            instancePlayerLaser.SetActive(false);
-
-            //Put in weapons tree
-            instancePlayerLaser.transform.parent = playerWeaponsTreeLaser.transform;
-
-            //Pass control reference
-            instancePlayerLaser.GetComponent<PlayerLaser>().control = control;
-        }
-
-        //UI
-        control.ui.weaponSelectedClipSizeText.text = "" + weaponLaserClipSize;
+        UpdateWeaponSelected();
 
         //AUDIO
         //Play the first song 0 to 30 seconds after startup
@@ -445,6 +444,13 @@ public class Player : MonoBehaviour
         {
             currency += 1000;
             Debug.Log("Show me the money. " + currency);
+            control.ui.UpdateAllPlayerResourcesUI();
+        }
+
+        //Add ore water
+        if (binds.GetInputDown(binds.bindThrustVectorDecrease))
+        {
+            ore[ORE_WATER] += 1.0;
             control.ui.UpdateAllPlayerResourcesUI();
         }
 
@@ -515,10 +521,24 @@ public class Player : MonoBehaviour
 
             UpdatePlayerEngineEffect();     //Set engine glow relative to movement
 
-            //Decrement fuel
+            //Fuel decrement
             if (canAndIsMoving)
             {
                 vitalsFuel = Math.Max(0.0, vitalsFuel - ((vitalsFuelConsumptionRate / (1 + upgradeLevels[control.commerce.UPGRADE_FUEL_EFFICIENCY])) * Time.deltaTime));
+            }
+
+            //Fuel increment (in-situ refinery)
+            bool missingEnoughFuel = vitalsFuel < vitalsFuelMax - REFINERY_FUEL_OUT_RATE;
+            bool hasUpgrade = upgradeLevels[control.commerce.UPGRADE_IN_SITU_FUEL_REFINERY] >= 1;
+            bool hasEnoughOre = ore[ORE_WATER] > REFINERY_ORE_WATER_IN_RATE;
+            bool enoughTimeHasPassed = Time.time > refineryTimeAtLastRefine + REFINERY_TIME_BETWEEN_REFINES;
+
+            if (missingEnoughFuel && hasUpgrade && hasEnoughOre && enoughTimeHasPassed && control.settings.refine)
+            {
+                ore[ORE_WATER] -= REFINERY_ORE_WATER_IN_RATE;
+                vitalsFuel += REFINERY_FUEL_OUT_RATE;
+                control.ui.UpdatePlayerOreWaterText();
+                refineryTimeAtLastRefine = Time.time;
             }
 
             //Warn on loop if out of fuel
@@ -577,7 +597,7 @@ public class Player : MonoBehaviour
 
     private void SlowUpdate()
     {
-        UpdateVitalsDisplay();
+        control.ui.UpdatePlayerVitalsDisplay();
         UpdateWarningText();
     }
 
@@ -864,14 +884,6 @@ public class Player : MonoBehaviour
     #endregion
 
     #region Methods called in update: UI
-    private void UpdateVitalsDisplay()
-    {
-        vitalsHealthUI.GetComponent<Image>().fillAmount = (float)(vitalsHealth / vitalsHealthMax);
-        vitalsHealthUIText.text = vitalsHealth.ToString("F1");
-        vitalsFuelUI.GetComponent<Image>().fillAmount = (float)(vitalsFuel / vitalsFuelMax);
-        vitalsFuelUIText.text = vitalsFuel.ToString("F1");
-    }
-
     private void UpdateWarningText()
     {
         if (warningUIFlashTime > 0f)
@@ -911,7 +923,7 @@ public class Player : MonoBehaviour
         UpdatePlayerWeaponsUI();
 
         //Cooldowns
-        UpdatePlayerWeaponCooldowns();
+        UpdateWeaponSelected();
         
         //Fire
         if
@@ -922,11 +934,14 @@ public class Player : MonoBehaviour
             && !Commerce.menuOpen
             && !UI.displayMap
             && binds.GetInput(binds.bindPrimaryFire)
-            && weaponLaserSingleCooldownCurrent <= 0f
-            && weaponLaserClipCooldownCurrent <= 0f
+            && weaponSelectedSingleCooldownCurrent <= 0f
+            && weaponSelectedClipCooldownCurrent <= 0f
         )
         {
-            FireWeaponLaser();
+            if (selectedWeapon == "Laser")
+            {
+                playerWeaponLaser.FireWeaponLaser();
+            }
         }
     }
     #endregion
@@ -950,20 +965,19 @@ public class Player : MonoBehaviour
     {
         //Vitals
         vitalsHealthMax = VITALS_HEALTH_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_REINFORCED_HULL]);
-        vitalsHealth = vitalsHealthMax;
+        //vitalsHealth = vitalsHealthMax;
 
         vitalsFuelMax = VITALS_FUEL_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
-        vitalsFuel = vitalsFuelMax;
+        Debug.LogFormat("{0}, {1}, {2}", vitalsFuelMax, VITALS_FUEL_MAX_STARTER, upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
+        //vitalsFuel = vitalsFuelMax;
 
-        UpdateVitalsDisplay();
+        control.ui.UpdatePlayerVitalsDisplay();
 
         //Movement
         thrustEngineWarmupMultiplierMax = THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_RAPTOR_ENGINES]);
 
         //Weapons
-        weaponLaserClipSize = (short)(WEAPON_LASER_CLIP_SIZE_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_DUAL_BATTERIES]));
-        weaponLaserClipRemaining = weaponLaserClipSize;
-
+        playerWeaponLaser.UpdateUpgrades();
         UpdatePlayerWeaponsUI();
     }
     #endregion
@@ -1135,110 +1149,42 @@ public class Player : MonoBehaviour
     #endregion
 
     #region General methods: Weapons
-    private void FireWeaponLaser()
+    public void WeaponsDestroyTrees()
     {
-        //Pooling
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].SetActive(true);
-        //Ignore collisions between the laser and the player (this does not seem necessary)
-        //Physics.IgnoreCollision(weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Collider>(), transform.GetComponent<Collider>());
-        //Reset weapon instance
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].transform.position = transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f);
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<Rigidbody>().velocity = rb.velocity + (WEAPON_LASER_PROJECTILE_SPEED * transform.forward);
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeAtWhichThisSelfDestructs = WEAPON_LASER_LIFETIME_DURATION;
-        WEAPON_LASER_POOL[WeaponLaserPoolIndex].GetComponent<PlayerLaser>().timeSpentAlive = 0f;
-
-        //Iterate through list
-        if (WeaponLaserPoolIndex < WEAPON_LASER_POOL_LENGTH - 1)
-        {
-            WeaponLaserPoolIndex++;
-        }
-        else
-        {
-            WeaponLaserPoolIndex = 0;
-        }
-
-        //Cooldown & ammo
-        weaponLaserSingleCooldownCurrent = WEAPON_LASER_SINGLE_COOLDOWN_DURATION;
-        weaponLaserClipRemaining--;
-
-        //UI
-        //Deprecated as this is called in Update() now anyway
-        //UpdatePlayerWeaponsUI();
-
-        //Play sound effect
-        switch (soundSourceLaserArrayIndex)
-        {
-            case 0:
-                soundSourceLaser0.Play();
-                break;
-            case 1:
-                soundSourceLaser1.Play();
-                break;
-            case 2:
-                soundSourceLaser2.Play();
-                break;
-            case 3:
-                soundSourceLaser3.Play();
-                break;
-        }
-
-        //Increment and loop sound source array
-        soundSourceLaserArrayIndex++;
-        if (soundSourceLaserArrayIndex > soundSourceLaserArrayLength - 1) soundSourceLaserArrayIndex = 0;
+        Control.DestroyAllChildren(playerWeaponsTreeLaser, 0f);
     }
 
-    private void UpdatePlayerWeaponCooldowns()
+    private void UpdateWeaponSelected()
     {
-        //Reload
-        if (binds.GetInputDown(binds.bindPrimaryReload) && weaponLaserClipRemaining != weaponLaserClipSize)
+        if (selectedWeapon == "Laser")
         {
-            weaponLaserClipRemaining = 0;
-        }
+            //Properties
+            weaponSelectedClipSize = playerWeaponLaser.clipSize;
+            weaponSelectedClipRemaining = playerWeaponLaser.clipRemaining;
+            weaponSelectedClipCooldownDuration = playerWeaponLaser.CLIP_COOLDOWN_DURATION;
+            weaponSelectedClipCooldownCurrent = playerWeaponLaser.clipCooldownCurrent;
 
-        //Single
-        if (weaponLaserSingleCooldownCurrent > 0f)
-        {
-            weaponLaserSingleCooldownCurrent -= Time.deltaTime;
-        }
+            weaponSelectedSingleCooldownDuration = playerWeaponLaser.SINGLE_COOLDOWN_DURATION;
+            weaponSelectedSingleCooldownCurrent = playerWeaponLaser.singleCooldownCurrent;
 
-        //Clip
-        if (weaponLaserClipCooldownCurrent > 0f)
-        {
-            weaponLaserClipCooldownCurrent -= Time.deltaTime;
+            //UI
+            control.ui.weaponSelectedClipSizeText.text = playerWeaponLaser.clipSize.ToString();
         }
-
-        //Reloading
-        if (weaponLaserClipRemaining == 0)
-        {
-            //Play sound
-            soundSourceLaserReload.Play();
-            //Start cooldown
-            weaponLaserClipCooldownCurrent = WEAPON_LASER_CLIP_COOLDOWN_DURATION;
-            //Reset clip
-            weaponLaserClipRemaining = weaponLaserClipSize;
-        }
-
-        //UI
-        //Deprecated as this is called in Update() now anyway
-        //UpdatePlayerWeaponsUI();
     }
 
     private void UpdatePlayerWeaponsUI()
     {
         //Clip max text
-        control.ui.weaponSelectedClipSizeText.text = weaponLaserClipSize.ToString();
+        control.ui.weaponSelectedClipSizeText.text = weaponSelectedClipSize.ToString();
 
         //Clip remaining text
-        control.ui.weaponSelectedClipRemainingText.text = weaponLaserClipRemaining.ToString();
+        control.ui.weaponSelectedClipRemainingText.text = weaponSelectedClipRemaining.ToString();
 
         //Single and clip joint-cooldown bar
         control.ui.weaponCooldown.fillAmount = Mathf.Max(
             0f,
-            weaponLaserSingleCooldownCurrent / WEAPON_LASER_SINGLE_COOLDOWN_DURATION,
-            weaponLaserClipCooldownCurrent / WEAPON_LASER_CLIP_COOLDOWN_DURATION
+            weaponSelectedSingleCooldownCurrent / weaponSelectedSingleCooldownDuration,
+            weaponSelectedClipCooldownCurrent / weaponSelectedClipCooldownDuration
         );
     }
     #endregion
@@ -1288,15 +1234,15 @@ public class Player : MonoBehaviour
         //Adjust volume and pitch with movement
         if (canAndIsMoving)
         {
-            soundSourceRocket.volume = Mathf.Min(soundRocketMaxVolume, soundSourceRocket.volume + (Time.deltaTime * soundRocketVolumeDeltaRate));
+            soundSourceRocket.volume = Mathf.Min(SOUND_ROCKET_MAX_VOLUME, soundSourceRocket.volume + (Time.deltaTime * SOUND_ROCKET_VOLUME_DELTA_RATE));
 
-            soundSourceRocket.pitch = Mathf.Min(soundRocketMaxPitch, soundSourceRocket.pitch + (Time.deltaTime * soundRocketPitchDeltaRate));
+            soundSourceRocket.pitch = Mathf.Min(SOUND_ROCKET_MAX_PITCH, soundSourceRocket.pitch + (Time.deltaTime * SOUND_ROCKET_PITCH_DELTA_RATE));
         }
         else
         {
-            soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * soundRocketVolumeDeltaRate) * 32f));
+            soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * SOUND_ROCKET_VOLUME_DELTA_RATE) * 32f));
 
-            soundSourceRocket.pitch = Mathf.Max(1f, soundSourceRocket.pitch - ((soundSourceRocket.pitch * Time.deltaTime * soundRocketPitchDeltaRate) * 32f));
+            soundSourceRocket.pitch = Mathf.Max(1f, soundSourceRocket.pitch - ((soundSourceRocket.pitch * Time.deltaTime * SOUND_ROCKET_PITCH_DELTA_RATE) * 32f));
         }
     }
     #endregion
@@ -1400,7 +1346,7 @@ public class Player : MonoBehaviour
         if (!destroyed)
         {
             vitalsHealth = newHealthAmount;
-            UpdateVitalsDisplay(); //force a vitals update so that you can immediately see your health change
+            control.ui.UpdatePlayerVitalsDisplay(); //force a vitals update so that you can immediately see your health change
             FlashWarning("WARNING: " + cause + "\nHull integrity compromised"); //⚠
                                                                                 //deathMessage = "You died.\nLast recorded warning message: " + cause
             

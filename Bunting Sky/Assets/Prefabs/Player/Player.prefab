@@ -5361,6 +5361,7 @@ GameObject:
   - component: {fileID: 3053305804255348953}
   - component: {fileID: 3053305804255348958}
   - component: {fileID: 5702378282571553331}
+  - component: {fileID: 5403147369654324799}
   - component: {fileID: 3053305804255348954}
   - component: {fileID: 3053305804255348959}
   - component: {fileID: 7655753605321914316}
@@ -5447,7 +5448,6 @@ MonoBehaviour:
   soundClipCoins: {fileID: 8300000, guid: d262567fb0e796e45aea95c290481788, type: 3}
   soundSourceCollision: {fileID: 298731642404369153}
   soundClipCollision: {fileID: 8300000, guid: 66f6a02ded0dd8a49bde752b4fb07b31, type: 3}
-  playerLaser: {fileID: 6553045504266895388, guid: 371bd3c94d4221946b3f768d30a5f7e6, type: 3}
   skyboxStarsParticleSystem: {fileID: 617420397379647762}
 --- !u!114 &5702378282571553331
 MonoBehaviour:
@@ -5462,6 +5462,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   particlesDamageRock: {fileID: 5439371856500958557}
+--- !u!114 &5403147369654324799
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053305804255348949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d66624afbbf1de541a39750774157465, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerLaserPrefab: {fileID: 6553045504266895388, guid: 371bd3c94d4221946b3f768d30a5f7e6, type: 3}
 --- !u!64 &3053305804255348954
 MeshCollider:
   m_ObjectHideFlags: 0
