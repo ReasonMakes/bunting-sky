@@ -315,6 +315,7 @@ public class Player : MonoBehaviour
      */
 
     [System.NonSerialized] public int[] upgradeLevels;
+    private bool upgradesInitialized = false;
     private readonly double REFINERY_ORE_WATER_IN_RATE = 0.18d;
     private readonly double REFINERY_FUEL_OUT_RATE = 0.09d;
     private readonly float REFINERY_TIME_BETWEEN_REFINES = 1.5f;
@@ -325,8 +326,10 @@ public class Player : MonoBehaviour
     //Tree
     [System.NonSerialized] public GameObject playerWeaponsTree;
     
-    private PlayerWeaponLaser playerWeaponLaser;
+    public PlayerWeaponLaser playerWeaponLaser;
+    public PlayerWeaponSeismicCharge playerWeaponSeismicCharge;
     [System.NonSerialized] public GameObject playerWeaponsTreeLaser;
+    [System.NonSerialized] public GameObject playerWeaponsTreeSeismicCharge;
 
     [System.NonSerialized] public string selectedWeapon = "Laser";
 
@@ -345,25 +348,26 @@ public class Player : MonoBehaviour
     #endregion
 
     #region Start
-    private void Awake()
-    {
-        //REFERENCES
-        playerWeaponLaser = GetComponent<PlayerWeaponLaser>();
-
-        //WEAPONS TREES
-        //Main
-        playerWeaponsTree = new GameObject("Weapons");
-        //playerWeaponsTree.transform.parent = control.generation.verseSpace.transform;
-
-        //Laser
-        playerWeaponsTreeLaser = new GameObject("Laser");
-        //playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
-    }
 
     private void Start()
     {
+        //WEAPONS TREES
+        //Main
+        playerWeaponsTree = new GameObject("Weapons");
+        playerWeaponsTree.transform.parent = control.generation.verseSpace.transform;
+
+        //Laser
+        playerWeaponsTreeLaser = new GameObject("Laser");
+        playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
+
+        //Seismic charge
+        playerWeaponsTreeSeismicCharge = new GameObject("Seismic Charge");
+        playerWeaponsTreeSeismicCharge.transform.parent = playerWeaponsTree.transform;
+
+        //MODEL
         DecideWhichModelsToRender();
 
+        //SKYBOX
         skyboxStarsParticleSystem.Emit(SKYBOX_STARS_COUNT);
     }
 
@@ -381,6 +385,11 @@ public class Player : MonoBehaviour
 
         //KeyBinds
         binds = control.binds;
+
+        //Upgrades
+        upgradeLevels = new int[control.commerce.upgradeDictionary.GetLength(0)];
+        upgradesInitialized = true;
+        UpdateUpgrades();
 
         //Camera
         centreMountTran = centreMount.transform;
@@ -427,10 +436,6 @@ public class Player : MonoBehaviour
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.15f;
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 0.2f;
-
-        //Upgrades
-        upgradeLevels = new int[control.commerce.upgradeDictionary.GetLength(0)];
-        UpdateUpgrades();
     }
     #endregion
 
@@ -919,28 +924,37 @@ public class Player : MonoBehaviour
     #region Methods called in update: Weapons
     private void UpdatePlayerWeapons()
     {
-        //UI
-        UpdatePlayerWeaponsUI();
-
-        //Cooldowns
-        UpdateWeaponSelected();
-        
-        //Fire
-        if
-        (
-            !destroyed
-            && Application.isFocused
-            && !Menu.menuOpenAndGamePaused
-            && !Commerce.menuOpen
-            && !UI.displayMap
-            && binds.GetInput(binds.bindPrimaryFire)
-            && weaponSelectedSingleCooldownCurrent <= 0f
-            && weaponSelectedClipCooldownCurrent <= 0f
-        )
+        if (upgradesInitialized)
         {
-            if (selectedWeapon == "Laser")
+            //UI
+            UpdatePlayerWeaponsUI();
+
+            //Cooldowns
+            UpdateWeaponSelected();
+
+            //Fire
+            if
+            (
+                !destroyed
+                && Application.isFocused
+                && !Menu.menuOpenAndGamePaused
+                && !Commerce.menuOpen
+                && !UI.displayMap
+                && binds.GetInput(binds.bindPrimaryFire)
+                && weaponSelectedSingleCooldownCurrent <= 0f
+                && weaponSelectedClipCooldownCurrent <= 0f
+            )
             {
-                playerWeaponLaser.FireWeaponLaser();
+                if (selectedWeapon == "Laser")
+                {
+                    Debug.Log("Laser");
+                    playerWeaponLaser.Fire();
+                }
+                else if (selectedWeapon == "Seismic charges")
+                {
+                    Debug.Log("Seismic charge");
+                    playerWeaponSeismicCharge.Fire();
+                }
             }
         }
     }
@@ -968,7 +982,7 @@ public class Player : MonoBehaviour
         //vitalsHealth = vitalsHealthMax;
 
         vitalsFuelMax = VITALS_FUEL_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
-        Debug.LogFormat("{0}, {1}, {2}", vitalsFuelMax, VITALS_FUEL_MAX_STARTER, upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
+        //Debug.LogFormat("{0}, {1}, {2}", vitalsFuelMax, VITALS_FUEL_MAX_STARTER, upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
         //vitalsFuel = vitalsFuelMax;
 
         control.ui.UpdatePlayerVitalsDisplay();
@@ -978,6 +992,7 @@ public class Player : MonoBehaviour
 
         //Weapons
         playerWeaponLaser.UpdateUpgrades();
+        playerWeaponSeismicCharge.UpdateUpgrades();
         UpdatePlayerWeaponsUI();
     }
     #endregion
@@ -1152,10 +1167,22 @@ public class Player : MonoBehaviour
     public void WeaponsDestroyTrees()
     {
         Control.DestroyAllChildren(playerWeaponsTreeLaser, 0f);
+        Control.DestroyAllChildren(playerWeaponsTreeSeismicCharge, 0f);
     }
 
     private void UpdateWeaponSelected()
     {
+        //Select
+        if (binds.GetInputDown(binds.bindSelectWeapon1))
+        {
+            selectedWeapon = "Laser";
+        }
+        else if (upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1 && binds.GetInputDown(binds.bindSelectWeapon2))
+        {
+            selectedWeapon = "Seismic charges";
+        }
+
+        //Get properties and update UI
         if (selectedWeapon == "Laser")
         {
             //Properties
@@ -1169,6 +1196,20 @@ public class Player : MonoBehaviour
 
             //UI
             control.ui.weaponSelectedClipSizeText.text = playerWeaponLaser.clipSize.ToString();
+        }
+        else if (selectedWeapon == "Seismic charges")
+        {
+            //Properties
+            weaponSelectedClipSize = playerWeaponSeismicCharge.clipSize;
+            weaponSelectedClipRemaining = playerWeaponSeismicCharge.clipRemaining;
+            weaponSelectedClipCooldownDuration = playerWeaponSeismicCharge.CLIP_COOLDOWN_DURATION;
+            weaponSelectedClipCooldownCurrent = playerWeaponSeismicCharge.clipCooldownCurrent;
+
+            weaponSelectedSingleCooldownDuration = playerWeaponSeismicCharge.SINGLE_COOLDOWN_DURATION;
+            weaponSelectedSingleCooldownCurrent = playerWeaponSeismicCharge.singleCooldownCurrent;
+
+            //UI
+            control.ui.weaponSelectedClipSizeText.text = playerWeaponSeismicCharge.clipSize.ToString();
         }
     }
 

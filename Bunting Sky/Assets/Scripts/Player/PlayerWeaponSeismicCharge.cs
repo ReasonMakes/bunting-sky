@@ -2,19 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerWeaponLaser : MonoBehaviour
+public class PlayerWeaponSeismicCharge : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
     [System.NonSerialized] public Player player;
     
     //This
-    public GameObject playerWeaponProjectileLaserPrefab;
+    public GameObject playerWeaponProjectileSeismicChargePrefab;
     private readonly List<GameObject> POOL = new List<GameObject>();
     private readonly short POOL_LENGTH = 16;
     private short poolIndex = 0;
 
-    private readonly float PROJECTILE_SPEED = 120f;
-    private readonly float PROJECTILE_LIFETIME_DURATION = 2f;
+    private readonly float PROJECTILE_SPEED = 1f;
+    private readonly float PROJECTILE_LIFETIME_DURATION = 5f;
 
     [System.NonSerialized] public short clipSize;
     [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 16;
@@ -30,15 +30,15 @@ public class PlayerWeaponLaser : MonoBehaviour
         //Set up object pooling
         for (int i = 0; i < POOL_LENGTH; i++)
         {
-            GameObject instancePlayerWeaponProjectileLaser = Instantiate(playerWeaponProjectileLaserPrefab, Vector3.zero, Quaternion.identity);
-            POOL.Add(instancePlayerWeaponProjectileLaser);
-            instancePlayerWeaponProjectileLaser.SetActive(false);
+            GameObject instancePlayerWeaponProjectileSeismicCharge = Instantiate(playerWeaponProjectileSeismicChargePrefab, Vector3.zero, Quaternion.identity);
+            POOL.Add(instancePlayerWeaponProjectileSeismicCharge);
+            instancePlayerWeaponProjectileSeismicCharge.SetActive(false);
 
             //Put in weapons tree
-            instancePlayerWeaponProjectileLaser.transform.parent = player.playerWeaponsTreeLaser.transform;
+            instancePlayerWeaponProjectileSeismicCharge.transform.parent = player.playerWeaponsTreeSeismicCharge.transform;
 
             //Pass control reference
-            instancePlayerWeaponProjectileLaser.GetComponent<PlayerWeaponProjectileLaser>().control = control;
+            instancePlayerWeaponProjectileSeismicCharge.GetComponent<PlayerWeaponProjectileSeismicCharge>().control = control;
         }
     }
 
@@ -97,8 +97,8 @@ public class PlayerWeaponLaser : MonoBehaviour
         POOL[poolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         POOL[poolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         POOL[poolIndex].GetComponent<Rigidbody>().velocity = player.rb.velocity + (PROJECTILE_SPEED * transform.forward);
-        POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().timeAtWhichThisSelfDestructs = PROJECTILE_LIFETIME_DURATION;
-        POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().timeSpentAlive = 0f;
+        POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().timeAtWhichThisSelfDestructs = PROJECTILE_LIFETIME_DURATION;
+        POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().timeSpentAlive = 0f;
 
         //Iterate through list
         if (poolIndex < POOL_LENGTH - 1)

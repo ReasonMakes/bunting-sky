@@ -185,6 +185,9 @@ public class Generation : MonoBehaviour
         instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().control = control;
         instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().player = instancePlayer.GetComponentInChildren<Player>();
 
+        instancePlayer.GetComponentInChildren<PlayerWeaponSeismicCharge>().control = control;
+        instancePlayer.GetComponentInChildren<PlayerWeaponSeismicCharge>().player = instancePlayer.GetComponentInChildren<Player>();
+
         playerScript.control = control;
         playerScript.cBodies = cBodies;
 

@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerWeaponLaserProjectile : MonoBehaviour
+public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
+    private Transform playerBody;
     public Rigidbody rb;
+
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
     private readonly float MIN_GLOW_DISTANCE = 2f;
-    private Transform playerBody;
-
+    
     private void Start()
     {
         rb.detectCollisions = false;

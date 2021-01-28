@@ -21,6 +21,7 @@ public class Menu : MonoBehaviour
     public Toggle menuSettingsToggleDisplayHUD;
     public Toggle menuSettingsToggleDisplayFPS;
     public Toggle menuSettingsToggleSpotlight;
+    public Toggle menuSettingsToggleRefine;
 
     public GameObject menuKeybinds;
 
@@ -69,6 +70,12 @@ public class Menu : MonoBehaviour
             menuSettingsToggleSpotlight.isOn = !menuSettingsToggleSpotlight.isOn;
             
             //MenuSettingsSpotlightToggle();
+        }
+
+        //Refine toggle
+        if (control.binds.GetInputDown(control.binds.bindToggleRefine))
+        {
+            menuSettingsToggleRefine.isOn = !menuSettingsToggleRefine.isOn;
         }
     }
 
@@ -152,6 +159,7 @@ public class Menu : MonoBehaviour
         menuSettingsToggleDisplayHUD.isOn = control.settings.displayHUD;
         menuSettingsToggleDisplayFPS.isOn = control.settings.displayFPS;
         menuSettingsToggleSpotlight.isOn = control.settings.spotlightOn;
+        menuSettingsToggleRefine.isOn = control.settings.refine;
     }
 
     public void MenuSettingsMouseSensitivitySet()
@@ -304,6 +312,12 @@ public class Menu : MonoBehaviour
             //Not quite sure why this needs to be inverted, but it works
             control.generation.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(!control.settings.spotlightOn);
         }
+    }
+
+    public void MenuSettingsRefineToggle()
+    {
+        control.settings.refine = !control.settings.refine;
+        control.settings.Save();
     }
 
     public void MenuSettingsTargetFPSSet()

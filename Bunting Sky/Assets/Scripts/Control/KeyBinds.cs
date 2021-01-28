@@ -43,6 +43,9 @@ public class KeyBinds : MonoBehaviour
 
     [System.NonSerialized] public short bindToggleSpotlight;
     [System.NonSerialized] public short bindToggleMap;
+    [System.NonSerialized] public short bindToggleRefine;
+    [System.NonSerialized] public short bindSelectWeapon1;
+    [System.NonSerialized] public short bindSelectWeapon2;
 
     [System.NonSerialized] public short bindToggleHUD;
     [System.NonSerialized] public short bindToggleFPS;
@@ -92,6 +95,9 @@ public class KeyBinds : MonoBehaviour
 
             bindToggleSpotlight = (short)KeyCode.F,
             bindToggleMap = (short)KeyCode.M,
+            bindToggleRefine = (short)KeyCode.T,
+            bindSelectWeapon1 = (short)KeyCode.Z,
+            bindSelectWeapon2 = (short)KeyCode.X,
 
             bindToggleHUD = (short)KeyCode.F3,
             bindToggleFPS = (short)KeyCode.F4,
@@ -127,6 +133,9 @@ public class KeyBinds : MonoBehaviour
 
         ioBuffer.bindToggleSpotlight = bindToggleSpotlight;
         ioBuffer.bindToggleMap = bindToggleMap;
+        ioBuffer.bindToggleRefine = bindToggleRefine;
+        ioBuffer.bindSelectWeapon1 = bindSelectWeapon1;
+        ioBuffer.bindSelectWeapon2 = bindSelectWeapon2;
 
         ioBuffer.bindToggleHUD = bindToggleHUD;
         ioBuffer.bindToggleFPS = bindToggleFPS;
@@ -161,6 +170,9 @@ public class KeyBinds : MonoBehaviour
 
         bindToggleSpotlight = ioBuffer.bindToggleSpotlight;
         bindToggleMap = ioBuffer.bindToggleMap;
+        bindToggleRefine = ioBuffer.bindToggleRefine;
+        bindSelectWeapon1 = ioBuffer.bindSelectWeapon1;
+        bindSelectWeapon2 = ioBuffer.bindSelectWeapon2;
 
         bindToggleHUD = ioBuffer.bindToggleHUD;
         bindToggleFPS = ioBuffer.bindToggleFPS;
@@ -196,6 +208,9 @@ public class KeyBinds : MonoBehaviour
 
         public short bindToggleSpotlight;
         public short bindToggleMap;
+        public short bindToggleRefine;
+        public short bindSelectWeapon1;
+        public short bindSelectWeapon2;
 
         public short bindToggleHUD;
         public short bindToggleFPS;
