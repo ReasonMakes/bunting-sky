@@ -14,7 +14,7 @@ public class CBodyAsteroid : MonoBehaviour
     public GameObject modelClassMedium;
     public GameObject modelClassSmall;
 
-    public Control control;
+    [System.NonSerialized] public Control control;
 
     public GameObject ore;
 
@@ -22,9 +22,9 @@ public class CBodyAsteroid : MonoBehaviour
     public Material matPlatinoid;
     public Material matPreciousMetal;
     public Material matWater;
-    public byte type = 0; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
+    [System.NonSerialized] public byte type = 0; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
-    public GameObject particlesShurikenDamageObj;
+    //public GameObject particlesShurikenDamageObj;
 
     [System.NonSerialized] public byte health = 4;
     [System.NonSerialized] public bool destroyed = false;
@@ -37,7 +37,7 @@ public class CBodyAsteroid : MonoBehaviour
     public SphereCollider targetCollider4;
 
     public bool separating = true;
-    private float intersectingRepelForce = 0.05f;
+    private readonly float INTERSECTING_REPEL_FORCE = 0.03f;
 
     private void Start()
     {
@@ -81,7 +81,7 @@ public class CBodyAsteroid : MonoBehaviour
                 ))
                 {
                     //Debug.Log("Intersecting");
-                    rb.AddForce(intersectingRepelForce * (transform.position - asteroid.transform.position).normalized * Time.deltaTime);
+                    rb.AddForce(INTERSECTING_REPEL_FORCE * (transform.position - asteroid.transform.position).normalized * Time.deltaTime);
                     return;
                 }
             }
@@ -191,7 +191,10 @@ public class CBodyAsteroid : MonoBehaviour
 
     public void Damage(byte damageAmount, Vector3 direction, Vector3 position)
     {
-        health -= damageAmount;
+        //Debug.Log("Type " + type + " asteroid damaged. " + health + " HP remaining.");
+
+        health = (byte)Mathf.Max(0f, health - damageAmount);
+        //health -= damageAmount;
         if (health > 0)
         {
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(1, direction, position, false);

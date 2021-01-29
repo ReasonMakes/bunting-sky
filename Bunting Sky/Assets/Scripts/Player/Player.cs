@@ -48,6 +48,8 @@ public class Player : MonoBehaviour
     //!!!!!TOP PRIORITY!!!!!
     //Add seismic charge weapon
 
+    //Centre star doesn't load in the correct position
+
     //Add menu scrolling
     //Add setting in menu to toggle refinery
     //Add setting to turn off music
@@ -331,7 +333,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public GameObject playerWeaponsTreeLaser;
     [System.NonSerialized] public GameObject playerWeaponsTreeSeismicCharge;
 
-    [System.NonSerialized] public string selectedWeapon = "Laser";
+    [System.NonSerialized] public string selectedWeaponTitle = "Laser";
 
     private short weaponSelectedClipSize;
     private short weaponSelectedClipRemaining;
@@ -412,7 +414,8 @@ public class Player : MonoBehaviour
         soundSourceOreCollected.clip = soundClipOreCollected;
 
         //WEAPONS
-        UpdateWeaponSelected();
+        //Called in update anyway
+        //UpdateWeaponSelected();
 
         //AUDIO
         //Play the first song 0 to 30 seconds after startup
@@ -453,11 +456,13 @@ public class Player : MonoBehaviour
         }
 
         //Add ore water
+        /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
             ore[ORE_WATER] += 1.0;
             control.ui.UpdateAllPlayerResourcesUI();
         }
+        */
 
         //Teleport forward
         /*
@@ -469,13 +474,14 @@ public class Player : MonoBehaviour
         */
 
         //Spawn
-        /*
+        
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
             control.generation.SpawnAsteroidManually(transform.position + transform.forward * 2f, rb.velocity, true);
+            upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
             Debug.Log("Spawned one asteroid");
         }
-        */
+        
 
         /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
@@ -945,14 +951,12 @@ public class Player : MonoBehaviour
                 && weaponSelectedClipCooldownCurrent <= 0f
             )
             {
-                if (selectedWeapon == "Laser")
+                if (selectedWeaponTitle == "Laser")
                 {
-                    Debug.Log("Laser");
                     playerWeaponLaser.Fire();
                 }
-                else if (selectedWeapon == "Seismic charges")
+                else if (selectedWeaponTitle == "Seismic charges")
                 {
-                    Debug.Log("Seismic charge");
                     playerWeaponSeismicCharge.Fire();
                 }
             }
@@ -1175,15 +1179,15 @@ public class Player : MonoBehaviour
         //Select
         if (binds.GetInputDown(binds.bindSelectWeapon1))
         {
-            selectedWeapon = "Laser";
+            selectedWeaponTitle = "Laser";
         }
         else if (upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1 && binds.GetInputDown(binds.bindSelectWeapon2))
         {
-            selectedWeapon = "Seismic charges";
+            selectedWeaponTitle = "Seismic charges";
         }
 
-        //Get properties and update UI
-        if (selectedWeapon == "Laser")
+        //Get properties
+        if (selectedWeaponTitle == "Laser")
         {
             //Properties
             weaponSelectedClipSize = playerWeaponLaser.clipSize;
@@ -1193,11 +1197,8 @@ public class Player : MonoBehaviour
 
             weaponSelectedSingleCooldownDuration = playerWeaponLaser.SINGLE_COOLDOWN_DURATION;
             weaponSelectedSingleCooldownCurrent = playerWeaponLaser.singleCooldownCurrent;
-
-            //UI
-            control.ui.weaponSelectedClipSizeText.text = playerWeaponLaser.clipSize.ToString();
         }
-        else if (selectedWeapon == "Seismic charges")
+        else if (selectedWeaponTitle == "Seismic charges")
         {
             //Properties
             weaponSelectedClipSize = playerWeaponSeismicCharge.clipSize;
@@ -1207,10 +1208,11 @@ public class Player : MonoBehaviour
 
             weaponSelectedSingleCooldownDuration = playerWeaponSeismicCharge.SINGLE_COOLDOWN_DURATION;
             weaponSelectedSingleCooldownCurrent = playerWeaponSeismicCharge.singleCooldownCurrent;
-
-            //UI
-            control.ui.weaponSelectedClipSizeText.text = playerWeaponSeismicCharge.clipSize.ToString();
         }
+
+        //UI
+        control.ui.UpdateWeaponAlternate(selectedWeaponTitle, upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1);
+        control.ui.UpdateWeaponSelected(selectedWeaponTitle);
     }
 
     private void UpdatePlayerWeaponsUI()

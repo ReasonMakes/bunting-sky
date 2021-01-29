@@ -6,15 +6,12 @@ using UnityEngine.UI;
 
 public class Commerce : MonoBehaviour
 {
-    public static bool menuOpen = false;
-    public static bool menuLocked = false;
+    [System.NonSerialized] public static bool menuOpen = false;
+    [System.NonSerialized] public static bool menuLocked = false;
 
     [SerializeField] private Control control;
 
     public TextMeshProUGUI stationName;
-
-    public Color colorTextDisabled = new Color(1f, 1f, 1f, 0.1f);
-    public Color colorTextEnabled = new Color(1f, 1f, 1f, 1f);
 
     public GameObject tooltip;
 
@@ -204,14 +201,14 @@ public class Commerce : MonoBehaviour
         sellAllWaterPrice.text          = "$" + priceWater + " / g";
 
         //Colour
-        sellAllPlatinoidText.color      = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? colorTextEnabled : colorTextDisabled;
-        sellAllPlatinoidPrice.color     = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllPlatinoidText.color      = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPlatinoidPrice.color     = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
-        sellAllPreciousMetalText.color  = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? colorTextEnabled : colorTextDisabled;
-        sellAllPreciousMetalPrice.color = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllPreciousMetalText.color  = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPreciousMetalPrice.color = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
-        sellAllWaterText.color          = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? colorTextEnabled : colorTextDisabled;
-        sellAllWaterPrice.color         = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? colorTextEnabled : colorTextDisabled;
+        sellAllWaterText.color          = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllWaterPrice.color         = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
         //UPGRADE
         //Interactable
@@ -250,8 +247,8 @@ public class Commerce : MonoBehaviour
 
         //Display
         //Colour
-        menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsHealth >= playerScript.vitalsHealthMax || playerScript.currency < PRICE_REPAIR) ? colorTextDisabled : colorTextEnabled;
-        menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsFuel >= playerScript.vitalsFuelMax || playerScript.currency < PRICE_REFUEL) ? colorTextDisabled : colorTextEnabled;
+        menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsHealth >= playerScript.vitalsHealthMax || playerScript.currency < PRICE_REPAIR) ? Control.colorTextDisabled : Control.colorTextEnabled;
+        menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsFuel >= playerScript.vitalsFuelMax || playerScript.currency < PRICE_REFUEL) ? Control.colorTextDisabled : Control.colorTextEnabled;
 
         //Text
         if (playerScript.vitalsHealth >= playerScript.vitalsHealthMax)
@@ -355,9 +352,9 @@ public class Commerce : MonoBehaviour
 
         //ASSIGN
         menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_NAME] + level;
-        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = colorTextEnabled;
+        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextEnabled;
         menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "$" + upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_PRICE] + " ea";
-        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = colorTextEnabled;
+        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = Control.colorTextEnabled;
     }
 
     public void SetButtonUpgradeToSoldOut(int buttonIndex)
@@ -365,18 +362,18 @@ public class Commerce : MonoBehaviour
         Button menuButton = GetUpgradeButtonFromIndex(buttonIndex);
 
         menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[UPGRADE_SOLD_OUT, UPGRADE_NAME];
-        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = colorTextDisabled;
+        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
         menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().text = "N/A";
-        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = colorTextDisabled;
+        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
     }
 
     public void SetButtonUpgradeToTooExpensive(int buttonIndex)
     {
         Button menuButton = GetUpgradeButtonFromIndex(buttonIndex);
 
-        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = colorTextDisabled;
+        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
         menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_NAME] + "\n(insufficient funds)";
-        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = colorTextDisabled;
+        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
     }
 
     public void SetButtonUpgradeToMaxed(int buttonIndex)
@@ -384,8 +381,8 @@ public class Commerce : MonoBehaviour
         Button menuButton = GetUpgradeButtonFromIndex(buttonIndex);
 
         menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_NAME] + "\n(already owned at max level)";
-        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = colorTextDisabled;
-        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = colorTextDisabled;
+        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
+        menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
     }
 
     private bool GetIfButtonUpgradeIsInStock(int buttonIndex)

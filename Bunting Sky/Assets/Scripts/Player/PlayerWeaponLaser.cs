@@ -114,10 +114,6 @@ public class PlayerWeaponLaser : MonoBehaviour
         singleCooldownCurrent = SINGLE_COOLDOWN_DURATION;
         clipRemaining--;
 
-        //UI
-        //Deprecated as this is called in Update() now anyway
-        //UpdatePlayerWeaponsUI();
-
         //Play sound effect
         switch (player.soundSourceLaserArrayIndex)
         {

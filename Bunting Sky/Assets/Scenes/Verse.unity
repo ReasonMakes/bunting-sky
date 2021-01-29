@@ -403,7 +403,7 @@ GameObject:
   - component: {fileID: 26166308}
   - component: {fileID: 26166307}
   m_Layer: 5
-  m_Name: Alternate Name Text
+  m_Name: Alternate Title Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3213,7 +3213,7 @@ GameObject:
   - component: {fileID: 363764604}
   - component: {fileID: 363764603}
   m_Layer: 5
-  m_Name: Selected Name Text
+  m_Name: Selected Title Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -16679,7 +16679,7 @@ MonoBehaviour:
   menuSettingsToggleDisplayHUD: {fileID: 519622203}
   menuSettingsToggleDisplayFPS: {fileID: 147944946}
   menuSettingsToggleSpotlight: {fileID: 1082177544}
-  menuSettingsToggleRefine: {fileID: 0}
+  menuSettingsToggleRefine: {fileID: 981158276}
   menuKeybinds: {fileID: 2123622230}
   control: {fileID: 2000740122}
 --- !u!114 &2000740127
@@ -16696,8 +16696,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   control: {fileID: 2000740122}
   stationName: {fileID: 333230900}
-  colorTextDisabled: {r: 1, g: 1, b: 1, a: 0.1}
-  colorTextEnabled: {r: 1, g: 1, b: 1, a: 1}
   tooltip: {fileID: 963646420}
   menuContainer: {fileID: 588412768}
   menuButtonSellAllPlatinoid: {fileID: 660913995}

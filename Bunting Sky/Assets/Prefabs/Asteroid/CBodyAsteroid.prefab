@@ -225,14 +225,11 @@ MonoBehaviour:
   modelClassLarge: {fileID: 6685615498556311451}
   modelClassMedium: {fileID: 1333070545988586138}
   modelClassSmall: {fileID: 1333070544999399938}
-  control: {fileID: 0}
   ore: {fileID: 6046421670457136187, guid: 5f4a5adc8ea192b4fa0e54cc9c9e5cc4, type: 3}
   meshRenderer: {fileID: 0}
   matPlatinoid: {fileID: 2100000, guid: 2723ee2b7e004a64f9a865ff364754ab, type: 2}
   matPreciousMetal: {fileID: 2100000, guid: d9ffcbaf140a3ff4b9037f03a7c95403, type: 2}
   matWater: {fileID: 2100000, guid: ec94f4270075f474196b4f1ee2c17b6c, type: 2}
-  type: 0
-  particlesShurikenDamageObj: {fileID: 0}
   targetCollider1: {fileID: 5520706539341832288}
   targetCollider2: {fileID: 8390337967562609920}
   targetCollider3: {fileID: 294555307309304710}

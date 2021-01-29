@@ -13,10 +13,13 @@ public class Gravity : MonoBehaviour
     //Maybe this should vary depending on distance to nearest cBody
     //That way there will be more fidelity in the physics when it's most relevant
     //But calculating distance may be intensive too
+
+    //We can also improve this by using Physics.OverlapSphere to only test for cbodies that are within relevant range (so we don't waste resources calculating negligible forces)
+
     public readonly short GRAVITY_SLOW_UPDATE_PERIOD = 90;
     [System.NonSerialized] public int gravityInstanceIndex;
     private float gravityTimePoint = 0f;
-    private float gravityDeltaTime = 0f;
+    //private float gravityDeltaTime = 0f;
     private Vector3 gravityForceVector = Vector3.zero;
 
     [System.NonSerialized] public bool gravitateTowardCentreStarOnly = false;
@@ -53,7 +56,7 @@ public class Gravity : MonoBehaviour
     public void GravitateTowardAllCBodies()
     {
         //Keep track of time
-        gravityDeltaTime = Time.time - gravityTimePoint;
+        //gravityDeltaTime = Time.time - gravityTimePoint;
         gravityTimePoint = Time.time;
 
         //Reset force vector

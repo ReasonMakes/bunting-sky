@@ -50,9 +50,12 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public TextMeshProUGUI resourcesTextWater;
 
     //Player weapons
+    [System.NonSerialized] public Image weaponCooldown;
     [System.NonSerialized] public TextMeshProUGUI weaponSelectedClipRemainingText;
     [System.NonSerialized] public TextMeshProUGUI weaponSelectedClipSizeText;
-    [System.NonSerialized] public Image weaponCooldown;
+    [System.NonSerialized] public TextMeshProUGUI weaponSelectedTitleText;
+    [System.NonSerialized] public TextMeshProUGUI weaponAlternateTitleText;
+    private string selectedWeaponTitle = "Laser";
 
     //Player camera reticle
     [System.NonSerialized] public GameObject cameraReticle;
@@ -93,9 +96,13 @@ public class UI : MonoBehaviour
         resourcesTextPreciousMetal      = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals Text").GetComponent<TextMeshProUGUI>();
         resourcesTextWater              = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water Text").GetComponent<TextMeshProUGUI>();
 
+        
+        
+        weaponCooldown                  = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Cooldown").GetComponent<Image>();
         weaponSelectedClipRemainingText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Remaining Text").GetComponent<TextMeshProUGUI>();
         weaponSelectedClipSizeText      = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
-        weaponCooldown                  = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Cooldown").GetComponent<Image>();
+        weaponSelectedTitleText         = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
+        weaponAlternateTitleText        = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
     }
 
     private void Start()
@@ -352,7 +359,7 @@ public class UI : MonoBehaviour
     private void UpdateWaypointAndTargetUI()
     {
         //Console
-        TextMesh consoleTargetInfoText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Info Text").GetComponent<TextMesh>();
+        TextMesh consoleTargetInfoText         = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Info Text").GetComponent<TextMesh>();
         TextMesh consoleTargetTypeAndTitleText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Type And Title Text").GetComponent<TextMesh>();
 
         //Waypoint
@@ -661,6 +668,32 @@ public class UI : MonoBehaviour
             + "\n" + "Platinoid: " + resourcesTextPlatinoid.text
             + "\n" + "Precious metal: " + resourcesTextPreciousMetal.text
             + "\n" + "Water ice: " + resourcesTextWater.text;
+    }
+    #endregion
+
+    #region Player weapons
+    public void UpdateWeaponAlternate(string playerSelectedWeaponTitle, bool seismicChargesUnlocked)
+    {
+        if (playerSelectedWeaponTitle == "Laser" && seismicChargesUnlocked)
+        {
+            weaponAlternateTitleText.text = "Seismic charges";
+        }
+    }
+
+    public void UpdateWeaponSelected(string playerSelectedWeaponTitle)
+    { 
+        if (selectedWeaponTitle != playerSelectedWeaponTitle)
+        {
+            Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+
+            //Swap weapons
+            weaponAlternateTitleText.text = weaponSelectedTitleText.text;
+            weaponSelectedTitleText.text = playerSelectedWeaponTitle;
+            weaponSelectedClipSizeText.text = playerScript.playerWeaponLaser.clipSize.ToString();
+
+            //Remember
+            selectedWeaponTitle = playerSelectedWeaponTitle;
+        }
     }
     #endregion
 }

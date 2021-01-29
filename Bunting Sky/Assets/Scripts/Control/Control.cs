@@ -10,6 +10,9 @@ public class Control : MonoBehaviour
     public Menu menu;
     public Commerce commerce;
 
+    [System.NonSerialized] public static Color colorTextDisabled = new Color(1f, 1f, 1f, 0.1f);
+    [System.NonSerialized] public static Color colorTextEnabled = new Color(1f, 1f, 1f, 1f);
+
     //FPS
     [System.NonSerialized] public int fps = 0;
     
