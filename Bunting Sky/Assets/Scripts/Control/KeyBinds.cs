@@ -28,8 +28,8 @@ public class KeyBinds : MonoBehaviour
     [System.NonSerialized] public short bindThrustDown;
     [System.NonSerialized] public short bindAlignShipToReticle;
 
-    [System.NonSerialized] public short bindThrustVectorIncrease;
-    [System.NonSerialized] public short bindThrustVectorDecrease;
+    [System.NonSerialized] public short bindCheat1;
+    [System.NonSerialized] public short bindCheat2;
 
     [System.NonSerialized] public short bindCycleMovementMode;
 
@@ -80,8 +80,8 @@ public class KeyBinds : MonoBehaviour
             bindThrustDown = (short)KeyCode.LeftControl,
             bindAlignShipToReticle = (short)KeyCode.LeftShift,
 
-            bindThrustVectorIncrease = (short)KeyCode.E,
-            bindThrustVectorDecrease = (short)KeyCode.Q,
+            bindCheat1 = (short)KeyCode.I,
+            bindCheat2 = (short)KeyCode.O,
 
             bindCycleMovementMode = (short)KeyCode.Tab,
 
@@ -118,8 +118,8 @@ public class KeyBinds : MonoBehaviour
         ioBuffer.bindThrustDown = bindThrustDown;
         ioBuffer.bindAlignShipToReticle = bindAlignShipToReticle;
 
-        ioBuffer.bindThrustVectorIncrease = bindThrustVectorIncrease;
-        ioBuffer.bindThrustVectorDecrease = bindThrustVectorDecrease;
+        ioBuffer.bindCheat1 = bindCheat1;
+        ioBuffer.bindCheat2 = bindCheat2;
 
         ioBuffer.bindCycleMovementMode = bindCycleMovementMode;
 
@@ -155,8 +155,8 @@ public class KeyBinds : MonoBehaviour
         bindThrustDown = ioBuffer.bindThrustDown;
         bindAlignShipToReticle = ioBuffer.bindAlignShipToReticle;
 
-        bindThrustVectorIncrease = ioBuffer.bindThrustVectorIncrease;
-        bindThrustVectorDecrease = ioBuffer.bindThrustVectorDecrease;
+        bindCheat1 = ioBuffer.bindCheat1;
+        bindCheat2 = ioBuffer.bindCheat2;
 
         bindCycleMovementMode = ioBuffer.bindCycleMovementMode;
 
@@ -193,8 +193,8 @@ public class KeyBinds : MonoBehaviour
         public short bindThrustDown;
         public short bindAlignShipToReticle;
 
-        public short bindThrustVectorIncrease;
-        public short bindThrustVectorDecrease;
+        public short bindCheat1;
+        public short bindCheat2;
 
         public short bindCycleMovementMode;
 

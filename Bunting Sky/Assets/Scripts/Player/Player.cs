@@ -46,13 +46,16 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //!!!!!TOP PRIORITY!!!!!
-    //Add seismic charge weapon
 
-    //Centre star doesn't load in the correct position
+    //Fix velocity orbits
+
+    //MAKE ASTEROIDS SAVE
+
+    //tooltips for keybinds! (tell player to hold shift when aiming at asteroids with mouse but not ship)
 
     //Add menu scrolling
-    //Add setting in menu to toggle refinery
     //Add setting to turn off music
+    //Add setting to set in-game volume
     //Add keybinds menu
 
     //Add planetoid variations
@@ -62,8 +65,10 @@ public class Player : MonoBehaviour
     //- centres around player without skipping forward tons
     //- displays background stars
     //- doesn't render destroyed planetoids
+    //DISABLE MAP WHEN MAIN MENU IS OPEN
 
-    //Fix ship auto-torquing
+    //Fix ship auto-torquing?
+    //Copy acceleration AS WELL AS velocity?
 
     //!!!!!!!!!!
 
@@ -243,6 +248,8 @@ public class Player : MonoBehaviour
     public AudioClip songHoghmanTransfer;
     public AudioClip songWeWereHere;
     private float musicPlayTime = 30f;
+    private readonly float MUSIC_PLAY_QUEUE_TIME = 60f;
+    private readonly float MUSIC_PLAY_QUEUE_VARIANCE_TIME = 60f;
 
     //Audio: Sound Effects
     public AudioSource soundSourceRocket;
@@ -447,12 +454,12 @@ public class Player : MonoBehaviour
     {
         //DEBUG
         //---------------------------------------------------
-        //Infinite money
-        if (binds.GetInputDown(binds.bindThrustVectorIncrease))
+        //Free money
+        if (binds.GetInputDown(binds.bindCheat1))
         {
             currency += 1000;
-            Debug.Log("Show me the money. " + currency);
             control.ui.UpdateAllPlayerResourcesUI();
+            Debug.Log("Show me the money. " + currency);
         }
 
         //Add ore water
@@ -474,15 +481,14 @@ public class Player : MonoBehaviour
         */
 
         //Spawn
-        
-        if (binds.GetInputDown(binds.bindThrustVectorDecrease))
+        if (binds.GetInputDown(binds.bindCheat2))
         {
-            control.generation.SpawnAsteroidManually(transform.position + transform.forward * 2f, rb.velocity, true);
-            upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+            control.generation.SpawnAsteroidManually(transform.position + transform.forward * 3f, rb.velocity, true);
             Debug.Log("Spawned one asteroid");
+            upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+            Debug.Log("Unlocked seismic charges");
         }
         
-
         /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
@@ -1236,8 +1242,19 @@ public class Player : MonoBehaviour
     private void PlayMusic()
     {
         //Select the track
+        
         float songToPlay = UnityEngine.Random.value;
 
+        if (songToPlay >= 0f && songToPlay < 0.5f)
+        {
+            music.clip = songDrifting;
+        }
+        else
+        {
+            music.clip = songLifeSupportFailure;
+        }
+
+        /*
         if (songToPlay >= 0f && songToPlay < 0.25f)
         {
             music.clip = songDrifting;
@@ -1254,12 +1271,13 @@ public class Player : MonoBehaviour
         {
             music.clip = songWeWereHere;
         }
+        */
 
         //Play the track
         music.Play();
         
         //Queue another song to be played 10-20 minutes after the current one finishes
-        musicPlayTime = Time.time + music.clip.length + UnityEngine.Random.Range(600f, 1200f);
+        musicPlayTime = Time.time + music.clip.length + UnityEngine.Random.Range(MUSIC_PLAY_QUEUE_TIME, MUSIC_PLAY_QUEUE_TIME + MUSIC_PLAY_QUEUE_VARIANCE_TIME);
     }
 
     private void AdjustRocketSound()

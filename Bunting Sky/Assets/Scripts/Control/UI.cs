@@ -674,9 +674,16 @@ public class UI : MonoBehaviour
     #region Player weapons
     public void UpdateWeaponAlternate(string playerSelectedWeaponTitle, bool seismicChargesUnlocked)
     {
-        if (playerSelectedWeaponTitle == "Laser" && seismicChargesUnlocked)
+        if (playerSelectedWeaponTitle == "Laser")
         {
-            weaponAlternateTitleText.text = "Seismic charges";
+            if (seismicChargesUnlocked)
+            {
+                weaponAlternateTitleText.text = "Seismic charges";
+            }
+            else
+            {
+                weaponAlternateTitleText.text = "None";
+            }
         }
     }
 

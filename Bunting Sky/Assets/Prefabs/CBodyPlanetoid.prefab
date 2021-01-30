@@ -100,6 +100,7 @@ MonoBehaviour:
   station: {fileID: 3535112129357172416, guid: 188c3194560817b48becf027043164ae, type: 3}
   rb: {fileID: 2037984649228943104}
   model: {fileID: 2800826970867333623}
+  hasStation: 0
 --- !u!114 &2037984649228943107
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,6 +126,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b5f305f124d29c4a8c716847b5ad4bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  prefixesNumbers: {fileID: 4900000, guid: 05186cc995cb11c4bbb780f6c38062e9, type: 3}
+  prefixesLetters: {fileID: 4900000, guid: a8d27b442d3238443a1d13850fb3e7b3, type: 3}
+  mainModern: {fileID: 4900000, guid: 1ef0e22dd35184e4880139f23b9f7d57, type: 3}
+  mainAncient: {fileID: 4900000, guid: 01ecc84f81fa0534db129fa7504ac2a3, type: 3}
+  mainMassEffect: {fileID: 4900000, guid: 2362956269c6f344ca96e16096f9a878, type: 3}
+  mainStarWars: {fileID: 4900000, guid: 12308d113640cfc40a52c5fd79cffbfe, type: 3}
+  mainTheoretical: {fileID: 4900000, guid: 24448262526d39f459076d1860291627, type: 3}
+  suffixesGeneral: {fileID: 4900000, guid: 25fa71f4d79ca8b468c29a9fa4a387ef, type: 3}
+  suffixesGreek: {fileID: 4900000, guid: 0d5c5a5ff465c8242964fc23fdb23d7c, type: 3}
+  suffixesPhonecian: {fileID: 4900000, guid: 1460c536efc59ec47a295ccf0fd2e994, type: 3}
+  suffixesRomanNumerals: {fileID: 4900000, guid: 3c279a60fdd3c1c408111c769d5e3210, type: 3}
 --- !u!114 &2731101898289063776
 MonoBehaviour:
   m_ObjectHideFlags: 0

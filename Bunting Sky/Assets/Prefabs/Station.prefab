@@ -1467,6 +1467,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bd176059ce2e934faf6c9f0d610895a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  prefixesEnTitlesBusiness: {fileID: 4900000, guid: 80b497055fe149a42a3ef6e4bd43b14c, type: 3}
+  prefixesEnTitlesCivilian: {fileID: 4900000, guid: dcba7440515434140b8b33d62dd1a610, type: 3}
+  prefixesEnTitlesScience: {fileID: 4900000, guid: cae856340eea06f449c97656d99d19ba, type: 3}
+  prefixesEnTitlesReligious: {fileID: 4900000, guid: 50d5dca0ab531d74c85c25bae4dec6c8, type: 3}
+  prefixesEnTitlesMilitary: {fileID: 4900000, guid: 4a7f95b5fb1207d48bcf049a7486b79a, type: 3}
+  mainEnFirstFemale: {fileID: 4900000, guid: 007df6ee2526a444dad4ca108c5f9e42, type: 3}
+  mainEnFirstMale: {fileID: 4900000, guid: 36d9f83cab640db4f928ef0b2e01e5ed, type: 3}
+  mainEnFirstNB: {fileID: 4900000, guid: 43ffdb001c66f02439559b55044f7201, type: 3}
+  suffixesEnLast: {fileID: 4900000, guid: 6261986317ff64143a9ec3f1b2964faa, type: 3}
 --- !u!54 &3059884859765187972
 Rigidbody:
   m_ObjectHideFlags: 0
