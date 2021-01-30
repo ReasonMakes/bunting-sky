@@ -49,6 +49,8 @@ public class Player : MonoBehaviour
 
     //Fix velocity orbits
 
+    //Names overlap for some reason
+
     //MAKE ASTEROIDS SAVE
 
     //tooltips for keybinds! (tell player to hold shift when aiming at asteroids with mouse but not ship)
