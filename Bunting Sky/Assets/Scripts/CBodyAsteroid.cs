@@ -26,7 +26,8 @@ public class CBodyAsteroid : MonoBehaviour
 
     //public GameObject particlesShurikenDamageObj;
 
-    [System.NonSerialized] public byte health = 4;
+    [System.NonSerialized] public readonly static byte HEALTH_MAX = 4;
+    [System.NonSerialized] public byte health = HEALTH_MAX;
     [System.NonSerialized] public bool destroyed = false;
     private float destroyedTime = 0f;
 
@@ -92,9 +93,9 @@ public class CBodyAsteroid : MonoBehaviour
         separating = false;
     }
 
-    public string RandomSize()
+    public static string GetRandomSize()
     {
-        //Randomly choose size and set size and type
+        //Randomly choose size
         switch (Random.Range(0, 3)) //int range is exclusive, so have to add 1 to the max value
         {
             case 0:
@@ -177,6 +178,11 @@ public class CBodyAsteroid : MonoBehaviour
         }
 
         GetComponent<ParticlesDamageRock>().SetParticleSystemDamageColour(activeModel.transform.GetChild(0), GetComponent<ParticlesDamageRock>().saturationDefault);
+    }
+
+    public static byte GetRandomType()
+    {
+        return (byte)Random.Range(0, Ore.typeLength);
     }
 
     private void OnCollisionEnter(Collision collision)

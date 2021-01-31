@@ -107,6 +107,9 @@ public class Generation : MonoBehaviour
             Control.DestroyAllChildren(cBodiesPlanetoids, 0f);
             Control.DestroyAllChildren(cBodiesAsteroids, 0f);
             Control.DestroyAllChildren(ores, 0f);
+            Destroy(control.ui.playerShipDirectionReticleTree, 0f);
+            control.ui.playerShipDirectionReticleList.Clear();
+            //Control.DestroyAllChildren(control.ui.playerShipDirectionReticleTree, 0f);
             instancePlayer.GetComponentInChildren<Player>().WeaponsDestroyTrees();
             
             //Destroy player
@@ -199,6 +202,7 @@ public class Generation : MonoBehaviour
 
         playerScript.LateStart();
 
+        //Debug.Log("Creating player ship direction reticles");
         control.ui.CreatePlayerShipDirectionReticles();
 
         //Remember
@@ -322,7 +326,7 @@ public class Generation : MonoBehaviour
 
                 CBodyAsteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<CBodyAsteroid>();
                 //Randomize size and type
-                instanceCBodyAsteroidScript.SetSize(instanceCBodyAsteroidScript.RandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
+                instanceCBodyAsteroidScript.SetSize(CBodyAsteroid.GetRandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
                 instanceCBodyAsteroidScript.SetType(clusterType);
                 //Give control reference
                 instanceCBodyAsteroidScript.control = control;
@@ -380,7 +384,7 @@ public class Generation : MonoBehaviour
         return instanceCBodyPlanetoid;
     }
 
-    public GameObject SpawnAsteroidManually(Vector3 position, Vector3 velocity, bool randomType)
+    public GameObject SpawnAsteroidManually(Vector3 position, Vector3 velocity, string size, byte type, byte health) //bool randomType)
     {
         GameObject instanceCBodyAsteroid = Instantiate(
             cBodyAsteroid,
@@ -405,8 +409,12 @@ public class Generation : MonoBehaviour
         instanceCBodyAsteroid.GetComponent<Rigidbody>().velocity = velocity;
 
         //Randomize size and type
-        instanceCBodyAsteroidScript.SetSize(instanceCBodyAsteroidScript.RandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
+        instanceCBodyAsteroidScript.SetSize(size);
+        //instanceCBodyAsteroidScript.SetSize(instanceCBodyAsteroidScript.RandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
 
+        //Type
+        instanceCBodyAsteroidScript.SetType(type);
+        /*
         if (randomType)
         {
             instanceCBodyAsteroidScript.SetType((byte)Random.Range(0, Ore.typeLength));
@@ -415,6 +423,10 @@ public class Generation : MonoBehaviour
         {
             instanceCBodyAsteroidScript.SetType(0);
         }
+        */
+
+        //Health
+        instanceCBodyAsteroidScript.health = health;
 
         return instanceCBodyAsteroid;
     }
@@ -424,8 +436,6 @@ public class Generation : MonoBehaviour
     public void SaveGame()
     {
         //Debug.Log("Saving game");
-
-        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
         //World properties
         //Planetoids
@@ -490,6 +500,41 @@ public class Generation : MonoBehaviour
             planetoidArrayIndex++;
         }
 
+        //Asteroids
+        CBodyAsteroid[] asteroidArray = FindObjectsOfType<CBodyAsteroid>();
+
+        float[,] controlScriptAsteroidPosition = new float[asteroidArray.Length, 3];
+        float[,] controlScriptAsteroidVelocity = new float[asteroidArray.Length, 3];
+        string[] controlScriptAsteroidSize = new string[asteroidArray.Length];
+        byte[] controlScriptAsteroidType = new byte[asteroidArray.Length];
+        byte[] controlScriptAsteroidHealth = new byte[asteroidArray.Length];
+
+        byte asteroidArrayIndex = 0;
+        foreach (CBodyAsteroid asteroid in asteroidArray)
+        {
+            //Position
+            controlScriptAsteroidPosition[asteroidArrayIndex, 0] = asteroid.transform.position.x;
+            controlScriptAsteroidPosition[asteroidArrayIndex, 1] = asteroid.transform.position.y;
+            controlScriptAsteroidPosition[asteroidArrayIndex, 2] = asteroid.transform.position.z;
+
+            //Velocity
+            controlScriptAsteroidVelocity[asteroidArrayIndex, 0] = asteroid.GetComponent<Rigidbody>().velocity.x;
+            controlScriptAsteroidVelocity[asteroidArrayIndex, 1] = asteroid.GetComponent<Rigidbody>().velocity.y;
+            controlScriptAsteroidVelocity[asteroidArrayIndex, 2] = asteroid.GetComponent<Rigidbody>().velocity.z;
+
+            //Size
+            controlScriptAsteroidSize[asteroidArrayIndex] = asteroid.sizeClassDisplay;
+
+            //Type
+            controlScriptAsteroidType[asteroidArrayIndex] = asteroid.type;
+
+            //Health
+            controlScriptAsteroidHealth[asteroidArrayIndex] = asteroid.health;
+
+            //Increment
+            asteroidArrayIndex++;
+        }
+
         //Verse
         float[] controlScriptVersePosition = new float[3];
         controlScriptVersePosition[0] = verseSpace.transform.position.x;
@@ -497,6 +542,7 @@ public class Generation : MonoBehaviour
         controlScriptVersePosition[2] = verseSpace.transform.position.z;
 
         //Player
+        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
         float[] playerScriptPlayerPosition = new float[3];
         playerScriptPlayerPosition[0] = playerScript.transform.position.x;
         playerScriptPlayerPosition[1] = playerScript.transform.position.y;
@@ -505,24 +551,37 @@ public class Generation : MonoBehaviour
         LevelData.Data data = new LevelData.Data
         {
             //World properties
+            //Planetoids
             controlPlanetoidQuantity = (byte)planetoidArray.Length,
             controlPlanetoidPosition = controlScriptPlanetoidPosition,
             controlPlanetoidVelocity = controlScriptPlanetoidVelocity,
             controlPlanetoidName = controlScriptPlanetoidName,
             controlPlanetoidHasStation = controlScriptPlanetoidHasStation,
 
+            //Planetoids: stations
             controlPlanetoidStationTitle = controlScriptPlanetoidStationTitle,
             controlPlanetoidStationPricePlatinoid = controlScriptPlanetoidPricePlatinoid,
             controlPlanetoidStationPricePreciousMetal = controlScriptPlanetoidPricePreciousMetal,
             controlPlanetoidStationPriceWater = controlScriptPlanetoidPriceWater,
             controlPlanetoidStationUpgradeIndex = controlScriptPlanetoidStationUpgradeIndex,
 
+            //Asteroids
+            controlAsteroidQuantity = asteroidArray.Length,
+            controlAsteroidPosition = controlScriptAsteroidPosition,
+            controlAsteroidVelocity = controlScriptAsteroidVelocity,
+            controlAsteroidSize = controlScriptAsteroidSize,
+            controlAsteroidType = controlScriptAsteroidType,
+            controlAsteroidHealth = controlScriptAsteroidHealth,
+
+            //Centre star
             controlCentreStarName = instanceCentreStar.GetComponent<CelestialName>().title,
+            
+            //Verse space
             controlVerseSpacePosition = controlScriptVersePosition,
 
+            //Player properties
             playerPosition = playerScriptPlayerPosition,
 
-            //Player properties
             playerUpgrades = playerScript.upgradeLevels,
 
             playerVitalsHealth = playerScript.vitalsHealth,
@@ -618,6 +677,26 @@ public class Generation : MonoBehaviour
                         null
                     );
                 }
+            }
+
+            //Asteroids
+            for (byte i = 0; i < data.controlAsteroidQuantity; i++)
+            {
+                SpawnAsteroidManually(
+                    new Vector3(
+                        data.controlAsteroidPosition[i, 0],
+                        data.controlAsteroidPosition[i, 1],
+                        data.controlAsteroidPosition[i, 2]
+                    ),
+                    new Vector3(
+                        data.controlAsteroidVelocity[i, 0],
+                        data.controlAsteroidVelocity[i, 1],
+                        data.controlAsteroidVelocity[i, 2]
+                    ),
+                    data.controlAsteroidSize[i],
+                    data.controlAsteroidType[i],
+                    data.controlAsteroidHealth[i]
+                );
             }
 
             //PLAYER

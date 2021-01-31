@@ -47,13 +47,15 @@ public class Player : MonoBehaviour
 
     //!!!!!TOP PRIORITY!!!!!
 
+    //turn down bloom
+
+    //When in first-person, make world-to-screen target UI invisible
+
     //Fix velocity orbits
 
-    //Names overlap for some reason
+    //Sun disappears sometimes
 
     //MAKE ASTEROIDS SAVE
-
-    //tooltips for keybinds! (tell player to hold shift when aiming at asteroids with mouse but not ship)
 
     //Add menu scrolling
     //Add setting to turn off music
@@ -67,10 +69,12 @@ public class Player : MonoBehaviour
     //- centres around player without skipping forward tons
     //- displays background stars
     //- doesn't render destroyed planetoids
-    //DISABLE MAP WHEN MAIN MENU IS OPEN
 
     //Fix ship auto-torquing?
     //Copy acceleration AS WELL AS velocity?
+    //ADD SPACE PIRATES??
+    //Add hologram of target?
+    //Line renderer contrail?
 
     //!!!!!!!!!!
 
@@ -247,11 +251,12 @@ public class Player : MonoBehaviour
     public AudioSource music;
     public AudioClip songDrifting;
     public AudioClip songLifeSupportFailure;
-    public AudioClip songHoghmanTransfer;
-    public AudioClip songWeWereHere;
+    public AudioClip songHoghmanTransfer; //unused
+    public AudioClip songWeWereHere; //unused
     private float musicPlayTime = 30f;
     private readonly float MUSIC_PLAY_QUEUE_TIME = 60f;
     private readonly float MUSIC_PLAY_QUEUE_VARIANCE_TIME = 60f;
+    private bool firstSong = true;
 
     //Audio: Sound Effects
     public AudioSource soundSourceRocket;
@@ -342,15 +347,15 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public GameObject playerWeaponsTreeLaser;
     [System.NonSerialized] public GameObject playerWeaponsTreeSeismicCharge;
 
-    [System.NonSerialized] public string selectedWeaponTitle = "Laser";
+    [System.NonSerialized] public string weaponSelectedTitle = "Laser";
 
-    private short weaponSelectedClipSize;
-    private short weaponSelectedClipRemaining;
-    private float weaponSelectedClipCooldownDuration;
-    private float weaponSelectedClipCooldownCurrent;
+    [System.NonSerialized] public short weaponSelectedClipSize;
+    [System.NonSerialized] public short weaponSelectedClipRemaining;
+    [System.NonSerialized] public float weaponSelectedClipCooldownDuration;
+    [System.NonSerialized] public float weaponSelectedClipCooldownCurrent;
 
-    private float weaponSelectedSingleCooldownDuration;
-    private float weaponSelectedSingleCooldownCurrent;
+    [System.NonSerialized] public float weaponSelectedSingleCooldownDuration;
+    [System.NonSerialized] public float weaponSelectedSingleCooldownCurrent;
     #endregion
 
     //Skybox stars
@@ -428,7 +433,7 @@ public class Player : MonoBehaviour
 
         //AUDIO
         //Play the first song 0 to 30 seconds after startup
-        musicPlayTime = Time.time + UnityEngine.Random.Range(0f, 30f);
+        musicPlayTime = Time.time + UnityEngine.Random.Range(0f, musicPlayTime);
 
         //Init sounds
         soundSourceRocket.clip = soundClipRocket;
@@ -461,7 +466,7 @@ public class Player : MonoBehaviour
         {
             currency += 1000;
             control.ui.UpdateAllPlayerResourcesUI();
-            Debug.Log("Show me the money. " + currency);
+            control.ui.SetTip("Show me the money.");
         }
 
         //Add ore water
@@ -485,10 +490,16 @@ public class Player : MonoBehaviour
         //Spawn
         if (binds.GetInputDown(binds.bindCheat2))
         {
-            control.generation.SpawnAsteroidManually(transform.position + transform.forward * 3f, rb.velocity, true);
-            Debug.Log("Spawned one asteroid");
+            control.generation.SpawnAsteroidManually(
+                transform.position + transform.forward * 3f,
+                rb.velocity,
+                CBodyAsteroid.GetRandomSize(),
+                CBodyAsteroid.GetRandomType(),
+                CBodyAsteroid.HEALTH_MAX
+            );
+            control.ui.SetTip("Spawned one asteroid.");
             upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-            Debug.Log("Unlocked seismic charges");
+            control.ui.SetTip("Seismic charges unlocked.");
         }
         
         /*
@@ -880,7 +891,11 @@ public class Player : MonoBehaviour
         if (!Menu.menuOpenAndGamePaused && !Commerce.menuOpen)
         {
             //Map
-            if (binds.GetInputDown(binds.bindToggleMap)) ToggleMapView();
+            if (binds.GetInputDown(binds.bindToggleMap))
+            {
+                control.ui.ToggleMapView();
+            }
+
             if (UI.displayMap)
             {
                 mapCam.transform.position = Vector3.zero + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
@@ -941,7 +956,7 @@ public class Player : MonoBehaviour
         if (upgradesInitialized)
         {
             //UI
-            UpdatePlayerWeaponsUI();
+            control.ui.UpdatePlayerWeaponsUI();
 
             //Cooldowns
             UpdateWeaponSelected();
@@ -959,14 +974,7 @@ public class Player : MonoBehaviour
                 && weaponSelectedClipCooldownCurrent <= 0f
             )
             {
-                if (selectedWeaponTitle == "Laser")
-                {
-                    playerWeaponLaser.Fire();
-                }
-                else if (selectedWeaponTitle == "Seismic charges")
-                {
-                    playerWeaponSeismicCharge.Fire();
-                }
+                WeaponsFire();
             }
         }
     }
@@ -1005,7 +1013,8 @@ public class Player : MonoBehaviour
         //Weapons
         playerWeaponLaser.UpdateUpgrades();
         playerWeaponSeismicCharge.UpdateUpgrades();
-        UpdatePlayerWeaponsUI();
+        //control.ui.UpdatePlayerWeaponsUI();
+        //This is called in update anyway
     }
     #endregion
 
@@ -1045,7 +1054,7 @@ public class Player : MonoBehaviour
         DecideWhichModelsToRender();
     }
 
-    private void DecideWhichModelsToRender()
+    public void DecideWhichModelsToRender()
     {
         //Defaults (will be values if destroyed)
         bool firstPerson = false;
@@ -1135,47 +1144,32 @@ public class Player : MonoBehaviour
             fovSet = true;
         }
     }
-    
-    private void ToggleMapView()
-    {
-        UI.displayMap = !UI.displayMap;
-
-        control.ui.ToggleMapUI();
-
-        if (UI.displayMap)
-        {
-            //Ship cameras
-            fpCam.SetActive(!UI.displayMap);
-            tpCam.SetActive(!UI.displayMap);
-
-            //Map camera
-            mapCam.SetActive(UI.displayMap);
-
-            //Background stars
-            //skyboxStarsParticleSystem.transform.parent = mapCam.transform;
-
-            //Map ship model
-            transform.parent.Find("Ship Map Model").gameObject.SetActive(UI.displayMap);
-        }
-        else
-        {
-            //Ship cameras
-            fpCam.SetActive(!UI.displayMap);
-            DecideWhichModelsToRender(); 
-
-            //Map camera
-            mapCam.SetActive(UI.displayMap);
-
-            //Background stars
-            //skyboxStarsParticleSystem.transform.parent = positionMount.transform;
-
-            //Map ship model
-            transform.parent.Find("Ship Map Model").gameObject.SetActive(UI.displayMap);
-        }
-    }
     #endregion
 
     #region General methods: Weapons
+    private void WeaponsFire()
+    {
+        if (weaponSelectedTitle == "Laser")
+        {
+            playerWeaponLaser.Fire();
+
+            //Debug.LogFormat("Ship angle: {0}, view angle: {1}", transform.localRotation.eulerAngles, centreMountTran.localRotation.eulerAngles);
+            //Debug.Log("ship to look diff: " + (transform.localRotation.eulerAngles - centreMountTran.localRotation.eulerAngles).magnitude);
+            //Debug.Log("ship to look diff: " + (transform.localRotation * Quaternion.Inverse(centreMountTran.localRotation)));
+            //Debug.Log("ship to look diff: " + Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)));
+
+            if (Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY)
+            {
+                control.ui.tipAimCertainty++;
+                //control.ui.SetTip("Not aiming at centre!");
+            }
+        }
+        else if (weaponSelectedTitle == "Seismic charges")
+        {
+            playerWeaponSeismicCharge.Fire();
+        }
+    }
+
     public void WeaponsDestroyTrees()
     {
         Control.DestroyAllChildren(playerWeaponsTreeLaser, 0f);
@@ -1187,15 +1181,15 @@ public class Player : MonoBehaviour
         //Select
         if (binds.GetInputDown(binds.bindSelectWeapon1))
         {
-            selectedWeaponTitle = "Laser";
+            weaponSelectedTitle = "Laser";
         }
         else if (upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1 && binds.GetInputDown(binds.bindSelectWeapon2))
         {
-            selectedWeaponTitle = "Seismic charges";
+            weaponSelectedTitle = "Seismic charges";
         }
 
         //Get properties
-        if (selectedWeaponTitle == "Laser")
+        if (weaponSelectedTitle == "Laser")
         {
             //Properties
             weaponSelectedClipSize = playerWeaponLaser.clipSize;
@@ -1206,7 +1200,7 @@ public class Player : MonoBehaviour
             weaponSelectedSingleCooldownDuration = playerWeaponLaser.SINGLE_COOLDOWN_DURATION;
             weaponSelectedSingleCooldownCurrent = playerWeaponLaser.singleCooldownCurrent;
         }
-        else if (selectedWeaponTitle == "Seismic charges")
+        else if (weaponSelectedTitle == "Seismic charges")
         {
             //Properties
             weaponSelectedClipSize = playerWeaponSeismicCharge.clipSize;
@@ -1219,41 +1213,41 @@ public class Player : MonoBehaviour
         }
 
         //UI
-        control.ui.UpdateWeaponAlternate(selectedWeaponTitle, upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1);
-        control.ui.UpdateWeaponSelected(selectedWeaponTitle);
+        control.ui.UpdateWeaponAlternate(weaponSelectedTitle, upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1);
+        control.ui.UpdateWeaponSelected(weaponSelectedTitle);
     }
 
-    private void UpdatePlayerWeaponsUI()
-    {
-        //Clip max text
-        control.ui.weaponSelectedClipSizeText.text = weaponSelectedClipSize.ToString();
-
-        //Clip remaining text
-        control.ui.weaponSelectedClipRemainingText.text = weaponSelectedClipRemaining.ToString();
-
-        //Single and clip joint-cooldown bar
-        control.ui.weaponCooldown.fillAmount = Mathf.Max(
-            0f,
-            weaponSelectedSingleCooldownCurrent / weaponSelectedSingleCooldownDuration,
-            weaponSelectedClipCooldownCurrent / weaponSelectedClipCooldownDuration
-        );
-    }
+    
     #endregion
 
     #region General methods: Audio
     private void PlayMusic()
     {
         //Select the track
-        
-        float songToPlay = UnityEngine.Random.value;
-
-        if (songToPlay >= 0f && songToPlay < 0.5f)
+        if (firstSong)
         {
-            music.clip = songDrifting;
+            float songToPlay = UnityEngine.Random.value;
+            if (songToPlay >= 0f && songToPlay < 0.5f)
+            {
+                music.clip = songDrifting;
+            }
+            else
+            {
+                music.clip = songLifeSupportFailure;
+            }
+
+            firstSong = false;
         }
         else
         {
-            music.clip = songLifeSupportFailure;
+            if (music.clip == songLifeSupportFailure)
+            {
+                music.clip = songDrifting;
+            }
+            else
+            {
+                music.clip = songLifeSupportFailure;
+            }
         }
 
         /*
@@ -1278,7 +1272,7 @@ public class Player : MonoBehaviour
         //Play the track
         music.Play();
         
-        //Queue another song to be played 10-20 minutes after the current one finishes
+        //Queue another song for after the current one finishes
         musicPlayTime = Time.time + music.clip.length + UnityEngine.Random.Range(MUSIC_PLAY_QUEUE_TIME, MUSIC_PLAY_QUEUE_TIME + MUSIC_PLAY_QUEUE_VARIANCE_TIME);
     }
 

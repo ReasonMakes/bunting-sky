@@ -73,10 +73,17 @@ public class CBodyPlanetoid : MonoBehaviour
         GetComponent<Gravity>().gravitateTowardCentreStarOnly = true;
 
         //Spawn regular asteroids
-        for(int i = 0; i < 7; i++)
+        byte type = CBodyAsteroid.GetRandomType();
+        for (int i = 0; i < 7; i++)
         {
             //Spawn
-            GameObject asteroid = control.generation.SpawnAsteroidManually(transform.position, rb.velocity, false);
+            GameObject asteroid = control.generation.SpawnAsteroidManually(
+                transform.position,
+                rb.velocity,
+                CBodyAsteroid.GetRandomSize(),
+                type,
+                CBodyAsteroid.HEALTH_MAX
+            );
 
             //Spread out
             asteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);

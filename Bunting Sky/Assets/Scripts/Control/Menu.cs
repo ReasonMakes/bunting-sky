@@ -108,6 +108,12 @@ public class Menu : MonoBehaviour
 
         //Toggle reticle
         control.ui.cameraReticle.SetActive(!menuOpenAndGamePaused);
+
+        //Disable map screen
+        if (UI.displayMap)
+        {
+            control.ui.ToggleMapView();
+        }
     }
 
     public void MenuMainOpen()

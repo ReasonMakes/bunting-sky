@@ -63,7 +63,7 @@ public class UI : MonoBehaviour
     //Player ship direction reticle
     [System.NonSerialized] public GameObject playerShipDirectionReticleTree;
     public GameObject playerShipDirectionReticlePrefab;
-    private List<GameObject> playerShipDirectionReticleList = new List<GameObject>();
+    [System.NonSerialized] public List<GameObject> playerShipDirectionReticleList = new List<GameObject>();
     private short playerShipDirectionReticleListLength = 16;
     private float playerShipDirectionReticleSpacing = 0.05f;
     private float playerShipDirectionReticleSpacingPower = 3f;
@@ -73,6 +73,14 @@ public class UI : MonoBehaviour
     //Map
     [System.NonSerialized] public static bool displayMap = false;
     [System.NonSerialized] public static float mapScale = 10f;
+
+    //Tips
+    [System.NonSerialized] public TextMeshProUGUI tipText;
+    [System.NonSerialized] public float tipAimCertainty = 0f;
+    private readonly float TIP_CERTAINTY_DECAY = 0.003f;
+    private readonly float TIP_AIM_THRESHOLD_CERTAINTY = 4f;
+    [System.NonSerialized] public readonly float TIP_AIM_THRESHOLD_ACCURACY = 0.995f;
+    public string tipAimText;
 
     private void Awake()
     {
@@ -96,13 +104,15 @@ public class UI : MonoBehaviour
         resourcesTextPreciousMetal      = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals Text").GetComponent<TextMeshProUGUI>();
         resourcesTextWater              = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water Text").GetComponent<TextMeshProUGUI>();
 
-        
-        
         weaponCooldown                  = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Cooldown").GetComponent<Image>();
         weaponSelectedClipRemainingText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Remaining Text").GetComponent<TextMeshProUGUI>();
         weaponSelectedClipSizeText      = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
         weaponSelectedTitleText         = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
         weaponAlternateTitleText        = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
+
+        tipText                         = canvas.transform.Find("HUD Bottom").Find("Tips").Find("Tip Text").GetComponent<TextMeshProUGUI>();
+
+        UpdateTipBinds();
     }
 
     private void Start()
@@ -136,9 +146,27 @@ public class UI : MonoBehaviour
         //Resources animations
         if (updatePlayerResourcesUIAnimations)
         {
-            updatePlayerResourcesUIAnimations = false;
             UpdateAllPlayerResourcesUIAnimations();
+            updatePlayerResourcesUIAnimations = false;
         }
+
+        //Tip animation
+        if (tipText.color.a > 0f)
+        {
+            float tipTextAlphaDecrement = 0.01f;
+            float tipTextAlphaAdjustment = tipText.color.a - (tipTextAlphaDecrement * ((1f - tipText.color.a) + tipTextAlphaDecrement));
+            tipText.color = new Color(1f, 1f, 1f, Mathf.Max(0f, tipTextAlphaAdjustment));
+        }
+
+        if (tipAimCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
+        {
+            SetTip(tipAimText);
+            tipAimCertainty = 0f;
+        }
+
+        tipAimCertainty = Mathf.Max(0f, tipAimCertainty - TIP_CERTAINTY_DECAY);
+
+        //Debug.Log(tipAimCertainty);
     }
 
     private void LateUpdate()
@@ -154,10 +182,84 @@ public class UI : MonoBehaviour
         }
     }
 
-    public void ToggleMapUI()
+    #region Tip
+    public void SetTip(string text)
     {
+        tipText.text = text;
+        tipText.color = Color.white;
+    }
+
+    public void UpdateTipBinds()
+    {
+        tipAimText = "Hold " + GetBindAsPrettyString(control.binds.bindAlignShipToReticle) + " to torque your starship in the direction you're looking!";
+    }
+
+    private string GetBindAsPrettyString(short bind)
+    {
+        //Convert from our proprietary binds saving format of short back to KeyCode and read as string
+        string pretty = ((KeyCode)bind).ToString();
+
+        //Add spaces in between capitals (useful for binds like "LeftShift")
+        pretty = Control.InsertSpacesInFrontOfCapitals(pretty);
+
+        //Make all lowercase
+        pretty = pretty.ToLower();
+
+        //Surround with square brackets
+        pretty = "[" + pretty + "]";
+
+        return pretty;
+    }
+    #endregion
+
+    public void ToggleMapView()
+    {
+        //Map cannot be opened while menu is
+        if (Menu.menuOpenAndGamePaused)
+        {
+            displayMap = false;
+        }
+        else
+        {
+            displayMap = !displayMap;
+        }
+        
+        //Cursor and camera reticle
         Cursor.lockState = (CursorLockMode)System.Convert.ToByte(!displayMap);    //toggle cursor lock
         cameraReticle.SetActive(!displayMap);
+
+        //Player and map
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+        if (displayMap)
+        {
+            //Ship cameras
+            playerScript.fpCam.SetActive(!displayMap);
+            playerScript.tpCam.SetActive(!displayMap);
+
+            //Map camera
+            playerScript.mapCam.SetActive(displayMap);
+
+            //Background stars
+            //skyboxStarsParticleSystem.transform.parent = mapCam.transform;
+
+            //Map ship model
+            playerScript.transform.parent.Find("Ship Map Model").gameObject.SetActive(displayMap);
+        }
+        else
+        {
+            //Ship cameras
+            playerScript.fpCam.SetActive(!displayMap);
+            playerScript.DecideWhichModelsToRender();
+
+            //Map camera
+            playerScript.mapCam.SetActive(displayMap);
+
+            //Background stars
+            //skyboxStarsParticleSystem.transform.parent = positionMount.transform;
+
+            //Map ship model
+            playerScript.transform.parent.Find("Ship Map Model").gameObject.SetActive(displayMap);
+        }
     }
 
     #region UI: Player ship direction reticle
@@ -194,31 +296,44 @@ public class UI : MonoBehaviour
 
     private void UpdatePlayerShipFacingDirectionReticleUI()
     {
-        for (int i = 0; i <= playerShipDirectionReticleListLength - 1; i++)
+        if (playerShipDirectionReticleTree != null)
         {
-            //Get references
-            Transform instancePlayerBodyTransform = control.generation.instancePlayer.transform.Find("Body");
-
-            GameObject instancePlayerShipDirectionReticle = playerShipDirectionReticleList[i];
-            DirectionReticle instancePlayerShipDirectionReticleScript = instancePlayerShipDirectionReticle.GetComponent<DirectionReticle>();
-
-            //Position in front of player ship at distance relative to index
-            Vector3 reticleWorldPos = instancePlayerBodyTransform.position
-                + ((instancePlayerBodyTransform.rotation * Vector3.forward)
-                * (playerShipDirectionReticleForwardOffset + (playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)) * playerShipDirectionReticleScale)
-            );
-
-            //Transform 3D world space to 2D canvas space
-            instancePlayerShipDirectionReticle.transform.position = Camera.main.WorldToScreenPoint(reticleWorldPos);
-
-            //Don't render when behind camera
-            if (Vector3.Dot(reticleWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
+            for (int i = 0; i <= playerShipDirectionReticleListLength - 1; i++)
             {
-                instancePlayerShipDirectionReticle.SetActive(false);
-            }
-            else
-            {
-                instancePlayerShipDirectionReticle.SetActive(true);
+                //Get references
+                Transform instancePlayerBodyTransform = control.generation.instancePlayer.transform.Find("Body");
+
+                GameObject instancePlayerShipDirectionReticle = playerShipDirectionReticleList[i];
+                /*
+                if (instancePlayerShipDirectionReticle == null)
+                {
+                    return;
+                    
+                    //CreatePlayerShipDirectionReticles()
+                    //instancePlayerShipDirectionReticle
+                    //playerShipDirectionReticleList.Clear();
+                }
+                */
+                DirectionReticle instancePlayerShipDirectionReticleScript = instancePlayerShipDirectionReticle.GetComponent<DirectionReticle>();
+
+                //Position in front of player ship at distance relative to index
+                Vector3 reticleWorldPos = instancePlayerBodyTransform.position
+                    + ((instancePlayerBodyTransform.rotation * Vector3.forward)
+                    * (playerShipDirectionReticleForwardOffset + (playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)) * playerShipDirectionReticleScale)
+                );
+
+                //Transform 3D world space to 2D canvas space
+                instancePlayerShipDirectionReticle.transform.position = Camera.main.WorldToScreenPoint(reticleWorldPos);
+
+                //Don't render when behind camera
+                if (Vector3.Dot(reticleWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
+                {
+                    instancePlayerShipDirectionReticle.SetActive(false);
+                }
+                else
+                {
+                    instancePlayerShipDirectionReticle.SetActive(true);
+                }
             }
         }
     }
@@ -270,7 +385,7 @@ public class UI : MonoBehaviour
             SetPlayerTargetObject(hit.collider.transform.gameObject);
 
             //Console
-            TextMesh consoleTargetTypeAndTitleText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Type And Title Text").GetComponent<TextMesh>();
+            TextMesh consoleTargetTypeAndTitleText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Display Strut Left").Find("Target Type And Title Text").GetComponent<TextMesh>();
             targetTypeAndTitle = waypointTextType.text + "\n" + waypointTextTitle.text;
             consoleTargetTypeAndTitleText.text = targetTypeAndTitle;
         }
@@ -359,8 +474,8 @@ public class UI : MonoBehaviour
     private void UpdateWaypointAndTargetUI()
     {
         //Console
-        TextMesh consoleTargetInfoText         = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Info Text").GetComponent<TextMesh>();
-        TextMesh consoleTargetTypeAndTitleText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Type And Title Text").GetComponent<TextMesh>();
+        TextMesh consoleTargetInfoText         = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Display Strut Right").Find("Target Info Text").GetComponent<TextMesh>();
+        TextMesh consoleTargetTypeAndTitleText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Display Strut Left").Find("Target Type And Title Text").GetComponent<TextMesh>();
 
         //Waypoint
         renderWaypoint = false;
@@ -573,7 +688,7 @@ public class UI : MonoBehaviour
         string deltaVDisplay = signPrint + (int)deltaV + " Δv";
 
         //Update console
-        TextMesh consoleTargetInfoText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Target Info Text").GetComponent<TextMesh>();
+        TextMesh consoleTargetInfoText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Display Strut Right").Find("Target Info Text").GetComponent<TextMesh>();
         consoleTargetInfoText.text = distanceDisplay + "\n" + deltaVDisplay;
 
         //Return (for waypoint)
@@ -590,6 +705,8 @@ public class UI : MonoBehaviour
         playerScript.vitalsHealthUIText.text = playerScript.vitalsHealth.ToString("F2");
         playerScript.vitalsFuelUI.GetComponent<Image>().fillAmount = (float)(playerScript.vitalsFuel / playerScript.vitalsFuelMax);
         playerScript.vitalsFuelUIText.text = playerScript.vitalsFuel.ToString("F2");
+
+        UpdatePlayerConsole();
     }
 
     public void UpdatePlayerOreWaterText()
@@ -663,8 +780,24 @@ public class UI : MonoBehaviour
 
     private void UpdatePlayerConsole()
     {
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+
+        //Vitals
+        TextMesh consoleVitalsText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Vitals Text").GetComponent<TextMesh>();
+        consoleVitalsText.text =
+                     "Hull integrity: " + playerScript.vitalsHealth.ToString("F2")
+            + "\n" + "Engine fuel: " + playerScript.vitalsFuel.ToString("F2");
+
+        //Weapons
+        TextMesh consoleWeaponsText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Weapons Text").GetComponent<TextMesh>();
+        consoleWeaponsText.text =
+                     "Weapon: " + playerScript.weaponSelectedTitle
+            + "\n" + "Cooldown: " + Mathf.RoundToInt(weaponCooldown.fillAmount * 100f).ToString() + "%";
+
+        //Cargo
         TextMesh consoleCargoText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Cargo Text").GetComponent<TextMesh>();
-        consoleCargoText.text = "Currency: " + resourcesTextCurrency.text
+        consoleCargoText.text =
+                     "Currency: " + resourcesTextCurrency.text
             + "\n" + "Platinoid: " + resourcesTextPlatinoid.text
             + "\n" + "Precious metal: " + resourcesTextPreciousMetal.text
             + "\n" + "Water ice: " + resourcesTextWater.text;
@@ -672,6 +805,24 @@ public class UI : MonoBehaviour
     #endregion
 
     #region Player weapons
+    public void UpdatePlayerWeaponsUI()
+    {
+        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+
+        //Clip max text
+        weaponSelectedClipSizeText.text = playerScript.weaponSelectedClipSize.ToString();
+
+        //Clip remaining text
+        weaponSelectedClipRemainingText.text = playerScript.weaponSelectedClipRemaining.ToString();
+
+        //Single and clip joint-cooldown bar
+        weaponCooldown.fillAmount = Mathf.Max(
+            0f,
+            playerScript.weaponSelectedSingleCooldownCurrent / playerScript.weaponSelectedSingleCooldownDuration,
+            playerScript.weaponSelectedClipCooldownCurrent / playerScript.weaponSelectedClipCooldownDuration
+        );
+    }
+
     public void UpdateWeaponAlternate(string playerSelectedWeaponTitle, bool seismicChargesUnlocked)
     {
         if (playerSelectedWeaponTitle == "Laser")

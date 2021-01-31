@@ -5,7 +5,7 @@ using System.IO;
 
 public class CelestialName: MonoBehaviour
 {
-    private string path = "Names/Stars/";
+    //private string path = "Names/Stars/";
     [System.NonSerialized] public string title = "Error: could not load"; //default title
     string[] lines;
     string prefix = "";
@@ -40,7 +40,7 @@ public class CelestialName: MonoBehaviour
         TextAsset suffixesRomanNumerals   = Resources.Load<TextAsset>(path + "Suffixes/romanNumerals.txt");
         */
 
-        Debug.Log("Generating celestial name" + prefixesNumbers.text);
+        //Debug.Log("Generating celestial name" + prefixesNumbers.text);
 
         //Prefix
         if (Random.value >= 0.8f)
@@ -61,7 +61,7 @@ public class CelestialName: MonoBehaviour
                 lines = mainModern.text.Split('\n');
             }
 
-            prefix = lines[(int)Random.Range(0f, lines.Length - 1f)] + " ";
+            prefix = lines[(int)Random.Range(0f, lines.Length - 1f)].TrimStart('\r', '\n').TrimEnd('\r', '\n') + " ";
         }
 
         //Main
@@ -88,7 +88,7 @@ public class CelestialName: MonoBehaviour
             lines = mainTheoretical.text.Split('\n');
         }
 
-        main = lines[(int)Random.Range(0f, lines.Length - 1f)];
+        main = lines[(int)Random.Range(0f, lines.Length - 1f)].TrimStart('\r', '\n').TrimEnd('\r', '\n');
 
         //Suffix
         if (Random.value >= 0.8f)
@@ -112,10 +112,12 @@ public class CelestialName: MonoBehaviour
                 lines = suffixesRomanNumerals.text.Split('\n');
             }
 
-            suffix = " " + lines[(int)Random.Range(0f, lines.Length - 1f)];
+            suffix = " " + lines[(int)Random.Range(0f, lines.Length - 1f)].TrimStart('\r', '\n').TrimEnd('\r', '\n');
         }
 
         //Compile
         title = prefix + main + suffix;
+
+        //Debug.Log(title);
     }
 }

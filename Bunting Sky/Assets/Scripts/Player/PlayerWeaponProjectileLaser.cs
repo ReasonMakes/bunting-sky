@@ -83,6 +83,9 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                 {
                     Vector3 direction = (transform.position - hit.point).normalized;
                     asteroidScript.Damage(1, direction, hit.point);
+
+                    //Reset tooltip certainty
+                    control.ui.tipAimCertainty = 0f;
                 }
             }
 

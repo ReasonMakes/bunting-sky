@@ -10,19 +10,29 @@ public static class LevelData
     public class Data
     {
         //World properties
-        //System
+        //Planetoids
         [SerializeField] public byte controlPlanetoidQuantity;
         [SerializeField] public float[,] controlPlanetoidPosition;
         [SerializeField] public float[,] controlPlanetoidVelocity;
         [SerializeField] public string[] controlPlanetoidName;
         [SerializeField] public bool[] controlPlanetoidHasStation;
 
+        //Planetoids: stations
         [SerializeField] public string[] controlPlanetoidStationTitle;
         [SerializeField] public float[] controlPlanetoidStationPricePlatinoid;
         [SerializeField] public float[] controlPlanetoidStationPricePreciousMetal;
         [SerializeField] public float[] controlPlanetoidStationPriceWater;
         [SerializeField] public int[,] controlPlanetoidStationUpgradeIndex;
 
+        //Asteroids
+        [SerializeField] public int controlAsteroidQuantity;
+        [SerializeField] public float[,] controlAsteroidPosition;
+        [SerializeField] public float[,] controlAsteroidVelocity;
+        [SerializeField] public string[] controlAsteroidSize;
+        [SerializeField] public byte[] controlAsteroidType;
+        [SerializeField] public byte[] controlAsteroidHealth;
+        
+        //Centre star
         [SerializeField] public string controlCentreStarName;
         //Verse space
         [SerializeField] public float[] controlVerseSpacePosition;

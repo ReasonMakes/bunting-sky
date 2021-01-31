@@ -5,7 +5,7 @@ using System.IO;
 
 public class HumanName : MonoBehaviour
 {
-    private string path = "Names/Humans/";
+    //private string path = "Names/Humans/";
     [System.NonSerialized] public string title = "Error: could not load"; //default title
     private string[] lines;
     private string partOne = "";
@@ -35,7 +35,7 @@ public class HumanName : MonoBehaviour
         TextAsset suffixesEnLast              = Resources.Load<TextAsset>(path + "Suffixes/enLast.txt");
         */
 
-        Debug.Log("Generating human name");
+        //Debug.Log("Generating human name");
 
         //Part one
         if (Random.Range(0, 2) >= 1)
@@ -87,14 +87,16 @@ public class HumanName : MonoBehaviour
             }
         }
 
-        partOne = lines[Random.Range(0, lines.Length)];
+        partOne = lines[Random.Range(0, lines.Length)].TrimStart('\r', '\n').TrimEnd('\r', '\n');
 
         //Part two: last name
         lines = suffixesEnLast.text.Split('\n');
 
-        partTwo = lines[Random.Range(0, lines.Length)];
+        partTwo = lines[Random.Range(0, lines.Length)].TrimStart('\r', '\n').TrimEnd('\r', '\n');
 
         //Compile
         title = partOne + " " + partTwo;
+
+        //Debug.Log(title);
     }
 }
