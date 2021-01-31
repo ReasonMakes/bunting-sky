@@ -46,16 +46,9 @@ public class Player : MonoBehaviour
     //ICC stands for interstellar crypto currency
 
     //!!!!!TOP PRIORITY!!!!!
-
-    //turn down bloom
-
-    //When in first-person, make world-to-screen target UI invisible
-
-    //Fix velocity orbits
-
-    //Sun disappears sometimes
-
-    //MAKE ASTEROIDS SAVE
+    //Start in first-person
+    //Fix bug: resources animation
+    //When in first-person, make world-to-screen waypoint UI invisible
 
     //Add menu scrolling
     //Add setting to turn off music
@@ -70,11 +63,14 @@ public class Player : MonoBehaviour
     //- displays background stars
     //- doesn't render destroyed planetoids
 
+    //Fix velocity orbits
+
     //Fix ship auto-torquing?
     //Copy acceleration AS WELL AS velocity?
     //ADD SPACE PIRATES??
     //Add hologram of target?
     //Line renderer contrail?
+    //Sun disappears sometimes
 
     //!!!!!!!!!!
 
@@ -202,7 +198,8 @@ public class Player : MonoBehaviour
     public GameObject tpCam;
     public GameObject tpModel;
     public GameObject fpModel;
-
+    [System.NonSerialized] public static bool firstPerson = false;
+    [System.NonSerialized] public static bool thirdPerson = false;
     public GameObject mapCam;
     #endregion
 
@@ -292,7 +289,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
     private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
-    [System.NonSerialized] public bool destroyed = false;
+    [System.NonSerialized] public static bool destroyed = false;
     [System.NonSerialized] public double vitalsFuel = 15.0;
     [System.NonSerialized] public double vitalsFuelMax = 15.0;
     private readonly double VITALS_FUEL_MAX_STARTER = 15.0;
@@ -1057,8 +1054,8 @@ public class Player : MonoBehaviour
     public void DecideWhichModelsToRender()
     {
         //Defaults (will be values if destroyed)
-        bool firstPerson = false;
-        bool thirdPerson = false;
+        firstPerson = false;
+        thirdPerson = false;
 
         if (!destroyed)
         {

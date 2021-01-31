@@ -585,7 +585,7 @@ public class Generation : MonoBehaviour
             playerUpgrades = playerScript.upgradeLevels,
 
             playerVitalsHealth = playerScript.vitalsHealth,
-            playerDestroyed = playerScript.destroyed,
+            playerDestroyed = Player.destroyed,
 
             playerVitalsFuel = playerScript.vitalsFuel,
 
@@ -715,7 +715,7 @@ public class Generation : MonoBehaviour
             playerScript.UpdateUpgrades();
 
             playerScript.vitalsHealth = data.playerVitalsHealth;
-            playerScript.destroyed = data.playerDestroyed;
+            Player.destroyed = data.playerDestroyed;
 
             playerScript.vitalsFuel = data.playerVitalsFuel;
 

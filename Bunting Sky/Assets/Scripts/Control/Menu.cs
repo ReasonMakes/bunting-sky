@@ -313,7 +313,7 @@ public class Menu : MonoBehaviour
         control.settings.Save();
 
         //Don't update in-game when player has been destroyed
-        if (!control.generation.instancePlayer.GetComponentInChildren<Player>().destroyed)
+        if (!Player.destroyed)
         {
             //Not quite sure why this needs to be inverted, but it works
             control.generation.instancePlayer.GetComponentInChildren<Player>().spotlight.SetActive(!control.settings.spotlightOn);

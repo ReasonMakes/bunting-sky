@@ -147,7 +147,6 @@ public class UI : MonoBehaviour
         if (updatePlayerResourcesUIAnimations)
         {
             UpdateAllPlayerResourcesUIAnimations();
-            updatePlayerResourcesUIAnimations = false;
         }
 
         //Tip animation
@@ -528,7 +527,7 @@ public class UI : MonoBehaviour
                 waypointTextType.text = "Star";
                 waypointTextTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
-
+                
                 //Console waypoint
                 consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
 
@@ -541,7 +540,7 @@ public class UI : MonoBehaviour
                 waypointTextType.text = "Planetoid";
                 waypointTextTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
-
+                
                 //Console waypoint
                 consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
 
@@ -554,7 +553,7 @@ public class UI : MonoBehaviour
                 waypointTextType.text = "Station";
                 waypointTextTitle.text = hit.collider.gameObject.GetComponent<HumanName>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, true);
-
+                
                 //Console waypoint
                 consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
 
@@ -567,7 +566,7 @@ public class UI : MonoBehaviour
                 waypointTextType.text = "Asteroid";
                 waypointTextTitle.text = "Class: " + hit.collider.gameObject.GetComponent<CBodyAsteroid>().sizeClassDisplay;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
-
+                
                 //Console waypoint
                 consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
 
@@ -592,20 +591,19 @@ public class UI : MonoBehaviour
             consoleTargetInfoText.text = "\n";
         }
 
-        if (renderWaypoint)
+        //Don't render when in first-person
+        if (!Player.destroyed && Player.firstPerson)
         {
+            renderWaypoint = false;
             waypointImage.gameObject.SetActive(true);
-            waypointTextType.gameObject.SetActive(true);
-            waypointTextTitle.gameObject.SetActive(true);
-            waypointTextBody.gameObject.SetActive(true);
         }
         else
         {
-            waypointImage.gameObject.SetActive(false);
-            waypointTextType.gameObject.SetActive(false);
-            waypointTextTitle.gameObject.SetActive(false);
-            waypointTextBody.gameObject.SetActive(false);
+            waypointImage.gameObject.SetActive(renderWaypoint);
         }
+        waypointTextType.gameObject.SetActive(renderWaypoint);
+        waypointTextTitle.gameObject.SetActive(renderWaypoint);
+        waypointTextBody.gameObject.SetActive(renderWaypoint);
 
         //Target
         if (renderTarget)
@@ -755,6 +753,10 @@ public class UI : MonoBehaviour
 
     public void UpdateAllPlayerResourcesUIAnimations()
     {
+        //Default looping to disabled. If there are any changes the animations make, they will turn the looping back on
+        updatePlayerResourcesUIAnimations = false;
+
+        //Animate
         UpdatePlayerResourcesUIAnimation(ref resourcesImageCurrency);
         UpdatePlayerResourcesUIAnimation(ref resourcesImagePlatinoid);
         UpdatePlayerResourcesUIAnimation(ref resourcesImagePreciousMetal);

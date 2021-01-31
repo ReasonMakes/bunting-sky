@@ -13,16 +13,16 @@ public class Settings : MonoBehaviour
     private string fullPath;
 
     //Definitions
-    public readonly float MOUSE_SENSITIVITY_MIN = 0.001f;
-    public readonly float MOUSE_SENSITIVITY_MAX = 1000f;
-    public readonly float H_FIELD_OF_VIEW_MIN = 0.1f;
-    public readonly float H_FIELD_OF_VIEW_MAX = 142f;
-    public readonly float CAMERA_DISTANCE_MIN = 0.18f;
-    public readonly float CAMERA_DISTANCE_MAX = 2.4f;
-    public readonly float CAMERA_HEIGHT_MIN = 0f;
-    public readonly float CAMERA_HEIGHT_MAX = 1f;
-    public readonly int TARGET_FPS_MIN = 1;
-    public readonly int TARGET_FPS_MAX = 2000;
+    [System.NonSerialized] public readonly float MOUSE_SENSITIVITY_MIN = 0.001f;
+    [System.NonSerialized] public readonly float MOUSE_SENSITIVITY_MAX = 1000f;
+    [System.NonSerialized] public readonly float H_FIELD_OF_VIEW_MIN = 0.1f;
+    [System.NonSerialized] public readonly float H_FIELD_OF_VIEW_MAX = 142f;
+    [System.NonSerialized] public readonly float CAMERA_DISTANCE_MIN = 0.18f;
+    [System.NonSerialized] public readonly float CAMERA_DISTANCE_MAX = 2.4f;
+    [System.NonSerialized] public readonly float CAMERA_HEIGHT_MIN = 0f;
+    [System.NonSerialized] public readonly float CAMERA_HEIGHT_MAX = 1f;
+    [System.NonSerialized] public readonly int TARGET_FPS_MIN = 1;
+    [System.NonSerialized] public readonly int TARGET_FPS_MAX = 2000;
 
     //Settings initializations
     [System.NonSerialized] public float mouseSensitivity;
@@ -56,7 +56,7 @@ public class Settings : MonoBehaviour
             //Set defaults
             mouseSensitivity = 3f,
             hFieldOfView = 103f,
-            cameraFollowDistance = 1.0f, //0.025 increments from scroll wheel
+            cameraFollowDistance = CAMERA_DISTANCE_MIN, //1.0f, //0.025 increments from scroll wheel
             cameraFollowHeight = 0.2f,
             displayFPS = false,
             displayHUD = true,
