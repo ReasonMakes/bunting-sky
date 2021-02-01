@@ -13,11 +13,12 @@ public class Ore : MonoBehaviour
 
     public Control control; //this is set by its instantiator
     private float deathTime;
-    private readonly float DEATH_DELAY = 30f;
+    private readonly float DEATH_DELAY = 20f;
+    private readonly float DEATH_DELAY_ANIMATION_PORTION = 0.2f;
 
     public Vector3 parentVelocity = Vector3.zero;
-    private Vector3 playerVAtInit = Vector3.zero;
-    Transform playerTransform;
+    //private Vector3 playerVAtInit = Vector3.zero;
+    private Transform playerBodyTransform;
     private readonly float DRAG = 3f;
     private readonly float ATTRACT_STRENGTH = 150000f;
     private readonly float ABSORB_DIST = 0.15f;
@@ -28,8 +29,8 @@ public class Ore : MonoBehaviour
         deathTime = Time.time + DEATH_DELAY + Random.Range(0f, 2f);
 
         //Get player data
-        playerTransform = control.instancePlayer.transform.Find("Body").transform;
-        playerVAtInit = playerTransform.GetComponent<Rigidbody>().velocity;
+        playerBodyTransform = control.generation.instancePlayer.transform.Find("Body").transform;
+        //playerVAtInit = playerTransform.GetComponent<Rigidbody>().velocity;
 
         //Assign material equal to type
         switch (type) //0 = Platinoids, 1 = PreciousMetal, 2 = Water
@@ -50,24 +51,24 @@ public class Ore : MonoBehaviour
 
     void Update()
     {
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         {
             //Get player data
-            float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+            float distanceBetweenOreAndPlayer = Vector3.Distance(transform.position, playerBodyTransform.position);
 
             //Forces (gravitate toward player, repel away from other ore, drag relative)
-            AttractToPlayer(distanceToPlayer);
+            AttractToPlayer(distanceBetweenOreAndPlayer);
             RepelFromOtherOre();
             DragOreRelative();
 
             //Scale down as the ore gets closer to the player (to look like it's being absorbed) or as ore gets closer to deathTime
-            Scale(distanceToPlayer);
+            Scale(distanceBetweenOreAndPlayer);
 
             //When close enough to player, absorb into and increment ore counter
-            if (distanceToPlayer <= ABSORB_DIST) AbsorbIntoPlayer(playerTransform);
+            if (distanceBetweenOreAndPlayer <= ABSORB_DIST) AbsorbIntoPlayer();
 
             //If can't find way to player, absorb automagically
-            if (Time.time >= deathTime) AbsorbIntoPlayer(playerTransform);
+            if (Time.time >= deathTime) AbsorbIntoPlayer();
         }
     }
 
@@ -76,8 +77,7 @@ public class Ore : MonoBehaviour
         //Calculate scale for each type
         //Scale relative to limited player distance
         float scaleByPlayerDist = Mathf.Min(0.05f, 0.0025f + (0.025f * Mathf.Max(0f, distanceToPlayer - ABSORB_DIST)));
-        //Only the last 10% of deathTime affects size (ratio of second Min argument's multiplier to the first Min argument)
-        float scaleByDeathTime = Mathf.Min(1f, ((deathTime - Time.time) / DEATH_DELAY) * 10f);
+        float scaleByDeathTime = Mathf.Min(1f, ((deathTime - Time.time) / DEATH_DELAY) * DEATH_DELAY_ANIMATION_PORTION);
         
         //Choose the scale type
         float scale = Mathf.Min(scaleByPlayerDist, scaleByDeathTime);
@@ -111,10 +111,10 @@ public class Ore : MonoBehaviour
         }
     }
 
-    private void AttractToPlayer(float distanceBetweenPlayer)
+    private void AttractToPlayer(float distanceBetweenOreAndPlayer)
     {
-        Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
-        float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenPlayer);
+        Vector3 directionToPlayer = (playerBodyTransform.position - transform.position).normalized;
+        float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenOreAndPlayer);
         rb.AddForce(directionToPlayer * ATTRACT_STRENGTH * LimitedInverseDistanceBetweenPlayer * Time.deltaTime);
     }
 
@@ -139,7 +139,7 @@ public class Ore : MonoBehaviour
         //rb.velocity = control.DragRelative(rb.velocity, playerTransform.GetComponent<Rigidbody>().velocity, DRAG);
 
         //Drag relative to parent asteroid velocity
-        rb.velocity = control.DragRelative(rb.velocity, parentVelocity, DRAG);
+        rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, parentVelocity, DRAG);
 
         //Drag relative to the system
         //rb.velocity *= (1f - (DRAG * Time.deltaTime));
@@ -148,23 +148,17 @@ public class Ore : MonoBehaviour
         //rb.velocity = control.DragRelative(rb.velocity, playerVAtInit, DRAG);
     }
 
-    private void AbsorbIntoPlayer(Transform playerTran)
+    private void AbsorbIntoPlayer()
     {
-        //Add ore type to player inventory
-        playerTran.GetComponent<Player>().ore[type]++;
+        //Only add to player inventory if player isn't in the middle of nowhere
+        if (Vector3.Distance(transform.position, playerBodyTransform.position) < 600f)
+        {
+            //Add ore type to player inventory
+            playerBodyTransform.GetComponent<Player>().ore[type]++;
 
-        /*
-        Debug.Log(
-            "Platinoids: " + playerTran.GetComponent<Player>().ore[0]
-            + ", Precious metals: " + playerTran.GetComponent<Player>().ore[1]
-            + ", Water: " + playerTran.GetComponent<Player>().ore[2]
-        );
-        */
-
-        //Update resources display
-        control.textPlatinoids.text = "" + playerTran.GetComponent<Player>().ore[0];
-        control.textPreciousMetals.text = "" + playerTran.GetComponent<Player>().ore[1];
-        control.textWater.text = "" + playerTran.GetComponent<Player>().ore[2];
+            //Update resources display
+            control.ui.UpdateAllPlayerResourcesUI();
+        }
 
         //Destroy if it hasn't been already
         if (gameObject != null) Destroy(gameObject, 0f);

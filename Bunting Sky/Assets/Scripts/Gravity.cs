@@ -5,7 +5,7 @@ using UnityEngine;
 public class Gravity : MonoBehaviour
 {
     public Rigidbody rb;
-    public GameObject station;
+    [System.NonSerialized] public Control control;
 
     //smooth out gravitate addForce by adding a bit of the planned force every fixed update
     //basically on every gravitate call, calculate the amount of force to add, then in fixed update add that force divided by the amount of time in between updates
@@ -13,10 +13,16 @@ public class Gravity : MonoBehaviour
     //Maybe this should vary depending on distance to nearest cBody
     //That way there will be more fidelity in the physics when it's most relevant
     //But calculating distance may be intensive too
+
+    //We can also improve this by using Physics.OverlapSphere to only test for cbodies that are within relevant range (so we don't waste resources calculating negligible forces)
+
     public readonly short GRAVITY_SLOW_UPDATE_PERIOD = 90;
-    public int gravityInstanceIndex;
-    private float timeAtLastGravitate = 0f;
-    private float deltaTimeSinceLastGravitate = 0f;
+    [System.NonSerialized] public int gravityInstanceIndex;
+    private float gravityTimePoint = 0f;
+    //private float gravityDeltaTime = 0f;
+    private Vector3 gravityForceVector = Vector3.zero;
+
+    [System.NonSerialized] public bool gravitateTowardCentreStarOnly = false;
 
     private void Start()
     {
@@ -26,7 +32,7 @@ public class Gravity : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!Control.menuOpen)
+        if (!Menu.menuOpenAndGamePaused)
         {
             //Slow update to reduce the lag from calculating all of these for loops
             //We use a generated index so that not all instances of this class run the same expensive gravity calculations at the same time
@@ -34,6 +40,11 @@ public class Gravity : MonoBehaviour
             {
                 SlowFixedUpdate();
             }
+
+            //Add gravitation (semi) constantly at vector calculated intermittently
+            rb.AddForce(gravityForceVector * Time.fixedDeltaTime);
+
+            //Debug.Log(deltaTimeSinceLastGravitate);
         }
     }
 
@@ -45,31 +56,51 @@ public class Gravity : MonoBehaviour
     public void GravitateTowardAllCBodies()
     {
         //Keep track of time
-        deltaTimeSinceLastGravitate = Time.time - timeAtLastGravitate;
-        timeAtLastGravitate = Time.time;
+        //gravityDeltaTime = Time.time - gravityTimePoint;
+        gravityTimePoint = Time.time;
+
+        //Reset force vector
+        gravityForceVector = Vector3.zero;
 
         //Gravitate
-        Gravity[] cBodyArray = FindObjectsOfType<Gravity>();
-        foreach (Gravity cBody in cBodyArray)
+        //Debug.Log(gameObject.name);
+        if (gravitateTowardCentreStarOnly)
         {
-            //Don't gravitate toward self
-            if (cBody != this)
+            gravityForceVector += GetInstantaneousGravityFromOneCBody(control.generation.instanceCentreStar.GetComponent<Gravity>());
+        }
+        else
+        {
+            Gravity[] cBodyArray = FindObjectsOfType<Gravity>();
+            foreach (Gravity cBody in cBodyArray)
             {
-                //Don't gravitate toward destroyed asteroids
-                if(cBody.name == "CBodyAsteroid(Clone)")
+                //Don't gravitate toward self
+                if (cBody != this)
                 {
-                    if (cBody.GetComponent<CBodyAsteroid>().destroyed || cBody.GetComponent<CBodyAsteroid>().separating)
+                    //Don't gravitate toward destroyed asteroids
+                    if (cBody.name == "CBodyAsteroid" + "(Clone)") //control.cBodyAsteroid.name
                     {
-                        return;
+                        if (cBody.GetComponent<CBodyAsteroid>().destroyed || cBody.GetComponent<CBodyAsteroid>().separating)
+                        {
+                            return;
+                        }
                     }
-                }
 
-                Gravitate(cBody);
+                    //Don't gravitate toward destroyed planetoids
+                    if (cBody.name == "CBodyPlanetoid" + "(Clone)") //control.cBodyPlanetoid.name
+                    {
+                        if (cBody.GetComponent<CBodyPlanetoid>().disabled)
+                        {
+                            return;
+                        }
+                    }
+
+                    gravityForceVector += GetInstantaneousGravityFromOneCBody(cBody);
+                }
             }
         }
     }
 
-    private void Gravitate(Gravity cBody)
+    private Vector3 GetInstantaneousGravityFromOneCBody(Gravity cBody)
     {
         //Gravitate toward a celestial body
         /*
@@ -87,9 +118,9 @@ public class Gravity : MonoBehaviour
 
         //F = G * (m1 * m2 / r^2)
         float forceMagnitude = Control.GRAVITATIONAL_CONSTANT * ((rb.mass * cBody.rb.mass) / forceDistanceSquared);
-        
+
         //Manually factor-in deltaTime since last method call since this is in SlowUpdate()
-        rb.AddForce(forceMagnitude * forceDirection * deltaTimeSinceLastGravitate);
+        return forceMagnitude * forceDirection;// * gravityDeltaTime;
     }
 
     public void SetVelocityToOrbit(GameObject bodyToOrbit, float angleToStar)
@@ -106,8 +137,9 @@ public class Gravity : MonoBehaviour
 
         //This method runs into issues
         //Possibly because distance and speed units in unity don't have the same ratios as irl SI units do
+        //Or possibly because we aren't applying a constant force - we are applying it in steps
         //Bandaid fixed using a dirty approximate compensation coefficient
-        float dirtyApproxCompCoeff = 0.06f;
+        float dirtyApproxCompCoeff = 0.01f; //0.06f;
 
         Vector3 orbitalVector = bodyToOrbit.transform.position - transform.position; 
         float orbitalRadius = orbitalVector.magnitude;                               //r = |oV|
@@ -138,30 +170,10 @@ public class Gravity : MonoBehaviour
 
         //Debug.Log(gameObject.name + ": " + Control.gravityInstanceIndex);
 
-        gravityInstanceIndex = Control.gravityInstanceIndex;
+        gravityInstanceIndex = Generation.gravityInstanceIndex;
         //Increment
-        Control.gravityInstanceIndex += (int)(GRAVITY_SLOW_UPDATE_PERIOD * 0.161803398874989484820458683436f);
+        Generation.gravityInstanceIndex += (int)(GRAVITY_SLOW_UPDATE_PERIOD * 0.161803398874989484820458683436f);
         //Wrap
-        if (Control.gravityInstanceIndex >= GRAVITY_SLOW_UPDATE_PERIOD) Control.gravityInstanceIndex -= GRAVITY_SLOW_UPDATE_PERIOD;
-    }
-
-    public Vector3 SpawnStation(bool forced)
-    {
-        //Offset the station from the host cBody
-        Vector3 stationCoords = new Vector3(transform.position.x + 10f, transform.position.y + 10f, transform.position.z + 10f);
-
-        //4 in 5 chance of having a space station. Option to force-spawn the station
-        if (forced || Random.Range(0f, 4f) >= 1f)
-        {
-            GameObject instancedStation = Instantiate
-            (
-                station,
-                stationCoords,
-                Quaternion.Euler(270f, 0f, 270f)
-            );
-            instancedStation.transform.parent = transform;
-        }
-
-        return stationCoords;
+        if (Generation.gravityInstanceIndex >= GRAVITY_SLOW_UPDATE_PERIOD) Generation.gravityInstanceIndex -= GRAVITY_SLOW_UPDATE_PERIOD;
     }
 }

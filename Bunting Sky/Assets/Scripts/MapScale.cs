@@ -8,11 +8,11 @@ public class MapScale : MonoBehaviour
 
     private void Start()
     {
-        mapModel = transform.GetChild(0).gameObject;
+        mapModel = transform.Find("Map Model").gameObject;
     }
 
     private void Update()
     {
-        mapModel.SetActive(Control.displayMap);
+        mapModel.SetActive(UI.displayMap);
     }
 }
