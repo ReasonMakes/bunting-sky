@@ -8,173 +8,6 @@ using UnityEngine.UI;
 
 public class Player : MonoBehaviour
 {
-    #region Todo, readme, and credits
-    //COMBAT MODE which has the current movement scheme allowing you to dive and everything. When combat mode is off the ship is controlled by point and click and only moves along x and z axes similar to Spore
-    //Point lights do not support shadows
-    //COMBAT MUSIC FROM SUBNAUTICA
-    //Not all space stations have dry docks, so you can't always repair but you CAN always refuel
-    //Top-down map mode where all cBodies are highlighted/inflated just like scene view when highlighting cBodies group, and you can set targets
-
-    //To advertise the release, make several tutorial videos explaining how the various features work and how to implement them in your own game
-    //Have a brief intro with sick Subnuatica-esque beats showcasing the game and the feature the tutorial will teach
-    //At the end of the video, mention where to get the game if curious about it
-
-    //THERE SHOULD BE TWO MOVEMENT MODES -> BURN, and MANEOUVRE
-    //BURN MODE HAS NO DRAG ANYWHERE, JUST LIKE IRL SPACE
-    //MANEOUVRE HAS DRAG RELATIVE TO THE VELOCITY THAT WAS BURNED TO
-    //CAN AUTOMATICALLY BURN TO MATCH CBODIES (RUNS BY DEFAULT WHEN WITHIN CURRENT DISTANCE THRESHOLD, BUT CAN TURN OFF IN SETTINGS)
-    //OR: have no friction unless dragging relative
-
-
-    //ADD SEISMIC CHARGE WEAPON FOR CLEANING UP SMALL ASTEROIDS (start without, but is a cheap purchase at a station)
-
-    //Space station or starport?
-    //Automatically show if you're too close and too fast to slow down in time before flying past target
-
-    //TO GO TO A NEW SYSTEM: ship deploys some antimatter thing or something in front of it which becomes a mini singularity thing from interstellar ("spherical hole")
-    //Just completely rip off those graphic
-
-    //It's possible to improve the look of the asteroid damage particles by switching to a PBR shader graph system
-
-    //Line rendered in-game showing the movement vector of the ship?
-
-    //Could auto rotate camera roll around when upside down, like with Subnautica, but that may take away from the space-feel
-
-    //Engine glow affects local lighting, so when in first person and that light source is gone, the surroundings suddenly look darker.
-    //This can be fixed by not deleting the light source and rendering a cockpit model to block view to it. On the back wall of the cockpit could be a camera or something
-
-    //ICC stands for interstellar crypto currency
-
-    //!!!!!TOP PRIORITY!!!!!
-    //Start in first-person
-    //Fix bug: resources animation
-    //When in first-person, make world-to-screen waypoint UI invisible
-
-    //Add menu scrolling
-    //Add setting to turn off music
-    //Add setting to set in-game volume
-    //Add keybinds menu
-
-    //Add planetoid variations
-
-    //Map screen should be less janky
-    //- scroll wheel to zoom in and out
-    //- centres around player without skipping forward tons
-    //- displays background stars
-    //- doesn't render destroyed planetoids
-
-    //Fix velocity orbits
-
-    //Fix ship auto-torquing?
-    //Copy acceleration AS WELL AS velocity?
-    //ADD SPACE PIRATES??
-    //Add hologram of target?
-    //Line renderer contrail?
-    //Sun disappears sometimes
-
-    //!!!!!!!!!!
-
-    /*
-     * MOVEMENT MODES:
-     * sublight, for moving around asteroids, stations, and dogfighting - has a constant acceleration and drag
-     * burn (or something, maybe raptor engines something) - has increasing acceleration up to a max equal to what warp currently is, has drag
-     * warp (or a better name for warping) - traveling in between solar systems, travels through to bulk or maybe uses alcubierre drive, no drag, limited range (can't go past several solar systems, have to make pit stop).
-     *      Also has a long cooldown time (more than a minute) and is expensive resource-wise (need lots of water).
-     *      https://images.gr-assets.com/hostedimages/1437669203ra/15612130.gif
-     */
-
-    //TODO:
-    /*
-     * Add sound system which can handle multiple sounds being played at once (probably a dedicated object under control with an array of sound components)
-     * Add collection sound, engine sound
-     * Add more planetoid models
-     * Add asteroid moons to planetoids
-     * Randomly vary overall scale of asteroids?
-     * 
-     * Add weapon reticle
-     * 
-     * Work on map
-     */
-
-    /*
-     * Music to add(?):
-     * 
-     * Caleb Etheridge - Skyboy
-     * Jordan Critz - A Ripple in Time
-     * Nick Box - Where Ocean Meets Sky
-     * Chelsea McGough - Distant Water
-     * 
-     * !Add music from Sebastian Lague's videos!
-     * Shimmer - Frontier
-     * Shimmer - A Beautiful Dream
-     * 
-     * Antti Luode - Brief Respite
-     * Tide Electric - When Rain Comes
-     * Aeroplanes - Reflections of Space and Time
-     * Bad Snacks - In the Atmosphere
-     * MK2 - Reflections
-     * Jesse Gallagher - Nidra in the Sky with Ayla
-     * Antti Luode - Far Away
-     */
-
-    /*
-     * DEFAULT CONTROLS (keybinds are saved in C:\Users\[YOUR USERNAME HERE]\AppData\LocalLow\Reason Studios)
-     * 
-     * - Move: WASD, LEFT CONTROL, and SPACE (forward thrusting is much faster than translating/strafing in any other direction)
-     * - Orient view: mouse movement
-     * - Free look: hold right mouse button (when moving your ship will automatically torque in the direction you are looking unless you hold right mouse button)
-     * - Zoom in/out (and toggle first/third-person): mouse scroll wheel
-     * - Cycle movement modes: TAB (increase/reduce max engine thrust)
-     * - Increase/decrease thrust: E/Q
-     * 
-     * - Set object as target: middle mouse button (will automatically match velocity)
-     * - Toggle spotlight on/off: F
-     * - Map: M
-     * 
-     * - Take screenshot: F2
-     * - Toggle entire HUD: F3
-     * - Toggle FPS display: F4
-     * 
-     * 
-     */
-
-    /*
-     * CREDITS
-     * 
-     * Rocket sound by Zovex
-     * Modified by Reason: EQ'd and looped
-     * https://freesound.org/people/Zovex/sounds/237974/
-     * http://creativecommons.org/publicdomain/zero/1.0/
-     * 
-     * Cannon ball (laser) sound by OGsoundFX
-     * Modified by Reason to start at the transient and fade out more quickly
-     * https://freesound.org/people/OGsoundFX/sounds/423105/
-     * https://creativecommons.org/licenses/by/3.0/
-     * 
-     * Elevator (reloading) sound by calivintage
-     * Modified by Reason to fit the reloading time
-     * https://freesound.org/people/calivintage/sounds/95701/
-     * https://creativecommons.org/licenses/sampling+/1.0/
-     * 
-     * Ore collection sound is original - made by Reason using Serum in Reaper
-     * 
-     * Coins sound by DWOBoyle
-     * https://freesound.org/people/DWOBoyle/sounds/140382/
-     * https://creativecommons.org/licenses/by/3.0/
-     * 
-     * Rock slide (asteroid explosion) sound by Opsaaaaa
-     * Modified by Reason: clipped to start at the transient and end as the volume dies out, deepened the pitch of the low-end, hushed the high-end
-     * https://freesound.org/people/Opsaaaaa/sounds/335337/
-     * https://creativecommons.org/licenses/by/3.0/
-     * 
-     * Metal storm door (ship collision) sound by volivieri
-     * Modified by Reason: clipped to start at the second hit and end more quickly, deepened the pitch of the low-end, boosted bass, added a low-pass filter
-     * https://freesound.org/people/volivieri/sounds/161190/
-     * http://creativecommons.org/licenses/by/3.0/
-     * 
-     */
-    #endregion
-
     #region Init fields
     [System.NonSerialized] public Control control;
     private KeyBinds binds;
@@ -235,13 +68,6 @@ public class Player : MonoBehaviour
     private Transform closestAsteroidTransform;
     private readonly float DRAG = 3f; //Drag amount for all drag modes
     #endregion
-
-    /*
-    public GameObject cBodyStar;
-    public GameObject cBodyPlanetoid;
-    public GameObject station;
-    public GameObject cBodyAsteroid;
-    */
 
     #region Init fields: Audio
     //Audio: Music
@@ -307,10 +133,7 @@ public class Player : MonoBehaviour
 
     #region Init fields: Cargo
     //Cargo (displayed on map screen or when trading at a station)
-    [System.NonSerialized] public double currency = 100.0;
-    //public double resWater = 0.0;
-    //public double resPreciousMetal = 0.0;
-    //public double resPlatinoids = 0.0;
+    [System.NonSerialized] public double currency = 100.0; //ICC stands for interstellar crypto currency
     [System.NonSerialized] public double[] ore;
     [System.NonSerialized] public readonly int ORE_PLATINOID = 0;
     [System.NonSerialized] public readonly int ORE_PRECIOUS_METAL = 1;
