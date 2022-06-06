@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8484488951645806819}
   - component: {fileID: 2582157067648133222}
   - component: {fileID: 1296883558431705693}
+  - component: {fileID: 8451607987937374893}
   m_Layer: 0
   m_Name: Non-Emissive Model
   m_TagString: Untagged
@@ -81,6 +82,20 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!64 &8451607987937374893
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2370465605055985133}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 4
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -7628704582574450507, guid: 072d9501334567d428514af95fe554f7, type: 3}
 --- !u!1 &6553045504266895388
 GameObject:
   m_ObjectHideFlags: 0
@@ -93,7 +108,7 @@ GameObject:
   - component: {fileID: 4925178499841355205}
   - component: {fileID: 4478194492903579610}
   m_Layer: 0
-  m_Name: PlayerLaser
+  m_Name: PlayerWeaponProjectileLaser
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -124,7 +139,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6553045504266895388}
   serializedVersion: 2
-  m_Mass: 0.1
+  m_Mass: 0.001875
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0

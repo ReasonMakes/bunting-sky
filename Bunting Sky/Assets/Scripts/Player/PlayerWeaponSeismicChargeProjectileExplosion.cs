@@ -6,7 +6,7 @@ public class PlayerWeaponSeismicChargeProjectileExplosion : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
 
-    private readonly float EXPLOSION_RADIUS = 3f;
+    private readonly float EXPLOSION_RADIUS = 2f;
     private readonly float EXPLOSION_STRENGTH = 1f;
 
     private void Start()
@@ -38,7 +38,7 @@ public class PlayerWeaponSeismicChargeProjectileExplosion : MonoBehaviour
 
                             //Explosion damage
                             Vector3 directionHitFrom = (transform.position - hit.point).normalized;
-                            asteroidScript.Damage(1, directionHitFrom, hit.point);
+                            asteroidScript.Damage(1, directionHitFrom, hit.point, true);
                         }
                     }
                 }

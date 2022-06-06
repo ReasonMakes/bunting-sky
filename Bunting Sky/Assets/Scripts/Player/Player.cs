@@ -34,6 +34,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public static bool firstPerson = false;
     [System.NonSerialized] public static bool thirdPerson = false;
     public GameObject mapCam;
+    public GameObject mapLight;
     #endregion
 
     //Spotlight
@@ -43,13 +44,13 @@ public class Player : MonoBehaviour
     //Movement
     public Rigidbody rb;
     private Vector3 thrustVector;
-    private readonly float THRUST = 8416.65825f;
+    private readonly float THRUST = 4E3f; //3E3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
-    private readonly float THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER = 16f;
+    private readonly float THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER = 9.0f; //5.0f; //16f;
     private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.5f; //3f;
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
-    private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f;
+    private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f;
     private float engineBrightness = 0f;
     public Material engineGlowMat;
@@ -76,7 +77,7 @@ public class Player : MonoBehaviour
     public AudioClip songLifeSupportFailure;
     public AudioClip songHoghmanTransfer; //unused
     public AudioClip songWeWereHere; //unused
-    private float musicPlayTime = 30f;
+    private float musicPlayTime = 30f; //max time until first song plays
     private readonly float MUSIC_PLAY_QUEUE_TIME = 60f;
     private readonly float MUSIC_PLAY_QUEUE_VARIANCE_TIME = 60f;
     private bool firstSong = true;
@@ -116,10 +117,10 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
     private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
     [System.NonSerialized] public static bool destroyed = false;
-    [System.NonSerialized] public double vitalsFuel = 15.0;
+    [System.NonSerialized] public double vitalsFuel = 10.0;
     [System.NonSerialized] public double vitalsFuelMax = 15.0;
     private readonly double VITALS_FUEL_MAX_STARTER = 15.0;
-    [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.1;
+    [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.025;
     [System.NonSerialized] public GameObject vitalsHealthUI;
     [System.NonSerialized] public TextMeshProUGUI vitalsHealthUIText;
     [System.NonSerialized] public GameObject vitalsFuelUI;
@@ -132,8 +133,8 @@ public class Player : MonoBehaviour
     #endregion
 
     #region Init fields: Cargo
-    //Cargo (displayed on map screen or when trading at a station)
-    [System.NonSerialized] public double currency = 100.0; //ICC stands for interstellar crypto currency
+    //Cargo
+    [System.NonSerialized] public double currency = 0.0; //100.0; //ICC stands for interstellar crypto currency
     [System.NonSerialized] public double[] ore;
     [System.NonSerialized] public readonly int ORE_PLATINOID = 0;
     [System.NonSerialized] public readonly int ORE_PRECIOUS_METAL = 1;
@@ -152,9 +153,9 @@ public class Player : MonoBehaviour
 
     [System.NonSerialized] public int[] upgradeLevels;
     private bool upgradesInitialized = false;
-    private readonly double REFINERY_ORE_WATER_IN_RATE = 0.18d;
-    private readonly double REFINERY_FUEL_OUT_RATE = 0.09d;
-    private readonly float REFINERY_TIME_BETWEEN_REFINES = 1.5f;
+    private readonly double REFINERY_ORE_WATER_IN_RATE = 0.1d;
+    private readonly double REFINERY_FUEL_OUT_RATE = 0.075d;
+    private readonly float REFINERY_TIME_BETWEEN_REFINES = 10.0f;
     private float refineryTimeAtLastRefine = 0f;
     #endregion
 
@@ -219,7 +220,7 @@ public class Player : MonoBehaviour
         );
         */
 
-        //KeyBinds
+        //KeyBinds reference
         binds = control.binds;
 
         //Upgrades
@@ -281,22 +282,62 @@ public class Player : MonoBehaviour
     {
         //DEBUG
         //---------------------------------------------------
-        //Free money
+
+        //control.ui.SetTip(
+        //    "SpotlightOn: " + control.settings.spotlightOn.ToString()
+        //    + " - menuSettingsToggleSpotlight.isOn: " + control.menu.menuSettingsToggleSpotlight.isOn.ToString()
+        //);
+
+        //I to cheat
+
+        ////Repair ship to full
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    vitalsHealth = vitalsHealthMax;
+        //    control.ui.UpdatePlayerVitalsDisplay();
+        //
+        //    control.ui.SetTip("Hull repaired to full integrity");
+        //}
+        //
+        ////Unlock Reinforced Hull
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    upgradeLevels[control.commerce.UPGRADE_REINFORCED_HULL] = 1;
+        //    UpdateUpgrades();
+        //    control.ui.SetTip("Reinforced Hull upgrade unlocked");
+        //}
+        //
+        //Unlock Seismic Charges (Z and X to select weapon)
         if (binds.GetInputDown(binds.bindCheat1))
         {
-            currency += 1000;
-            control.ui.UpdateAllPlayerResourcesUI();
-            control.ui.SetTip("Show me the money.");
+            upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+            UpdateUpgrades();
+            control.ui.SetTip("Seismic charges upgrade unlocked");
         }
+        
+        ////Free money
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    currency += 1000;
+        //    control.ui.UpdateAllPlayerResourcesUI();
+        //    control.ui.SetTip("+1000 currency");
+        //}
+
+        //Unlock In Situ Refinery
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    upgradeLevels[control.commerce.UPGRADE_IN_SITU_FUEL_REFINERY] = 1;
+        //    UpdateUpgrades();
+        //    ore[ORE_WATER] += 10.0d;
+        //    control.ui.SetTip("In situ fuel refinery upgrade unlocked");
+        //}
 
         //Add ore water
-        /*
-        if (binds.GetInputDown(binds.bindThrustVectorDecrease))
-        {
-            ore[ORE_WATER] += 1.0;
-            control.ui.UpdateAllPlayerResourcesUI();
-        }
-        */
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    ore[ORE_WATER] += 10.0;
+        //    control.ui.UpdateAllPlayerResourcesUI();
+        //}
 
         //Teleport forward
         /*
@@ -308,6 +349,7 @@ public class Player : MonoBehaviour
         */
 
         //Spawn
+        //Press O to spawn asteroid
         if (binds.GetInputDown(binds.bindCheat2))
         {
             control.generation.SpawnAsteroidManually(
@@ -385,6 +427,7 @@ public class Player : MonoBehaviour
 
             if (missingEnoughFuel && hasUpgrade && hasEnoughOre && enoughTimeHasPassed && control.settings.refine)
             {
+                //control.ui.SetTip("Fuel produced by in situ refinery");
                 ore[ORE_WATER] -= REFINERY_ORE_WATER_IN_RATE;
                 vitalsFuel += REFINERY_FUEL_OUT_RATE;
                 control.ui.UpdatePlayerOreWaterText();
@@ -394,6 +437,7 @@ public class Player : MonoBehaviour
             //Warn on loop if out of fuel
             if (vitalsFuel <= 0d && warningUIFlashTime <= 0f)
             {
+                //UI warning
                 FlashWarning("Fuel reserves empty");
 
                 //Loop smoothly and indefinitely
@@ -406,16 +450,6 @@ public class Player : MonoBehaviour
                 warningUIFlashTime = 0f;
                 warningUIFlashPosition = 1f;
             }
-
-            //Update map player ship position
-            transform.parent.Find("Ship Map Model").position = transform.position;
-            /*
-            transform.parent.Find("Ship Map Model").position.Set(
-                transform.position.x,
-                1000f,
-                transform.position.z
-            );
-            */
         }
     }
 
@@ -718,7 +752,18 @@ public class Player : MonoBehaviour
 
             if (UI.displayMap)
             {
-                mapCam.transform.position = Vector3.zero + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
+                //Set map to player position
+                mapCam.transform.position = transform.position + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
+
+                //Set map zoom (default 1560)
+                if (binds.GetInput(binds.bindCameraZoomOut))
+                {
+                    mapCam.GetComponent<Camera>().orthographicSize = Mathf.Min(7000.0f, mapCam.GetComponent<Camera>().orthographicSize *= 1.1f);
+                }
+                else if (binds.GetInput(binds.bindCameraZoomIn))
+                {
+                    mapCam.GetComponent<Camera>().orthographicSize = Mathf.Max(10.0f, mapCam.GetComponent<Camera>().orthographicSize *= 0.9f);
+                }
             }
             else
             {
@@ -867,7 +912,7 @@ public class Player : MonoBehaviour
             )
         );
 
-        //Save follow distance to user settings file
+        //Save follow distance to user settings file (really, this saves ALL settings
         control.settings.Save();
 
         //Check if should be first-person, third-person, or no person!
@@ -876,6 +921,7 @@ public class Player : MonoBehaviour
 
     public void DecideWhichModelsToRender()
     {
+        //Decide if in first-person or third-person view
         //Defaults (will be values if destroyed)
         firstPerson = false;
         thirdPerson = false;
@@ -886,15 +932,29 @@ public class Player : MonoBehaviour
             thirdPerson = !firstPerson;
         }
 
+        //First-person cameras & model
         fpCam.SetActive(firstPerson);
         fpCamInterior.SetActive(firstPerson);
         fpModel.SetActive(firstPerson);
 
+        //Third-person camera & model
         tpCam.SetActive(thirdPerson || destroyed);
         tpModel.SetActive(thirdPerson);
 
-        transform.Find("Spotlight").gameObject.SetActive(!destroyed);
+        //Spotlight
+        if (!destroyed && control.settings.spotlightOn)
+        {
+            transform.Find("Spotlight").gameObject.SetActive(true);
+        }
+        else
+        {
+            transform.Find("Spotlight").gameObject.SetActive(false);
+        }
+
+        //Jet glow
         transform.Find("Jet Glow").gameObject.SetActive(!destroyed);
+
+        //Ship direction reticles
         control.ui.playerShipDirectionReticleTree.SetActive(!destroyed);
     }
 
@@ -1090,7 +1150,10 @@ public class Player : MonoBehaviour
         */
 
         //Play the track
-        music.Play();
+        if (control.settings.music)
+        {
+            music.Play();
+        }
         
         //Queue another song for after the current one finishes
         musicPlayTime = Time.time + music.clip.length + UnityEngine.Random.Range(MUSIC_PLAY_QUEUE_TIME, MUSIC_PLAY_QUEUE_TIME + MUSIC_PLAY_QUEUE_VARIANCE_TIME);
@@ -1182,12 +1245,16 @@ public class Player : MonoBehaviour
     #region General methods: Damage
     void OnCollisionEnter(Collision collision)
     {
+        //COLLISION PROPERTIES
+        //Collision speed
         float impactIntoleranceThreshold = 5f;
         float impactIntoleranceRange = 6f;
         float impactMaxDamage = 3f;
 
         Vector3 impactDeltaV = collision.relativeVelocity;
 
+        //SELF
+        double damageToDeal = 0.0d;
         if (impactDeltaV.magnitude >= impactIntoleranceThreshold)
         {
             //Play sound effect
@@ -1196,12 +1263,14 @@ public class Player : MonoBehaviour
             soundSourceCollision.Play();
 
             //Damage
-            double newHealthAmount = Math.Max(
-                0.0,
-                vitalsHealth - Math.Min(
+            damageToDeal = Math.Min(
                     impactIntoleranceThreshold * impactIntoleranceRange,
                     impactDeltaV.magnitude
-                ) / (impactIntoleranceThreshold * impactIntoleranceRange / impactMaxDamage)
+                ) / (impactIntoleranceThreshold * impactIntoleranceRange / impactMaxDamage);
+
+            double newHealthAmount = Math.Max(
+                0.0,
+                vitalsHealth - damageToDeal
             );
 
             DamagePlayer(
@@ -1215,6 +1284,27 @@ public class Player : MonoBehaviour
             soundSourceCollision.volume = 0.01f;
             soundSourceCollision.pitch = UnityEngine.Random.Range(0.4f, 0.8f);
             soundSourceCollision.Play();
+        }
+
+        //IMPACTED OBJECT
+        //If an asteroid, deal damage to it
+        if (collision.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
+        {
+            //Get ref
+            CBodyAsteroid asteroidScript = collision.transform.GetComponent<CBodyAsteroid>();
+            //Get direction and contact point (sloppy)
+            Vector3 direction = (transform.position - collision.transform.position).normalized;
+            Vector3 contactPoint = collision.transform.position;
+            //Get damage to deal
+            byte damageToDealToAsteroid = (byte)Mathf.RoundToInt((float)damageToDeal);
+
+            //Deal damage
+            if (damageToDealToAsteroid > 0)
+            {
+                asteroidScript.Damage(damageToDealToAsteroid, direction, contactPoint, true);
+            }
+
+            Debug.Log("Damage dealt to asteroid:" + damageToDealToAsteroid);
         }
     }
 

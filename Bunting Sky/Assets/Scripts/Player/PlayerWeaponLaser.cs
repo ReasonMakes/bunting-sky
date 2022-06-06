@@ -14,7 +14,7 @@ public class PlayerWeaponLaser : MonoBehaviour
     private short poolIndex = 0;
 
     private readonly float PROJECTILE_SPEED = 120f;
-    private readonly float PROJECTILE_LIFETIME_DURATION = 2f;
+    private float projectileLifetimeDuration = 4.5f; //THIS GETS CHANGED DYNAMICALLY
 
     [System.NonSerialized] public short clipSize;
     [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 16;
@@ -27,6 +27,10 @@ public class PlayerWeaponLaser : MonoBehaviour
 
     private void Start()
     {
+        //Calculate the lifetime duration as amount of time needed to burn through a full clip and reload (minus one shot for safety)
+        //In this case, this is 4.5 seconds (based on values as of the time of writing)
+        projectileLifetimeDuration = (SINGLE_COOLDOWN_DURATION * (float)(CLIP_SIZE_STARTER - 1)) + CLIP_COOLDOWN_DURATION;
+
         //Set up object pooling
         for (int i = 0; i < POOL_LENGTH; i++)
         {
@@ -97,8 +101,9 @@ public class PlayerWeaponLaser : MonoBehaviour
         POOL[poolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         POOL[poolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         POOL[poolIndex].GetComponent<Rigidbody>().velocity = player.rb.velocity + (PROJECTILE_SPEED * transform.forward);
-        POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().timeAtWhichThisSelfDestructs = PROJECTILE_LIFETIME_DURATION;
+        POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().timeAtWhichThisSelfDestructs = projectileLifetimeDuration;
         POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().timeSpentAlive = 0f;
+        POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().canDamage = true;
 
         //Iterate through list
         if (poolIndex < POOL_LENGTH - 1)

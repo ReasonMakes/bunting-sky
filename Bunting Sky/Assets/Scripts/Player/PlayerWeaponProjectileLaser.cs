@@ -10,12 +10,24 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
-    private readonly float MIN_GLOW_DISTANCE = 2f;
-    
+    private readonly float MIN_GLOW_DISTANCE = 2.0f;
+    //private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
+
+    [System.NonSerialized] public bool canDamage = true;
+
     private void Start()
     {
-        rb.detectCollisions = false;
+        //Player reference
         playerBody = control.generation.instancePlayer.transform.Find("Body");
+
+        //Ignore collisions with player
+        Physics.IgnoreCollision(
+            transform.Find("Non-Emissive Model").GetComponent<MeshCollider>(),
+            playerBody.GetComponent<MeshCollider>()
+        );
+
+        //General collision detection
+        rb.detectCollisions = true;
     }
 
     private void Update()
@@ -41,8 +53,8 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     private void DeactivateSelf()
     {
-        transform.Find("Emissive Model").gameObject.SetActive(false);
-        transform.Find("Point Light").gameObject.SetActive(false);
+        //transform.Find("Emissive Model").gameObject.SetActive(false);
+        //transform.Find("Point Light").gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -81,17 +93,42 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                 //Break apart asteroid
                 if (!asteroidScript.destroyed)
                 {
-                    Vector3 direction = (transform.position - hit.point).normalized;
-                    asteroidScript.Damage(1, direction, hit.point);
+                    if (canDamage)
+                    {
+                        //Calculate the direction from the laser to the asteroid hit point
+                        Vector3 direction = (transform.position - hit.point).normalized;
+
+                        //Add force to the asteroid (negative direction because we should push away, not toward)
+                        //asteroidScript.rb.AddForce(-direction * COLLISION_ASTEROID_FORCE);
+                        //asteroidScript.rb.AddTorque(-direction * COLLISION_ASTEROID_FORCE);
+
+                        //Damage the asteroid
+                        asteroidScript.Damage(1, direction, hit.point, true);
+                    }
 
                     //Reset tooltip certainty
                     control.ui.tipAimCertainty = 0f;
                 }
             }
 
+            //Can no longer deal damage
+            canDamage = false;
+
             //Deactivate self
-            DeactivateSelf();
+            //DeactivateSelf();
         }
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        //Debug.Log("Collision!");
+
+        DeactivateSelf();
+
+        //if (collision.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
+        //{
+        //    DeactivateSelf();
+        //}
     }
 
     private void UpdateEmissionAndLuminosity()

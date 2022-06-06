@@ -20,7 +20,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
     public GameObject explosion;
     private readonly float EXPLOSION_RADIUS = 30f;
     private readonly float EXPLOSION_PUSH_STRENGTH = 1f;
-    private readonly float EXPLOSION_DURATION = 0.3f;
+    private readonly float EXPLOSION_DURATION = 0.6f; //0.3f; //animation duration in seconds
     [System.NonSerialized] public bool exploded = false;
 
     private void Start()
@@ -155,7 +155,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
                             //Explosion damage
                             Vector3 directionHitFrom = (transform.position - hit.point).normalized;
-                            asteroidScript.Damage(2, directionHitFrom, hit.point);
+                            asteroidScript.Damage(2, directionHitFrom, hit.point, true);
                         }
                     }
                 }
@@ -222,7 +222,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                 if (!asteroidScript.destroyed)
                 {
                     Vector3 direction = (transform.position - hit.point).normalized;
-                    asteroidScript.Damage(1, direction, hit.point);
+                    asteroidScript.Damage(1, direction, hit.point, true);
                 }
             }
 

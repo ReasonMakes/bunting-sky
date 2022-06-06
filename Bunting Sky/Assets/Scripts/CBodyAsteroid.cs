@@ -38,7 +38,8 @@ public class CBodyAsteroid : MonoBehaviour
     public SphereCollider targetCollider4;
 
     public bool separating = true;
-    private readonly float INTERSECTING_REPEL_FORCE = 0.03f;
+    //private readonly float INTERSECTING_REPEL_FORCE = 0.03f;
+    private readonly float INTERSECTING_REPEL_TELEPORT_STEP_DIST = 0.03f;
 
     private void Start()
     {
@@ -47,6 +48,12 @@ public class CBodyAsteroid : MonoBehaviour
 
     private void Update()
     {
+        //Slow update
+        if (Time.frameCount % 30 == 0)
+        {
+            SlowUpdate();
+        }
+
         //Destruction
         if (!Menu.menuOpenAndGamePaused)
         {
@@ -57,6 +64,16 @@ public class CBodyAsteroid : MonoBehaviour
                 Destroy(gameObject, 0f);
             }
             destroyedTime += Time.deltaTime;
+        }
+    }
+
+    private void SlowUpdate()
+    {
+        if (Vector3.Distance(transform.position, control.generation.instanceCentreStar.transform.position) > 700.0f
+            && Vector3.Distance(transform.position, playerTran.position) > 400.0f)
+        {
+            //Debug.Log("Asteroid that was too far from centre star and player has been destroyed.");
+            Destroy(gameObject, 0f);
         }
     }
 
@@ -82,7 +99,14 @@ public class CBodyAsteroid : MonoBehaviour
                 ))
                 {
                     //Debug.Log("Intersecting");
-                    rb.AddForce(INTERSECTING_REPEL_FORCE * (transform.position - asteroid.transform.position).normalized * Time.deltaTime);
+
+                    Vector3 repelDir = (transform.position - asteroid.transform.position).normalized;
+                    //rb.AddForce(INTERSECTING_REPEL_FORCE * (transform.position - asteroid.transform.position).normalized * Time.deltaTime);
+                    //rb.AddForce(INTERSECTING_REPEL_FORCE * repelDir * Time.deltaTime);
+                    transform.position += INTERSECTING_REPEL_TELEPORT_STEP_DIST * repelDir;
+
+                    //Debug.Log(Time.time + ": Moved intersecting asteroid: " + repelDir);
+
                     return;
                 }
             }
@@ -120,7 +144,7 @@ public class CBodyAsteroid : MonoBehaviour
         {
             case "Small":
                 model = modelClassSmall;
-                rb.mass = 0.0001f;
+                rb.mass = 0.2f;
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 50;
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.2f;
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1f;
@@ -132,7 +156,7 @@ public class CBodyAsteroid : MonoBehaviour
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
-                rb.mass = 0.001f;
+                rb.mass = 1.0f;
                 health = (byte)Random.Range(2, 5);
                 break;
 
@@ -141,7 +165,7 @@ public class CBodyAsteroid : MonoBehaviour
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
                 GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
-                rb.mass = 0.01f;
+                rb.mass = 10.0f;
                 health = (byte)Random.Range(4, 8);
                 break;
         }
@@ -188,14 +212,15 @@ public class CBodyAsteroid : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         //Fatal collisions
-        if (collision.collider.gameObject.name == control.generation.cBodyPlanetoid.name + "(Clone)" || collision.collider.gameObject.name == control.generation.cBodyStar.name + "(Clone)")
+        if (collision.collider.gameObject.name == control.generation.cBodyPlanetoid.name + "(Clone)"
+            || collision.collider.gameObject.name == control.generation.cBodyStar.name + "(Clone)")
         {
-            //Destroy self
-            Damage(health, Vector3.zero, transform.position);
+            //Destroy self, but don't drop any ore
+            Damage(health, Vector3.zero, transform.position, false);
         }
     }
 
-    public void Damage(byte damageAmount, Vector3 direction, Vector3 position)
+    public void Damage(byte damageAmount, Vector3 direction, Vector3 position, bool oreDrop)
     {
         //Debug.Log("Type " + type + " asteroid damaged. " + health + " HP remaining.");
 
@@ -209,11 +234,11 @@ public class CBodyAsteroid : MonoBehaviour
         {
             health = 0;
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, position, true);
-            BreakApart();
+            BreakApart(oreDrop);
         }
     }
 
-    public void BreakApart()
+    public void BreakApart(bool oreDrop)
     {
         if (!destroyed)
         {
@@ -231,21 +256,20 @@ public class CBodyAsteroid : MonoBehaviour
             switch (sizeClassDisplay)
             {
                 case "Large":
-                    for (int i = 0; i < Random.Range(5, 10); i++) SpawnOre();
+                    if (oreDrop) { for (int i = 0; i < Random.Range(5, 10); i++) SpawnOre(); }
                     for (int i = 0; i < Random.Range(2, 4); i++) SpawnAsteroid("Medium");
                     for (int i = 0; i < Random.Range(3, 8); i++) SpawnAsteroid("Small");
                     break;
 
                 case "Medium":
-                    for (int i = 0; i < Random.Range(3, 7); i++) SpawnOre();
+                    if (oreDrop) { for (int i = 0; i < Random.Range(3, 7); i++) SpawnOre(); }
                     for (int i = 0; i < Random.Range(2, 5); i++) SpawnAsteroid("Small");
                     break;
 
                 case "Small":
-                    for (int i = 0; i < Random.Range(1, 3); i++) SpawnOre();
+                    if (oreDrop) { for (int i = 0; i < Random.Range(1, 3); i++) SpawnOre(); }
                     break;
             }
-            //in order to spawn more than one asteroid, setup a system which ignores collisions with siblings until no longer intersecting?
 
             //Play sound effect
             GetComponent<AudioSource>().Play();

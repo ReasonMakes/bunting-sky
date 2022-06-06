@@ -55,6 +55,7 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public TextMeshProUGUI weaponSelectedClipSizeText;
     [System.NonSerialized] public TextMeshProUGUI weaponSelectedTitleText;
     [System.NonSerialized] public TextMeshProUGUI weaponAlternateTitleText;
+    [System.NonSerialized] public string weaponMiningLaserTitle = "Mining Laser";
     private string selectedWeaponTitle = "Laser";
 
     //Player camera reticle
@@ -64,15 +65,14 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public GameObject playerShipDirectionReticleTree;
     public GameObject playerShipDirectionReticlePrefab;
     [System.NonSerialized] public List<GameObject> playerShipDirectionReticleList = new List<GameObject>();
-    private short playerShipDirectionReticleListLength = 16;
-    private float playerShipDirectionReticleSpacing = 0.05f;
-    private float playerShipDirectionReticleSpacingPower = 3f;
-    private float playerShipDirectionReticleScale = 0.05f;
-    private float playerShipDirectionReticleForwardOffset = 0.15f;
+    private short playerShipDirectionReticleListLength = 2; //16;
+    //private float playerShipDirectionReticleSpacing = 0.05f;
+    //private float playerShipDirectionReticleSpacingPower = 3f;
+    //private float playerShipDirectionReticleScale = 0.05f;
+    //private float playerShipDirectionReticleForwardOffset = 0.15f;
 
     //Map
     [System.NonSerialized] public static bool displayMap = false;
-    [System.NonSerialized] public static float mapScale = 10f;
 
     //Tips
     [System.NonSerialized] public TextMeshProUGUI tipText;
@@ -82,35 +82,38 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public readonly float TIP_AIM_THRESHOLD_ACCURACY = 0.995f;
     public string tipAimText;
 
+    //Player reference
+    [System.NonSerialized] private Player playerScript;
+
     private void Awake()
     {
         //Get references
-        systemInfo                      = canvas.transform.Find("HUD Top-Right").Find("SystemInfo").GetComponent<TextMeshProUGUI>();
-        cameraReticle                   = canvas.transform.Find("HUD Centre").Find("CameraReticle").gameObject;
+        systemInfo = canvas.transform.Find("HUD Top-Right").Find("SystemInfo").GetComponent<TextMeshProUGUI>();
+        cameraReticle = canvas.transform.Find("HUD Centre").Find("CameraReticle").gameObject;
 
-        waypointImage                   = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint").GetComponent<Image>();
-        waypointTextType                = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Type Text").GetComponent<TextMeshProUGUI>();
-        waypointTextTitle               = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Title Text").GetComponent<TextMeshProUGUI>();
-        waypointTextBody                = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Body Text").GetComponent<TextMeshProUGUI>();
+        waypointImage = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint").GetComponent<Image>();
+        waypointTextType = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Type Text").GetComponent<TextMeshProUGUI>();
+        waypointTextTitle = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Title Text").GetComponent<TextMeshProUGUI>();
+        waypointTextBody = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Body Text").GetComponent<TextMeshProUGUI>();
 
-        targetImage                     = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Target").GetComponent<Image>();
+        targetImage = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Target").GetComponent<Image>();
 
-        resourcesImageCurrency          = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Currency").GetComponent<Image>();
-        resourcesImagePlatinoid         = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Platinoid").GetComponent<Image>();
-        resourcesImagePreciousMetal     = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals").GetComponent<Image>();
-        resourcesImageWater             = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water").GetComponent<Image>();
-        resourcesTextCurrency           = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Currency Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextPlatinoid          = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Platinoid Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextPreciousMetal      = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextWater              = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water Text").GetComponent<TextMeshProUGUI>();
+        resourcesImageCurrency = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Currency").GetComponent<Image>();
+        resourcesImagePlatinoid = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Platinoid").GetComponent<Image>();
+        resourcesImagePreciousMetal = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals").GetComponent<Image>();
+        resourcesImageWater = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water").GetComponent<Image>();
+        resourcesTextCurrency = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Currency Text").GetComponent<TextMeshProUGUI>();
+        resourcesTextPlatinoid = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Platinoid Text").GetComponent<TextMeshProUGUI>();
+        resourcesTextPreciousMetal = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals Text").GetComponent<TextMeshProUGUI>();
+        resourcesTextWater = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water Text").GetComponent<TextMeshProUGUI>();
 
-        weaponCooldown                  = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Cooldown").GetComponent<Image>();
+        weaponCooldown = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Cooldown").GetComponent<Image>();
         weaponSelectedClipRemainingText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Remaining Text").GetComponent<TextMeshProUGUI>();
-        weaponSelectedClipSizeText      = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
-        weaponSelectedTitleText         = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
-        weaponAlternateTitleText        = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
+        weaponSelectedClipSizeText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
+        weaponSelectedTitleText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
+        weaponAlternateTitleText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
 
-        tipText                         = canvas.transform.Find("HUD Bottom").Find("Tips").Find("Tip Text").GetComponent<TextMeshProUGUI>();
+        tipText = canvas.transform.Find("HUD Bottom").Find("Tips").Find("Tip Text").GetComponent<TextMeshProUGUI>();
 
         UpdateTipBinds();
     }
@@ -128,6 +131,9 @@ public class UI : MonoBehaviour
         targetXMax = Screen.width - targetXMin;
         targetYMin = targetImage.GetPixelAdjustedRect().height / 2;
         targetYMax = Screen.height - targetYMin;
+
+        //Get player reference
+        playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
     }
 
     private void Update()
@@ -136,7 +142,8 @@ public class UI : MonoBehaviour
         if (control.settings.displayFPS)
         {
             if (Time.frameCount % FPS_PRINT_PERIOD == 0) control.fps = (int)(1f / Time.unscaledDeltaTime);
-            systemInfo.text = control.fps.ToString() + "FPS";
+            systemInfo.text = control.fps.ToString() + "FPS"
+                + "\n Asteroids: " + control.generation.cBodiesAsteroids.transform.childCount;
             /*
                 + "\nPosition: " + instancePlayer.transform.Find("Body").position
                 + "\nPos relative verse: " + (instancePlayer.transform.Find("Body").position - verseSpace.transform.position);
@@ -149,6 +156,12 @@ public class UI : MonoBehaviour
             UpdateAllPlayerResourcesUIAnimations();
         }
 
+        //Tip certainty
+        if (control.settings.tips)
+        {
+            UpdateTipCertainty();
+        }
+        
         //Tip animation
         if (tipText.color.a > 0f)
         {
@@ -156,16 +169,6 @@ public class UI : MonoBehaviour
             float tipTextAlphaAdjustment = tipText.color.a - (tipTextAlphaDecrement * ((1f - tipText.color.a) + tipTextAlphaDecrement));
             tipText.color = new Color(1f, 1f, 1f, Mathf.Max(0f, tipTextAlphaAdjustment));
         }
-
-        if (tipAimCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
-        {
-            SetTip(tipAimText);
-            tipAimCertainty = 0f;
-        }
-
-        tipAimCertainty = Mathf.Max(0f, tipAimCertainty - TIP_CERTAINTY_DECAY);
-
-        //Debug.Log(tipAimCertainty);
     }
 
     private void LateUpdate()
@@ -182,10 +185,36 @@ public class UI : MonoBehaviour
     }
 
     #region Tip
+    private void UpdateTipCertainty()
+    {
+        //AUTO TORQUING
+        if (tipAimCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
+        {
+            SetTip(tipAimText, ref tipAimCertainty);
+        }
+
+        //Don't recommend auto torquing if firing when fuel is empty
+        if (playerScript.vitalsFuel <= 0d)
+        {
+            tipAimCertainty = 0f;
+        }
+
+        //Decay
+        tipAimCertainty = Mathf.Max(0f, tipAimCertainty - TIP_CERTAINTY_DECAY);
+    }
+
     public void SetTip(string text)
     {
         tipText.text = text;
         tipText.color = Color.white;
+    }
+
+    public void SetTip(string text, ref float certainty)
+    {
+        tipText.text = text;
+        tipText.color = Color.white;
+
+        certainty = 0f;
     }
 
     public void UpdateTipBinds()
@@ -228,7 +257,9 @@ public class UI : MonoBehaviour
         cameraReticle.SetActive(!displayMap);
 
         //Player and map
-        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+        GameObject playerInstance = control.generation.instancePlayer;
+        Player playerScript = playerInstance.GetComponentInChildren<Player>();
+        playerScript.mapLight.SetActive(displayMap);
         if (displayMap)
         {
             //Ship cameras
@@ -241,8 +272,11 @@ public class UI : MonoBehaviour
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = mapCam.transform;
 
-            //Map ship model
-            playerScript.transform.parent.Find("Ship Map Model").gameObject.SetActive(displayMap);
+            //Map ship model (deprecated)
+            //playerScript.transform.parent.Find("Ship Map Model").gameObject.SetActive(displayMap);
+
+            //Enlarge player ship model
+            playerScript.tpModel.transform.localScale = Vector3.one * 200.0f;
         }
         else
         {
@@ -256,8 +290,8 @@ public class UI : MonoBehaviour
             //Background stars
             //skyboxStarsParticleSystem.transform.parent = positionMount.transform;
 
-            //Map ship model
-            playerScript.transform.parent.Find("Ship Map Model").gameObject.SetActive(displayMap);
+            //Return size of player ship model to default
+            playerScript.tpModel.transform.localScale = Vector3.one;
         }
     }
 
@@ -301,24 +335,20 @@ public class UI : MonoBehaviour
             {
                 //Get references
                 Transform instancePlayerBodyTransform = control.generation.instancePlayer.transform.Find("Body");
-
                 GameObject instancePlayerShipDirectionReticle = playerShipDirectionReticleList[i];
-                /*
-                if (instancePlayerShipDirectionReticle == null)
-                {
-                    return;
-                    
-                    //CreatePlayerShipDirectionReticles()
-                    //instancePlayerShipDirectionReticle
-                    //playerShipDirectionReticleList.Clear();
-                }
-                */
                 DirectionReticle instancePlayerShipDirectionReticleScript = instancePlayerShipDirectionReticle.GetComponent<DirectionReticle>();
 
                 //Position in front of player ship at distance relative to index
+                /*
                 Vector3 reticleWorldPos = instancePlayerBodyTransform.position
                     + ((instancePlayerBodyTransform.rotation * Vector3.forward)
                     * (playerShipDirectionReticleForwardOffset + (playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)) * playerShipDirectionReticleScale)
+                );
+                */
+
+                Vector3 reticleWorldPos = instancePlayerBodyTransform.position
+                    + ((instancePlayerBodyTransform.rotation * Vector3.forward)
+                    * (2.5f + (i * 500.0f))
                 );
 
                 //Transform 3D world space to 2D canvas space
@@ -619,32 +649,32 @@ public class UI : MonoBehaviour
         Vector3 playerVelocity = playerTransform.GetComponent<Rigidbody>().velocity;
 
         //Distance
-        float conversionRatioUnitsToMetres = 4f; //1 Unity unit = 4 metres
-        float distance = Vector3.Distance(subjectTransform.position, playerTransform.position) * conversionRatioUnitsToMetres;
+        float conversionRatio = 12.0f; //4.0f; //1 Unity unit = 4 metres
+        float distance = Vector3.Distance(subjectTransform.position, playerTransform.position) * conversionRatio;
         string distanceDisplay = " ?, ";
         if (distance < 1e3f)
         {
-            distanceDisplay = Mathf.RoundToInt(distance) + " m";
+            distanceDisplay = Mathf.RoundToInt(distance) + " s"; //" m";
         }
         else if (distance >= 1e3f)
         {
-            distanceDisplay = (distance * 1e-3f).ToString("F2") + " km";
+            distanceDisplay = (distance * 1e-3f).ToString("F2") + " c"; //" km";
         }
         else if (distance >= 1e6f)
         {
-            distanceDisplay = (distance * 1e-6f).ToString("F2") + " Mm";
+            distanceDisplay = (distance * 1e-6f).ToString("F2") + " k"; //" Mm";
         }
         else if (distance >= 1e9f)
         {
-            distanceDisplay = (distance * 3.33564e-9f).ToString("F2") + " lightsecond";
+            distanceDisplay = (distance * 3.33564e-9f).ToString("F2") + " p"; //" lightsecond";
         }
         else if (distance >= 5.5594e11f)
         {
-            distanceDisplay = (distance * 5.5594e-11f).ToString("F2") + " lightminute";
+            distanceDisplay = (distance * 5.5594e-11f).ToString("F2") + " g"; //" lightminute";
         }
         else if (distance >= 1.057e16f)
         {
-            distanceDisplay = (distance * 1.057e-16f).ToString("F2") + " lightyear";
+            distanceDisplay = (distance * 1.057e-16f).ToString("F2") + " c"; //" lightyear";
         }
 
         //DeltaV
@@ -720,9 +750,9 @@ public class UI : MonoBehaviour
 
         //Update values and start animations on a resource if its value changed
         UpdatePlayerResourceUI(ref resourcesTextCurrency, ref resourcesImageCurrency, playerScript.currency.ToString("F2") + " ICC", playerScript.soundSourceCoins);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid, ref resourcesImagePlatinoid, playerScript.ore[playerScript.ORE_PLATINOID].ToString("F2") + " g", playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal, ref resourcesImagePreciousMetal, playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F2") + " g", playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater, ref resourcesImageWater, playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " g", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid, ref resourcesImagePlatinoid, playerScript.ore[playerScript.ORE_PLATINOID].ToString("F2") + " kg", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal, ref resourcesImagePreciousMetal, playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F2") + " kg", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater, ref resourcesImageWater, playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " kg", playerScript.soundSourceOreCollected);
 
         //Update console
         UpdatePlayerConsole();

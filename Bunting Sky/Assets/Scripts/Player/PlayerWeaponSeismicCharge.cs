@@ -18,7 +18,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
     [System.NonSerialized] public short clipSize;
     [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 3;
     [System.NonSerialized] public short clipRemaining;
-    [System.NonSerialized] public readonly float CLIP_COOLDOWN_DURATION = 15f; //reload period
+    [System.NonSerialized] public readonly float CLIP_COOLDOWN_DURATION = 9f; //reload period
     [System.NonSerialized] public float clipCooldownCurrent = 0f;
 
     [System.NonSerialized] public readonly float SINGLE_COOLDOWN_DURATION = 0.5f;

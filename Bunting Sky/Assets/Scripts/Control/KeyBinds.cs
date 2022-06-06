@@ -15,11 +15,11 @@ public class KeyBinds : MonoBehaviour
     private string fullPath;
 
     //Mouse code definitions (1000 is subtracted later. TODO: make this into an enum)
-    private readonly short MOUSE_PRIMARY = 1000;
-    private readonly short MOUSE_SECONDARY = 1001;
-    private readonly short MOUSE_MIDDLE = 1002;
-    private readonly short MOUSE_SCROLL_UP = 1003;
-    private readonly short MOUSE_SCROLL_DOWN = 1004;
+    public readonly short MOUSE_PRIMARY = 1000;
+    public readonly short MOUSE_SECONDARY = 1001;
+    public readonly short MOUSE_MIDDLE = 1002;
+    public readonly short MOUSE_SCROLL_UP = 1003;
+    public readonly short MOUSE_SCROLL_DOWN = 1004;
 
     //Binds initializations
     [System.NonSerialized] public short bindThrustForward;

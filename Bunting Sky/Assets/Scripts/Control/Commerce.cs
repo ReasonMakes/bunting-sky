@@ -196,9 +196,9 @@ public class Commerce : MonoBehaviour
         sellAllWaterText.text           = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
 
         //Price
-        sellAllPlatinoidPrice.text      = "$" + pricePlatinoid + " / g";
-        sellAllPreciousMetalPrice.text  = "$" + pricePreciousMetal + " / g";
-        sellAllWaterPrice.text          = "$" + priceWater + " / g";
+        sellAllPlatinoidPrice.text      = "$" + pricePlatinoid + " / kg";
+        sellAllPreciousMetalPrice.text  = "$" + pricePreciousMetal + " / kg";
+        sellAllWaterPrice.text          = "$" + priceWater + " / kg";
 
         //Colour
         sellAllPlatinoidText.color      = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
@@ -246,36 +246,41 @@ public class Commerce : MonoBehaviour
         menuButtonRefuel.interactable = playerScript.currency >= PRICE_REFUEL && playerScript.vitalsFuel < playerScript.vitalsFuelMax;
 
         //Display
-        //Colour
-        menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsHealth >= playerScript.vitalsHealthMax || playerScript.currency < PRICE_REPAIR) ? Control.colorTextDisabled : Control.colorTextEnabled;
-        menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsFuel >= playerScript.vitalsFuelMax || playerScript.currency < PRICE_REFUEL) ? Control.colorTextDisabled : Control.colorTextEnabled;
-
-        //Text
+        //Colour and text
+        //Hull repair
         if (playerScript.vitalsHealth >= playerScript.vitalsHealthMax)
         {
+            menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabledAsComplete;
             menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "Repair all damages\n(no damages to repair)";
         }
         else if (playerScript.currency < PRICE_REPAIR)
         {
+            menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabledAsQuest;
             menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "Repair all damages\n(insufficient funds)";
         }
         else
         {
+            menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextEnabled;
             menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "Repair all damages";
         }
-
+        //Refuel
         if (playerScript.vitalsFuel >= playerScript.vitalsFuelMax)
         {
+            menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabledAsComplete;
             menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "Refuel to full\n(tank at maximum capacity)";
         }
         else if (playerScript.currency < PRICE_REFUEL)
         {
+            menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabledAsQuest;
             menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "Refuel to full\n(insufficient funds)";
         }
         else
         {
+            menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextEnabled;
             menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "Refuel to full";
         }
+        //menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsHealth >= playerScript.vitalsHealthMax || playerScript.currency < PRICE_REPAIR) ? Control.colorTextDisabled : Control.colorTextEnabled;
+        //menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsFuel >= playerScript.vitalsFuelMax || playerScript.currency < PRICE_REFUEL) ? Control.colorTextDisabled : Control.colorTextEnabled;
     }
 
     public void EnableTooltip()
@@ -371,7 +376,7 @@ public class Commerce : MonoBehaviour
     {
         Button menuButton = GetUpgradeButtonFromIndex(buttonIndex);
 
-        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
+        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabledAsQuest;
         menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_NAME] + "\n(insufficient funds)";
         menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
     }
@@ -381,7 +386,7 @@ public class Commerce : MonoBehaviour
         Button menuButton = GetUpgradeButtonFromIndex(buttonIndex);
 
         menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_NAME] + "\n(already owned at max level)";
-        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
+        menuButton.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabledAsComplete;
         menuButton.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>().color = Control.colorTextDisabled;
     }
 

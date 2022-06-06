@@ -5,6 +5,9 @@ using UnityEngine;
 
 public class Settings : MonoBehaviour
 {
+    //Control reference
+    public Control control;
+
     //Input/output
     private IOBuffer ioBuffer;
     private string jsonSaveData;
@@ -34,6 +37,8 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public int targetFPS;
     [System.NonSerialized] public bool spotlightOn;
     [System.NonSerialized] public bool refine;
+    [System.NonSerialized] public bool music;
+    [System.NonSerialized] public bool tips;
 
     public void Start()
     {
@@ -62,7 +67,9 @@ public class Settings : MonoBehaviour
             displayHUD = true,
             targetFPS = 300,
             spotlightOn = true,
-            refine = true
+            refine = true,
+            music = true,
+            tips = true
         };
     }
 
@@ -78,6 +85,8 @@ public class Settings : MonoBehaviour
         ioBuffer.targetFPS = targetFPS;
         ioBuffer.spotlightOn = spotlightOn;
         ioBuffer.refine = refine;
+        ioBuffer.music = music;
+        ioBuffer.tips = tips;
     }
 
     public void SetSettingsToIOBuffer()
@@ -92,6 +101,8 @@ public class Settings : MonoBehaviour
         targetFPS = ioBuffer.targetFPS;
         spotlightOn = ioBuffer.spotlightOn;
         refine = ioBuffer.refine;
+        music = ioBuffer.music;
+        tips = ioBuffer.tips;
     }
 
     //This entire object is what we save/load. It must contain duplicates for all settings definitions that its parent class has
@@ -107,6 +118,8 @@ public class Settings : MonoBehaviour
         public int targetFPS;
         public bool spotlightOn;
         public bool refine;
+        public bool music;
+        public bool tips;
     }
 
     #region Save/load

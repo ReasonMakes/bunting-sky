@@ -11,7 +11,9 @@ public class Control : MonoBehaviour
     public Menu menu;
     public Commerce commerce;
 
-    [System.NonSerialized] public static Color colorTextDisabled = new Color(1f, 1f, 1f, 0.1f);
+    [System.NonSerialized] public static Color colorTextDisabled = new Color(1f, 1f, 1f, 0.16f);
+    [System.NonSerialized] public static Color colorTextDisabledAsComplete = new Color(0f, 1f, 0f, 0.2f);
+    [System.NonSerialized] public static Color colorTextDisabledAsQuest = new Color(1f, 1f, 0f, 0.2f);
     [System.NonSerialized] public static Color colorTextEnabled = new Color(1f, 1f, 1f, 1f);
 
     //FPS
@@ -34,7 +36,7 @@ public class Control : MonoBehaviour
     [System.NonSerialized] public static string userDataFolder = "/user";
     [System.NonSerialized] public static string userLevelSaveFile = "/verse.bss"; //Bunting Sky Save
     [System.NonSerialized] public static string screenshotsFolder = "/screenshots";
-    [System.NonSerialized] public readonly float AUTO_SAVE_FREQUENCY = 10f; //30f;
+    [System.NonSerialized] public readonly float AUTO_SAVE_FREQUENCY = 60f; //10f; //30f;
 
     //UI
     public UI ui;
@@ -71,11 +73,11 @@ public class Control : MonoBehaviour
         }
 
         //Map camera follows player
-        generation.instancePlayer.transform.Find("Position Mount").Find("Map Camera").position -= new Vector3(
-            generation.instancePlayer.transform.Find("Body").position.x,
-            0f,
-            generation.instancePlayer.transform.Find("Body").position.z
-        );
+        //generation.instancePlayer.transform.Find("Position Mount").Find("Map Camera").position -= new Vector3(
+        //    generation.instancePlayer.transform.Find("Body").position.x,
+        //    0f,
+        //    generation.instancePlayer.transform.Find("Body").position.z
+        //);
     }
 
     private void LoopWorldOrigin()

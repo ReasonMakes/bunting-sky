@@ -620,7 +620,7 @@ PlayerSettings:
   m_MobileRenderingPath: 1
   metroPackageName: Template_3D
   metroPackageVersion: 
-  metroCertificatePath: D:\Central\Coding\CS\Projects\bunting-sky\Bunting Sky\Assets\WSATestCertificate.pfx
+  metroCertificatePath: Assets\WSATestCertificate.pfx
   metroCertificatePassword: 
   metroCertificateSubject: Reason Studios
   metroCertificateIssuer: Reason Studios
