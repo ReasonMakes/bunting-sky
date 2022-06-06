@@ -10,7 +10,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
-    private readonly float MIN_GLOW_DISTANCE = 2.0f;
+    private readonly float MIN_GLOW_DISTANCE = 1.0f;
     //private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
 
     [System.NonSerialized] public bool canDamage = true;
@@ -53,8 +53,8 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     private void DeactivateSelf()
     {
-        //transform.Find("Emissive Model").gameObject.SetActive(false);
-        //transform.Find("Point Light").gameObject.SetActive(false);
+        transform.Find("Emissive Model").gameObject.SetActive(false);
+        transform.Find("Point Light").gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -133,8 +133,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     private void UpdateEmissionAndLuminosity()
     {
-        bool glow = timeSpentAlive < timeAtWhichThisSelfDestructs - 1f
-            && Vector3.Distance(transform.position, playerBody.position) > MIN_GLOW_DISTANCE + (playerBody.GetComponent<Rigidbody>().velocity.magnitude / 25f);
+        bool glow = Vector3.Distance(transform.position, playerBody.position) > MIN_GLOW_DISTANCE + playerBody.GetComponent<Rigidbody>().velocity.magnitude;
 
         transform.Find("Emissive Model").gameObject.SetActive(glow);
         transform.Find("Point Light").gameObject.SetActive(glow);

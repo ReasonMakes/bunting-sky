@@ -1038,7 +1038,10 @@ public class Player : MonoBehaviour
             //Debug.Log("ship to look diff: " + (transform.localRotation * Quaternion.Inverse(centreMountTran.localRotation)));
             //Debug.Log("ship to look diff: " + Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)));
 
-            if (Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY)
+            if (
+                !binds.GetInput(binds.bindCameraFreeLook) &&
+                Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY
+                )
             {
                 control.ui.tipAimCertainty++;
                 //control.ui.SetTip("Not aiming at centre!");
