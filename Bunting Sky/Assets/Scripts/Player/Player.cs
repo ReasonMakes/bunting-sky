@@ -116,7 +116,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
     private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
-    [System.NonSerialized] public static bool destroyed = false;
+    [System.NonSerialized] public bool isDestroyed = false;
     [System.NonSerialized] public double vitalsFuel = 10.0;
     [System.NonSerialized] public double vitalsFuelMax = 15.0;
     private readonly double VITALS_FUEL_MAX_STARTER = 15.0;
@@ -290,6 +290,12 @@ public class Player : MonoBehaviour
 
         //I to cheat
 
+        ////Damage to 1hp
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    vitalsHealth = 0.1d;
+        //}
+
         ////Repair ship to full
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
@@ -307,21 +313,21 @@ public class Player : MonoBehaviour
         //    control.ui.SetTip("Reinforced Hull upgrade unlocked");
         //}
         //
-        //Unlock Seismic Charges (Z and X to select weapon)
-        if (binds.GetInputDown(binds.bindCheat1))
-        {
-            upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-            UpdateUpgrades();
-            control.ui.SetTip("Seismic charges upgrade unlocked");
-        }
-        
-        ////Free money
+        ////Unlock Seismic Charges (Z and X to select weapon)
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
-        //    currency += 1000;
-        //    control.ui.UpdateAllPlayerResourcesUI();
-        //    control.ui.SetTip("+1000 currency");
+        //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+        //    UpdateUpgrades();
+        //    control.ui.SetTip("Seismic charges upgrade unlocked");
         //}
+        
+        //Free money
+        if (binds.GetInputDown(binds.bindCheat1))
+        {
+            currency += 1000;
+            control.ui.UpdateAllPlayerResourcesUI();
+            control.ui.SetTip("+1000 currency");
+        }
 
         //Unlock In Situ Refinery
         //if (binds.GetInputDown(binds.bindCheat1))
@@ -509,7 +515,7 @@ public class Player : MonoBehaviour
         //Ignore movement input if a menu is opened
         if
         (
-            !destroyed
+            !isDestroyed
             && !Menu.menuOpenAndGamePaused
             && !Commerce.menuOpen
             && (
@@ -829,7 +835,7 @@ public class Player : MonoBehaviour
             //Fire
             if
             (
-                !destroyed
+                !isDestroyed
                 && Application.isFocused
                 && !Menu.menuOpenAndGamePaused
                 && !Commerce.menuOpen
@@ -926,7 +932,7 @@ public class Player : MonoBehaviour
         firstPerson = false;
         thirdPerson = false;
 
-        if (!destroyed)
+        if (!isDestroyed)
         {
             firstPerson = control.settings.cameraDistance <= control.settings.CAMERA_DISTANCE_MIN + 0.01f;
             thirdPerson = !firstPerson;
@@ -938,11 +944,11 @@ public class Player : MonoBehaviour
         fpModel.SetActive(firstPerson);
 
         //Third-person camera & model
-        tpCam.SetActive(thirdPerson || destroyed);
+        tpCam.SetActive(thirdPerson || isDestroyed);
         tpModel.SetActive(thirdPerson);
 
         //Spotlight
-        if (!destroyed && control.settings.spotlightOn)
+        if (!isDestroyed && control.settings.spotlightOn)
         {
             transform.Find("Spotlight").gameObject.SetActive(true);
         }
@@ -952,10 +958,10 @@ public class Player : MonoBehaviour
         }
 
         //Jet glow
-        transform.Find("Jet Glow").gameObject.SetActive(!destroyed);
+        transform.Find("Jet Glow").gameObject.SetActive(!isDestroyed);
 
         //Ship direction reticles
-        control.ui.playerShipDirectionReticleTree.SetActive(!destroyed);
+        control.ui.playerShipDirectionReticleTree.SetActive(!isDestroyed);
     }
 
     private void GetMouseToCameraTransform()
@@ -1313,7 +1319,7 @@ public class Player : MonoBehaviour
 
     public void DamagePlayer(double newHealthAmount, string cause)
     {
-        if (!destroyed)
+        if (!isDestroyed)
         {
             vitalsHealth = newHealthAmount;
             control.ui.UpdatePlayerVitalsDisplay(); //force a vitals update so that you can immediately see your health change
@@ -1336,7 +1342,7 @@ public class Player : MonoBehaviour
         //TODO
 
         //Remember is destroyed
-        destroyed = true;
+        isDestroyed = true;
 
         //Hide models (after destroyed is called because their visibility is determined by that variable)
         DecideWhichModelsToRender();

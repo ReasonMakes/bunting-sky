@@ -96,129 +96,7 @@ public class Menu : MonoBehaviour
     private void Update()
     {
         //KEYBINDS
-        //Change keybind
-        //Get whatever key was pressed (note: this will have to be expanded to fit mouse and joystick inputs)
-        //We check if any key is pressed first to save performance, as foreach will loop through a lot of codes here
-        //Thanks roojerry from the Unity forum
-        if (menuKeybindsIsSettingBind)
-        {
-            if (Input.anyKey || control.binds.GetInput(control.binds.MOUSE_SCROLL_UP) || control.binds.GetInput(control.binds.MOUSE_SCROLL_DOWN))
-            {
-                //Get the bind, if there is one
-                bool isBind = false;
-                short inputCode = 0;
-                if (control.binds.GetInput(control.binds.MOUSE_SCROLL_UP))
-                {
-                    isBind = true;
-                    inputCode = control.binds.MOUSE_SCROLL_UP;
-                }
-                else if (control.binds.GetInput(control.binds.MOUSE_SCROLL_DOWN))
-                {
-                    isBind = true;
-                    inputCode = control.binds.MOUSE_SCROLL_DOWN;
-                }
-                else
-                {
-                    foreach (KeyCode keyCode in Enum.GetValues(typeof(KeyCode)))
-                    {
-                        if (Input.GetKey(keyCode))
-                        {
-                            //Debug.Log("KeyCode down: " + keyCode);
-
-                            isBind = true;
-                            inputCode = (short)keyCode;
-                        }
-                    }
-                }
-
-                //Assign the bind
-                if (isBind)
-                {
-                    //Assign bind
-                    if (menuKeybindsBindID == BIND_ID_THRUST_FORWARD)   { control.binds.bindThrustForward = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_THRUST_LEFT)      { control.binds.bindThrustLeft = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_THRUST_BACKWARD)  { control.binds.bindThrustBackward = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_THRUST_RIGHT)     { control.binds.bindThrustRight = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_THRUST_UP)        { control.binds.bindThrustUp = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_THRUST_DOWN)      { control.binds.bindThrustDown = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_ALIGN_SHIP)       { control.binds.bindAlignShipToReticle = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_CHEAT1)           { control.binds.bindCheat1 = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_CHEAT2)           { control.binds.bindCheat2 = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_CYCLE_MM)         { control.binds.bindCycleMovementMode = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_FREE_LOOK)        { control.binds.bindCameraFreeLook = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_ZOOM_IN)          { control.binds.bindCameraZoomIn = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_ZOOM_OUT)         { control.binds.bindCameraZoomOut = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_SET_TARGET)       { control.binds.bindSetTarget = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_FIRE)             { control.binds.bindPrimaryFire = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_RELOAD)           { control.binds.bindPrimaryReload = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_SPOTLIGHT)        { control.binds.bindToggleSpotlight = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_MAP)              { control.binds.bindToggleMap = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_REFINE)           { control.binds.bindToggleRefine = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_WEAPON1)          { control.binds.bindSelectWeapon1 = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_WEAPON2)          { control.binds.bindSelectWeapon2 = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_HUD)              { control.binds.bindToggleHUD = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_FPS)              { control.binds.bindToggleFPS = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_SCREENSHOT)       { control.binds.bindSaveScreenshot = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_MENU)             { control.binds.bindToggleMenu = inputCode; }
-
-                    //Update menu text
-                    MenuKeybindsUpdateBindText();
-
-                    //Exit bind setting mode
-                    menuKeybindsIsSettingBind = false;
-
-                    //Save the keybind
-                    control.binds.Save();
-                }
-                else
-                {
-                    Debug.Log("Error! No bind received even though an input was detected.");
-                }
-            }
-        }
-        else
-        {
-            //IN-GAME SETTINGS KEYBINDS
-            //Menu toggle (includes cursor locking/unlocking)
-            if (!Commerce.menuOpen && control.binds.GetInputDown(control.binds.bindToggleMenu))
-            {
-                //Toggle menu
-                MenuToggle();
-            }
-
-            //HUD toggle
-            if (control.binds.GetInputDown(control.binds.bindToggleHUD))
-            {
-                menuSettingsToggleDisplayHUD.isOn = !menuSettingsToggleDisplayHUD.isOn;
-
-                //MenuSettingsHUDToggle();
-            }
-
-            //FPS toggle
-            if (control.binds.GetInputDown(control.binds.bindToggleFPS))
-            {
-                menuSettingsToggleDisplayFPS.isOn = !menuSettingsToggleDisplayFPS.isOn;
-
-                //MenuSettingsFPSToggle();
-            }
-
-            //Spotlight toggle
-            if (control.binds.GetInputDown(control.binds.bindToggleSpotlight))
-            {
-                //Update the settings menu and toggle the actual spotlight
-                //(Changing isOn also calls the method attached to that toggle button. In this case: MenuSettingsSpotlightToggle())
-                menuSettingsToggleSpotlight.isOn = !menuSettingsToggleSpotlight.isOn;
-
-                //Update spotlight gameObject
-                control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
-            }
-
-            //Refine toggle
-            if (control.binds.GetInputDown(control.binds.bindToggleRefine))
-            {
-                menuSettingsToggleRefine.isOn = !menuSettingsToggleRefine.isOn;
-            }
-        }
+        MenuKeybindsCheckKeybindAssignment();
     }
 
     public void DisableAllSubMenus()
@@ -547,6 +425,134 @@ public class Menu : MonoBehaviour
     #endregion
 
     //KEYBINDS
+    #region Keybinds
+    public void MenuKeybindsCheckKeybindAssignment()
+    {
+        //Change keybind
+        //Get whatever key was pressed (note: this will have to be expanded to fit mouse and joystick inputs)
+        //We check if any key is pressed first to save performance, as foreach will loop through a lot of codes here
+        //Thanks roojerry from the Unity forum
+        if (menuKeybindsIsSettingBind)
+        {
+            if (Input.anyKey || control.binds.GetInput(control.binds.MOUSE_SCROLL_UP) || control.binds.GetInput(control.binds.MOUSE_SCROLL_DOWN))
+            {
+                //Get the bind, if there is one
+                bool isBind = false;
+                short inputCode = 0;
+                if (control.binds.GetInput(control.binds.MOUSE_SCROLL_UP))
+                {
+                    isBind = true;
+                    inputCode = control.binds.MOUSE_SCROLL_UP;
+                }
+                else if (control.binds.GetInput(control.binds.MOUSE_SCROLL_DOWN))
+                {
+                    isBind = true;
+                    inputCode = control.binds.MOUSE_SCROLL_DOWN;
+                }
+                else
+                {
+                    foreach (KeyCode keyCode in Enum.GetValues(typeof(KeyCode)))
+                    {
+                        if (Input.GetKey(keyCode))
+                        {
+                            //Debug.Log("KeyCode down: " + keyCode);
+
+                            isBind = true;
+                            inputCode = (short)keyCode;
+                        }
+                    }
+                }
+
+                //Assign the bind
+                if (isBind)
+                {
+                    //Assign bind
+                    if (menuKeybindsBindID == BIND_ID_THRUST_FORWARD) { control.binds.bindThrustForward = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_THRUST_LEFT) { control.binds.bindThrustLeft = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_THRUST_BACKWARD) { control.binds.bindThrustBackward = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_THRUST_RIGHT) { control.binds.bindThrustRight = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_THRUST_UP) { control.binds.bindThrustUp = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_THRUST_DOWN) { control.binds.bindThrustDown = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_ALIGN_SHIP) { control.binds.bindAlignShipToReticle = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_CHEAT1) { control.binds.bindCheat1 = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_CHEAT2) { control.binds.bindCheat2 = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_CYCLE_MM) { control.binds.bindCycleMovementMode = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_FREE_LOOK) { control.binds.bindCameraFreeLook = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_ZOOM_IN) { control.binds.bindCameraZoomIn = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_ZOOM_OUT) { control.binds.bindCameraZoomOut = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_SET_TARGET) { control.binds.bindSetTarget = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_FIRE) { control.binds.bindPrimaryFire = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_RELOAD) { control.binds.bindPrimaryReload = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_SPOTLIGHT) { control.binds.bindToggleSpotlight = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_MAP) { control.binds.bindToggleMap = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_REFINE) { control.binds.bindToggleRefine = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_WEAPON1) { control.binds.bindSelectWeapon1 = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_WEAPON2) { control.binds.bindSelectWeapon2 = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_HUD) { control.binds.bindToggleHUD = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_FPS) { control.binds.bindToggleFPS = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_SCREENSHOT) { control.binds.bindSaveScreenshot = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_MENU) { control.binds.bindToggleMenu = inputCode; }
+
+                    //Update menu text
+                    MenuKeybindsUpdateBindText();
+
+                    //Exit bind setting mode
+                    menuKeybindsIsSettingBind = false;
+
+                    //Save the keybind
+                    control.binds.Save();
+                }
+                else
+                {
+                    Debug.Log("Error! No bind received even though an input was detected.");
+                }
+            }
+        }
+        else
+        {
+            //IN-GAME SETTINGS KEYBINDS
+            //Menu toggle (includes cursor locking/unlocking)
+            if (!Commerce.menuOpen && control.binds.GetInputDown(control.binds.bindToggleMenu))
+            {
+                //Toggle menu
+                MenuToggle();
+            }
+
+            //HUD toggle
+            if (control.binds.GetInputDown(control.binds.bindToggleHUD))
+            {
+                menuSettingsToggleDisplayHUD.isOn = !menuSettingsToggleDisplayHUD.isOn;
+
+                //MenuSettingsHUDToggle();
+            }
+
+            //FPS toggle
+            if (control.binds.GetInputDown(control.binds.bindToggleFPS))
+            {
+                menuSettingsToggleDisplayFPS.isOn = !menuSettingsToggleDisplayFPS.isOn;
+
+                //MenuSettingsFPSToggle();
+            }
+
+            //Spotlight toggle
+            if (control.binds.GetInputDown(control.binds.bindToggleSpotlight))
+            {
+                //Update the settings menu and toggle the actual spotlight
+                //(Changing isOn also calls the method attached to that toggle button. In this case: MenuSettingsSpotlightToggle())
+                menuSettingsToggleSpotlight.isOn = !menuSettingsToggleSpotlight.isOn;
+
+                //Update spotlight gameObject
+                control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
+            }
+
+            //Refine toggle
+            if (control.binds.GetInputDown(control.binds.bindToggleRefine))
+            {
+                menuSettingsToggleRefine.isOn = !menuSettingsToggleRefine.isOn;
+            }
+        }
+    }
+
     public void MenuKeybindsOpen()
     {
         menuMain.SetActive(false);
@@ -801,4 +807,5 @@ public class Menu : MonoBehaviour
         menuBindsToggleMenu.text = "";
         menuKeybindsBindID = BIND_ID_MENU;
     }
+    #endregion Keybinds
 }

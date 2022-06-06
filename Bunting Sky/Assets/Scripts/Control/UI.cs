@@ -625,7 +625,7 @@ public class UI : MonoBehaviour
         }
 
         //Don't render when in first-person
-        if (!Player.destroyed && Player.firstPerson)
+        if (!playerScript.isDestroyed && Player.firstPerson)
         {
             renderWaypoint = false;
             waypointImage.gameObject.SetActive(true);

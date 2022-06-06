@@ -188,14 +188,11 @@ public class Generation : MonoBehaviour
 
         Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
-        if (generationType == GENERATION_TYPE_NEW_GAME)
+        if (generationType == GENERATION_TYPE_NEW_GAME || generationType == GENERATION_TYPE_RESTARTED_GAME)
         {
             playerScript.vitalsHealth = playerScript.vitalsHealthMax;
             playerScript.vitalsFuel = playerScript.vitalsFuelMax;
-        }
-
-        if (generationType == GENERATION_TYPE_NEW_GAME || generationType == GENERATION_TYPE_RESTARTED_GAME)
-        {
+            playerScript.isDestroyed = false;
             instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
             instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnPlanetoid.GetComponent<Rigidbody>().velocity;
         }
@@ -595,7 +592,7 @@ public class Generation : MonoBehaviour
             playerUpgrades = playerScript.upgradeLevels,
 
             playerVitalsHealth = playerScript.vitalsHealth,
-            playerDestroyed = Player.destroyed,
+            playerDestroyed = playerScript.isDestroyed,
 
             playerVitalsFuel = playerScript.vitalsFuel,
 
@@ -726,7 +723,7 @@ public class Generation : MonoBehaviour
             playerScript.UpdateUpgrades();
 
             playerScript.vitalsHealth = data.playerVitalsHealth;
-            Player.destroyed = data.playerDestroyed;
+            playerScript.isDestroyed = data.playerDestroyed;
 
             playerScript.vitalsFuel = data.playerVitalsFuel;
 
