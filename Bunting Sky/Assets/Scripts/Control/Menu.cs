@@ -166,6 +166,9 @@ public class Menu : MonoBehaviour
 
                     //Exit bind setting mode
                     menuKeybindsIsSettingBind = false;
+
+                    //Save the keybind
+                    control.binds.Save();
                 }
                 else
                 {

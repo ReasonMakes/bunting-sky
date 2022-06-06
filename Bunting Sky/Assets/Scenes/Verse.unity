@@ -12186,7 +12186,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &746305664
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13963,6 +13963,7 @@ GameObject:
   m_Component:
   - component: {fileID: 838758690}
   - component: {fileID: 838758691}
+  - component: {fileID: 838758692}
   m_Layer: 5
   m_Name: Vertical Sort
   m_TagString: Untagged
@@ -14014,10 +14015,10 @@ RectTransform:
   m_Father: {fileID: 2123622231}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 139.99997}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 0, y: -970}
+  m_SizeDelta: {x: 100, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &838758691
 MonoBehaviour:
@@ -14045,6 +14046,20 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &838758692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838758689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_HorizontalFit: 0
+  m_VerticalFit: 1
 --- !u!1 &839792110
 GameObject:
   m_ObjectHideFlags: 0
@@ -21175,7 +21190,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.101960786, g: 0.09411765, b: 0.2784314, a: 0.98039216}
+  m_Color: {r: 0.09411765, g: 0.09411765, b: 0.2784314, a: 0.49803922}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -28635,6 +28650,9 @@ MonoBehaviour:
   control: {fileID: 2000740122}
   binds: {fileID: 2000740124}
   canvas: {fileID: 1962589715}
+  weaponSelectedIcon: {fileID: 1758171905}
+  weaponSelectedIconLaser: {fileID: 21300000, guid: 2de8918b9a9cfb34c9435bde9f319334, type: 3}
+  weaponSelectedIconSeismicCharge: {fileID: 21300000, guid: c15761de1cff42c4eb2f563f95de5507, type: 3}
   playerShipDirectionReticlePrefab: {fileID: 5317684262419695248, guid: d2a823f2f541c004d9c5723a57fc5a83, type: 3}
   tipAimText: 
 --- !u!1 &2010765254

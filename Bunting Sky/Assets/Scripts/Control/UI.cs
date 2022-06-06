@@ -57,6 +57,9 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public TextMeshProUGUI weaponAlternateTitleText;
     [System.NonSerialized] public string weaponMiningLaserTitle = "Mining Laser";
     private string selectedWeaponTitle = "Laser";
+    public Image weaponSelectedIcon;
+    public Sprite weaponSelectedIconLaser;
+    public Sprite weaponSelectedIconSeismicCharge;
 
     //Player camera reticle
     [System.NonSerialized] public GameObject cameraReticle;
@@ -883,6 +886,16 @@ public class UI : MonoBehaviour
 
             //Remember
             selectedWeaponTitle = playerSelectedWeaponTitle;
+
+            //Weapon icon
+            if (playerSelectedWeaponTitle == "Laser")
+            {
+                weaponSelectedIcon.sprite = weaponSelectedIconLaser;
+            }
+            else
+            {
+                weaponSelectedIcon.sprite = weaponSelectedIconSeismicCharge;
+            }
         }
     }
     #endregion
