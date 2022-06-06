@@ -250,9 +250,6 @@ public class CBodyAsteroid : MonoBehaviour
             rb.detectCollisions = false;
             activeModel.SetActive(false);
 
-            //Gravitate toward centre star only (so that the lack of the hitbox doesn't cause it to accelerate to infinity)
-            GetComponent<Gravity>().gravitateTowardCentreStarOnly = true;
-
             switch (sizeClassDisplay)
             {
                 case "Large":
@@ -293,9 +290,6 @@ public class CBodyAsteroid : MonoBehaviour
         );
         //Put in CBodies tree
         instanceCBodyAsteroid.transform.parent = control.generation.cBodiesAsteroids.transform;
-
-        //Pass control reference
-        instanceCBodyAsteroid.GetComponent<Gravity>().control = control;
 
         //Rigidbody
         Rigidbody instanceCBodyAsteroidRb = instanceCBodyAsteroid.GetComponent<Rigidbody>();

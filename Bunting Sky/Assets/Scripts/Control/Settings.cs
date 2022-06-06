@@ -25,7 +25,7 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public readonly float CAMERA_HEIGHT_MIN = 0f;
     [System.NonSerialized] public readonly float CAMERA_HEIGHT_MAX = 1f;
     [System.NonSerialized] public readonly int TARGET_FPS_MIN = 1;
-    [System.NonSerialized] public readonly int TARGET_FPS_MAX = 2000;
+    [System.NonSerialized] public readonly int TARGET_FPS_MAX = 300;
 
     //Settings initializations
     [System.NonSerialized] public float mouseSensitivity;

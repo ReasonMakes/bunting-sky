@@ -69,9 +69,6 @@ public class CBodyPlanetoid : MonoBehaviour
             Destroy(instancedStation, 0f);
         }
 
-        //Gravitate toward centre star only (so that the lack of the hitbox doesn't cause it to accelerate to infinity)
-        GetComponent<Gravity>().gravitateTowardCentreStarOnly = true;
-
         //Spawn regular asteroids
         byte type = CBodyAsteroid.GetRandomType();
         for (int i = 0; i < 7; i++)

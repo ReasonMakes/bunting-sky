@@ -17,7 +17,7 @@ public class Generation : MonoBehaviour
     public GameObject playerPrefab;
     [System.NonSerialized] public GameObject instancePlayer;
     [System.NonSerialized] public bool playerSpawned = false;
-    private GameObject playerSpawnPlanetoid;
+    [System.NonSerialized] private GameObject playerSpawnPlanetoid;
 
     //CBodies
     [System.NonSerialized] public GameObject instanceCentreStar;
@@ -66,7 +66,7 @@ public class Generation : MonoBehaviour
     private void Update()
     {
         //Slow update
-        if (Time.frameCount % 20 == 0)
+        if (Time.frameCount % control.settings.targetFPS == 0) //Every 1 second
         {
             SlowUpdate();
         }
@@ -86,14 +86,28 @@ public class Generation : MonoBehaviour
         //Limit
         if (cBodiesAsteroids.transform.childCount >= ASTEROIDS_CONCURRENT_MAXIMUM)
         {
-            //Debug.Log("Over-limit");
+            //Destroy asteroids that are far from the player
+            //Limit number of attempts to prevent getting stuck
+            int ASTEROIDS_TO_DESTROY = 5;
+            int asteroidsDestroyed = 0;
+            int ATTEMPT_QUIT = cBodiesAsteroids.transform.childCount;
+            for (int attempt = 0; attempt < ATTEMPT_QUIT; attempt++)
+            {
+                GameObject asteroidToDestroy = cBodiesAsteroids.transform.GetChild(Random.Range(0, cBodiesAsteroids.transform.childCount)).gameObject;
 
-            //TODO: destroy multiple at once
-            GameObject asteroidToDestroy = cBodiesAsteroids.transform.GetChild(Random.Range(0, cBodiesAsteroids.transform.childCount)).gameObject;
-            Destroy(asteroidToDestroy, 0f);
+                if (Vector3.Distance(asteroidToDestroy.transform.position, instancePlayer.transform.Find("Body").position) > 250.0f)
+                {
+                    //Destroy this asteroid and increment counts
+                    Destroy(asteroidToDestroy, 0f);
+
+                    asteroidsDestroyed++;
+                    if (asteroidsDestroyed >= ASTEROIDS_TO_DESTROY)
+                    {
+                        attempt = ATTEMPT_QUIT;
+                    }
+                }
+            }
         }
-
-        //Debug.Log(cBodiesAsteroids.transform.childCount);
     }
 
     #region Procedural generation
@@ -247,10 +261,6 @@ public class Generation : MonoBehaviour
 
             //Give control reference
             instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = control;
-            instanceCBodyPlanetoid.GetComponent<Gravity>().control = control;
-
-            //Orbit central star
-            instanceCBodyPlanetoid.GetComponent<Gravity>().SetVelocityToOrbit(centreCBodyStar, spawnAngle);
 
             //Spin
             instanceCBodyPlanetoid.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
@@ -319,17 +329,12 @@ public class Generation : MonoBehaviour
                 //Spread out within cluster
                 instanceCBodyAsteroid.transform.position += 2f * new Vector3(Random.value, Random.value, Random.value);
 
-                Gravity instanceCBodyGravityScript = instanceCBodyAsteroid.GetComponent<Gravity>();
-                //Orbit central star
-                instanceCBodyGravityScript.SetVelocityToOrbit(centreCBodyStar, spawnAngle);
-
                 CBodyAsteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<CBodyAsteroid>();
                 //Randomize size and type
                 instanceCBodyAsteroidScript.SetSize(CBodyAsteroid.GetRandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
                 instanceCBodyAsteroidScript.SetType(clusterType);
                 //Give control reference
                 instanceCBodyAsteroidScript.control = control;
-                instanceCBodyGravityScript.control = control;
             }
         }
     }
@@ -351,7 +356,6 @@ public class Generation : MonoBehaviour
 
         //Give control reference
         instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = control;
-        instanceCBodyPlanetoid.GetComponent<Gravity>().control = control;
 
         //Set velocity
         instanceCBodyPlanetoid.GetComponent<Rigidbody>().velocity = velocity;
@@ -402,7 +406,6 @@ public class Generation : MonoBehaviour
 
         //Give control reference
         instanceCBodyAsteroidScript.control = control;
-        instanceCBodyAsteroid.GetComponent<Gravity>().control = control;
 
         //Set velocity
         instanceCBodyAsteroid.GetComponent<Rigidbody>().velocity = velocity;

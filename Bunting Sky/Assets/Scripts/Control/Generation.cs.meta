@@ -3,7 +3,21 @@ guid: 14cc15d941e6e7e4793392223472731f
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - control: {instanceID: 0}
+  - playerPrefab: {fileID: 3053305805003596234, guid: e7cefad2da74c8940b402dee83242130, type: 3}
+  - instancePlayer: {instanceID: 0}
+  - instanceCentreStar: {instanceID: 0}
+  - verseSpace: {instanceID: 0}
+  - cBodies: {instanceID: 0}
+  - cBodyStar: {instanceID: 0}
+  - cBodiesPlanetoids: {instanceID: 0}
+  - cBodyPlanetoid: {instanceID: 0}
+  - station: {instanceID: 0}
+  - heighliner: {instanceID: 0}
+  - cBodiesAsteroids: {instanceID: 0}
+  - cBodyAsteroid: {instanceID: 0}
+  - ores: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
