@@ -69,7 +69,8 @@ public class CBodyAsteroid : MonoBehaviour
 
     private void SlowUpdate()
     {
-        if (Vector3.Distance(transform.position, control.generation.instanceCentreStar.transform.position) > 700.0f
+        //Destroy asteroids that are out of play
+        if (Vector3.Distance(transform.position, control.generation.instanceCentreStar.transform.position) > Mathf.Pow(control.generation.C_BODIES_SPACING_BASE_MAX, control.generation.C_BODIES_SPACING_POWER) + 250f
             && Vector3.Distance(transform.position, playerTran.position) > 400.0f)
         {
             //Debug.Log("Asteroid that was too far from centre star and player has been destroyed.");

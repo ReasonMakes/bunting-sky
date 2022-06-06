@@ -21,8 +21,11 @@ public class Generation : MonoBehaviour
 
     //CBodies
     [System.NonSerialized] public GameObject instanceCentreStar;
-    private readonly int PLANETOIDS_RANGE_LOW = 6;
-    private readonly int PLANETOIDS_RANGE_HIGH = 10;
+    [System.NonSerialized] public readonly float C_BODIES_DISTANCE_OUT = 150f;
+    [System.NonSerialized] public readonly float C_BODIES_SPACING_BASE_MAX = 50f;
+    [System.NonSerialized] public readonly float C_BODIES_SPACING_POWER = 2f;
+    private readonly int PLANETOIDS_RANGE_LOW = 5; //6;
+    private readonly int PLANETOIDS_RANGE_HIGH = 8; //10;
     private readonly int ASTEROID_CLUSTERS_RANGE_LOW = 6;
     private readonly int ASTEROID_CLUSTERS_RANGE_HIGH = 9;
     private readonly int ASTEROIDS_CONCURRENT_MINIMUM = 16;
@@ -135,16 +138,16 @@ public class Generation : MonoBehaviour
         SpawnCBodyStar(Vector3.zero, null);
 
         //Planetoids
-        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(Random.Range(PLANETOIDS_RANGE_LOW, PLANETOIDS_RANGE_HIGH), instanceCentreStar); ;
-
-        //Asteroids
-        GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
+        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(Random.Range(PLANETOIDS_RANGE_LOW, PLANETOIDS_RANGE_HIGH + 1), instanceCentreStar); ;
 
         //Player
         SpawnPlayer(
             generationType,
             playerSpawnPlanetoid.transform.position + new Vector3(6f, 14f, 2f)
         );
+
+        //Asteroids
+        GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
 
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
         SaveGame();
@@ -227,8 +230,7 @@ public class Generation : MonoBehaviour
         GameObject outPlayerSpawnPlanetoid = null;
 
         //Properties
-        float minimumDistanceBetweenCBodies = 150f;
-        float distanceOut = 1500f - minimumDistanceBetweenCBodies; //Minimum distance
+        float distanceOut = C_BODIES_DISTANCE_OUT;
         float randSpacing;
         float spawnRadius;
         float spawnAngle;
@@ -237,8 +239,8 @@ public class Generation : MonoBehaviour
         for (int i = 0; i < nCBodiesPlanetoids; i++)
         {
             //Instance cBody
-            randSpacing = Random.Range(0f, 400f) + Mathf.Pow(Random.Range(0f, 15f), 2f);
-            spawnRadius = distanceOut + minimumDistanceBetweenCBodies + randSpacing;
+            randSpacing = Mathf.Pow(Random.Range(0f, C_BODIES_SPACING_BASE_MAX), Random.Range(1f, C_BODIES_SPACING_POWER));
+            spawnRadius = distanceOut + randSpacing;
             distanceOut = spawnRadius; //incremenet distanceOut for the next cBody
             spawnAngle = Random.Range(0f, 365f);
 
@@ -268,14 +270,22 @@ public class Generation : MonoBehaviour
             //Generate name
             instanceCBodyPlanetoid.GetComponent<CelestialName>().GenerateName();
 
-            //Spawn station
+            //Spawn player station, other stations, and system heighliner
             if (i == 0)
             {
+                //Player station
                 //Force a station to spawn and return those coords to spawn the player there
                 outPlayerSpawnPlanetoid = instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(true, null, true, 0f, 0f, 0f, null);
             }
+            else if (i == 1)
+            {
+                //Heighliner
+                //Force a heighliner to spawn
+                instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnHeighliner("Heighliner");
+            }
             else
             {
+                //Other stations (random chance)
                 instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(false, null, true, 0f, 0f, 0f, null);
             }
         }
@@ -286,8 +296,7 @@ public class Generation : MonoBehaviour
     private void GenerateCBodiesAsteroids(int nCBodiesAsteroidClusters, GameObject centreCBodyStar)
     {
         //Properties
-        float minimumDistanceBetweenClusters = 100f;
-        float distanceOut = 1300f - minimumDistanceBetweenClusters;
+        float distanceOut = C_BODIES_DISTANCE_OUT;
         float randSpacing;
         float spawnRadius;
         float spawnAngle;
@@ -298,8 +307,8 @@ public class Generation : MonoBehaviour
         for (int i = 0; i < nCBodiesAsteroidClusters; i++)
         {
             //Instance cBody
-            randSpacing = Random.Range(0f, 600f) + Mathf.Pow(Random.Range(0f, 15f), 2f);
-            spawnRadius = distanceOut + minimumDistanceBetweenClusters + randSpacing;
+            randSpacing = Mathf.Pow(Random.Range(0f, C_BODIES_SPACING_BASE_MAX), Random.Range(1f, C_BODIES_SPACING_POWER));
+            spawnRadius = distanceOut + randSpacing;
             distanceOut = spawnRadius; //increment distanceOut for the next cBody
             spawnAngle = Random.Range(0f, 360f);
             clusterSize = Control.LowBiasedRandomIntSquared(4); //range of 1 to 16 (4^2 = 16)
@@ -497,7 +506,6 @@ public class Generation : MonoBehaviour
                 }
             }
 
-
             //Increment
             planetoidArrayIndex++;
         }
@@ -603,7 +611,8 @@ public class Generation : MonoBehaviour
         LevelData.Data data = LevelData.LoadGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile);
 
         //Only load if a save file exists. If a save file doesn't exist, generate a new game
-        if (data == null)
+        //ALWAYS generate a new game if in editor
+        if (data == null || Application.isEditor)
         {
             //Debug.Log("No save exists; generating new game");
             GenerateGame(GENERATION_TYPE_NEW_GAME);

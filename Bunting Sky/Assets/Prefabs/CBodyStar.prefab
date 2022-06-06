@@ -107,7 +107,6 @@ GameObject:
   - component: {fileID: 2307043007447084047}
   - component: {fileID: 8158958325557454507}
   - component: {fileID: 4742988195883914874}
-  - component: {fileID: 4286574223158942714}
   - component: {fileID: 4286574223158942660}
   m_Layer: 9
   m_Name: CBodyStar
@@ -245,19 +244,6 @@ MonoBehaviour:
   suffixesGreek: {fileID: 4900000, guid: 0d5c5a5ff465c8242964fc23fdb23d7c, type: 3}
   suffixesPhonecian: {fileID: 4900000, guid: 1460c536efc59ec47a295ccf0fd2e994, type: 3}
   suffixesRomanNumerals: {fileID: 4900000, guid: 3c279a60fdd3c1c408111c769d5e3210, type: 3}
---- !u!114 &4286574223158942714
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4286574223158942659}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f992dbda0de91e343808e368b43205c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rb: {fileID: 4286574223158942713}
 --- !u!114 &4286574223158942660
 MonoBehaviour:
   m_ObjectHideFlags: 0

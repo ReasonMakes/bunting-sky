@@ -114,7 +114,6 @@ GameObject:
   - component: {fileID: 1135752881064656198}
   - component: {fileID: 1333070546947983288}
   - component: {fileID: 1333070546947983289}
-  - component: {fileID: 1333070546947983286}
   - component: {fileID: 8611109209138625066}
   - component: {fileID: 7892786763060803639}
   m_Layer: 0
@@ -235,19 +234,6 @@ MonoBehaviour:
   targetCollider3: {fileID: 294555307309304710}
   targetCollider4: {fileID: 1135752881064656198}
   separating: 1
---- !u!114 &1333070546947983286
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1333070546947983284}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f992dbda0de91e343808e368b43205c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rb: {fileID: 1333070546947983288}
 --- !u!114 &8611109209138625066
 MonoBehaviour:
   m_ObjectHideFlags: 0

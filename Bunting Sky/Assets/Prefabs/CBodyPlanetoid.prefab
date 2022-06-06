@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 1754977631833332903}
   - component: {fileID: 2037984649228943105}
   - component: {fileID: 1344324469386139205}
-  - component: {fileID: 2037984649228943107}
   - component: {fileID: 8827680423194957202}
   - component: {fileID: 2731101898289063776}
   - component: {fileID: 7735751910042697564}
@@ -98,22 +97,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   station: {fileID: 3535112129357172416, guid: 188c3194560817b48becf027043164ae, type: 3}
+  heighliner: {fileID: 1332874778361589555, guid: dcd46b3301c89f24aa44608e45b26f95, type: 3}
   rb: {fileID: 2037984649228943104}
   model: {fileID: 2800826970867333623}
   hasStation: 0
---- !u!114 &2037984649228943107
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2037984649228943110}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f992dbda0de91e343808e368b43205c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rb: {fileID: 2037984649228943104}
+  hasHeighliner: 0
 --- !u!114 &8827680423194957202
 MonoBehaviour:
   m_ObjectHideFlags: 0

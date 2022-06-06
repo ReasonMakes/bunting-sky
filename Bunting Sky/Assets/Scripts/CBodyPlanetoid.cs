@@ -4,17 +4,23 @@ using UnityEngine;
 
 public class CBodyPlanetoid : MonoBehaviour
 {
+    //Main references
     [System.NonSerialized] public Control control;
-    public GameObject station;
     public Rigidbody rb;
-
     public GameObject model;
 
+    //Properties
     [System.NonSerialized] public bool disabled = false;
     private float timeSpentDisabled = 0f;
 
-    public bool hasStation = false;
+    //Children
+    public GameObject station;
+    [System.NonSerialized] public bool hasStation = false;
     [System.NonSerialized] public GameObject instancedStation;
+
+    public GameObject heighliner;
+    [System.NonSerialized] public bool hasHeighliner = false;
+    [System.NonSerialized] public GameObject instancedHeighliner;
 
     private void Start()
     {
@@ -169,5 +175,25 @@ public class CBodyPlanetoid : MonoBehaviour
 
         //Return coords so that player can spawn near station
         return gameObject;
+    }
+
+    public void SpawnHeighliner(string titleOverride)
+    {
+        //Remember that this planetoid has a station oribting it
+        hasHeighliner = true;
+
+        //Spawn the heighliner
+        instancedHeighliner = Instantiate
+        (
+            heighliner,
+            transform.position + new Vector3(20f, 20f, 20f),
+            Quaternion.Euler(0f, 0f, 0f)
+        );
+
+        //Set parent
+        instancedHeighliner.transform.parent = transform.parent;
+
+        //Set name
+        instancedHeighliner.GetComponent<HumanName>().title = titleOverride;
     }
 }
