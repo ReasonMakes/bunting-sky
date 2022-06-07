@@ -37,6 +37,9 @@ public class Generation : MonoBehaviour
             [System.NonSerialized] public GameObject cBodiesPlanetoids;
                 public GameObject cBodyPlanetoid;
                 public GameObject station;
+                [System.NonSerialized] public Transform[] instanceStationTran;
+                [System.NonSerialized] public int instanceStationIndex = 0;
+                [System.NonSerialized] public int instanceStationLength = 0;
                 public GameObject heighliner;
 
             [System.NonSerialized] public GameObject cBodiesAsteroids;
@@ -53,6 +56,9 @@ public class Generation : MonoBehaviour
         cBodiesPlanetoids = cBodies.transform.Find("Planetoids").gameObject;
         cBodiesAsteroids = cBodies.transform.Find("Asteroids").gameObject;
         ores = verseSpace.transform.Find("Ores").gameObject;
+
+        //Station instances array
+        instanceStationTran = new Transform[PLANETOIDS_RANGE_HIGH];
     }
 
     private void Start()
@@ -67,13 +73,35 @@ public class Generation : MonoBehaviour
     private void Update()
     {
         //Slow update
-        if (Time.frameCount % control.settings.targetFPS == 0) //Every 1 second
+        if (Time.frameCount % 10 == 0)
         {
             SlowUpdate();
+        }
+
+        //Very slow update
+        if (Time.frameCount % control.settings.targetFPS == 0) //Every 1 second
+        {
+            VerySlowUpdate();
         }
     }
 
     private void SlowUpdate()
+    {
+        //Mesh Collider to Sphere collider swapper (for performance)
+        //This will error if there are no stations (as instanceStationIndex will point to a non-existant station)
+        bool useMesh = (
+            Vector3.Distance(
+            instancePlayer.transform.Find("Body").position,
+            instanceStationTran[instanceStationIndex].position
+            ) < 40f
+        );
+        instanceStationTran[instanceStationIndex].Find("Mesh Collider").gameObject.SetActive(useMesh);
+        instanceStationTran[instanceStationIndex].Find("Sphere Collider").gameObject.SetActive(!useMesh);
+        //Prepare to check the next station in list on next slow update. (Iterates unless at the limit)
+        instanceStationIndex = (instanceStationIndex + 1) % (instanceStationLength - 1); //we -1 the length because we start counting from 0 in arrays
+    }
+
+    private void VerySlowUpdate()
     {
         //Asteroid count manager
         //Minimum
@@ -137,6 +165,8 @@ public class Generation : MonoBehaviour
 
         //Planetoids
         playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(Random.Range(PLANETOIDS_RANGE_LOW, PLANETOIDS_RANGE_HIGH + 1), instanceCentreStar); ;
+        //Reset the station index after generated all stations
+        instanceStationIndex = 0;
 
         //Player
         SpawnPlayer(
@@ -623,7 +653,7 @@ public class Generation : MonoBehaviour
 
         //Only load if a save file exists. If a save file doesn't exist, generate a new game
         //ALWAYS generate a new game if in editor
-        if (data == null)// || Application.isEditor)
+        if (data == null || control.IS_EDITOR)
         {
             //Debug.Log("No save exists; generating new game");
             GenerateGame(GENERATION_TYPE_NEW_GAME);
@@ -700,6 +730,8 @@ public class Generation : MonoBehaviour
                     );
                 }
             }
+            //Reset the station index after generated all stations
+            instanceStationIndex = 0;
 
             //Asteroids
             for (byte i = 0; i < data.controlAsteroidQuantity; i++)

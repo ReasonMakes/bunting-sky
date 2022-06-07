@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2037984649228943119}
   - component: {fileID: 2037984649228943104}
   - component: {fileID: 1754977631833332903}
+  - component: {fileID: 1932030117192067752}
   - component: {fileID: 2037984649228943105}
   - component: {fileID: 1344324469386139205}
   - component: {fileID: 8827680423194957202}
@@ -68,7 +69,20 @@ SphereCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 600
+  m_Radius: 20
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!135 &1932030117192067752
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2037984649228943110}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 8.9
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!64 &2037984649228943105
 MeshCollider:
@@ -96,12 +110,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f446e3629aa1ff4e85ce7f240f61eef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  station: {fileID: 3535112129357172416, guid: 188c3194560817b48becf027043164ae, type: 3}
-  heighliner: {fileID: 1332874778361589555, guid: dcd46b3301c89f24aa44608e45b26f95, type: 3}
   rb: {fileID: 2037984649228943104}
   model: {fileID: 2800826970867333623}
-  hasStation: 0
-  hasHeighliner: 0
+  station: {fileID: 3535112129357172416, guid: 188c3194560817b48becf027043164ae, type: 3}
+  heighliner: {fileID: 1332874778361589555, guid: dcd46b3301c89f24aa44608e45b26f95, type: 3}
 --- !u!114 &8827680423194957202
 MonoBehaviour:
   m_ObjectHideFlags: 0

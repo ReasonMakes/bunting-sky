@@ -27,6 +27,7 @@ public class Menu : MonoBehaviour
     public Toggle menuSettingsToggleRefine;
     public Toggle menuSettingsToggleMusic;
     public Toggle menuSettingsToggleTips;
+    public Toggle menuSettingsToggleFullscreen;
 
     public GameObject menuKeybinds;
     private bool menuKeybindsIsSettingBind = false;
@@ -155,11 +156,17 @@ public class Menu : MonoBehaviour
 
     public void MenuSaveAndQuit()
     {
+        //Save
         control.generation.SaveGame();
+
+        //Quit
+        #if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+        #endif
 
         Application.Quit();
 
-        //if (Application.isEditor)
+        //if (control.IS_EDITOR)
         //{
         //    UnityEditor.EditorApplication.isPlaying = false;
         //}
@@ -205,6 +212,7 @@ public class Menu : MonoBehaviour
         //Toggles
         menuSettingsToggleDisplayHUD.isOn = control.settings.displayHUD;
         menuSettingsToggleDisplayFPS.isOn = control.settings.displayFPS;
+        menuSettingsToggleFullscreen.isOn = control.settings.fullscreen;
 
         //Changing isOn activates the method, so we need to run it twice to cancel-out running it once
         if (menuSettingsToggleSpotlight.isOn != control.settings.spotlightOn)
@@ -328,6 +336,16 @@ public class Menu : MonoBehaviour
         {
             control.ui.systemInfo.text = "";
         }
+    }
+
+    public void MenuSettingsFullscreenToggle()
+    {
+        //Update in settings and save
+        control.settings.fullscreen = !control.settings.fullscreen;
+        control.settings.Save();
+
+        //Update in game
+        Screen.fullScreen = control.settings.fullscreen;
     }
 
     public void MenuSettingsHUDToggle()

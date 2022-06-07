@@ -489,6 +489,27 @@ public class Player : MonoBehaviour
     {
         control.ui.UpdatePlayerVitalsDisplay();
         UpdateWarningText();
+
+        //Too close to the sun?
+        float distToCStar = Vector3.Distance(transform.position, control.generation.instanceCentreStar.transform.position);
+        float maxDist = 150f;
+        float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
+        if (distToCStar < maxDist)
+        {
+            //Debug.Log("Too close to the sun: " + distToCStar);
+            DamagePlayer(
+                Math.Max(
+                    0d,
+                    //vitalsHealth - (Math.Pow(1d + (((maxDist - distToCStar)/maxDist) * maxBaseDPS), 2d) * Time.deltaTime)
+                    vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
+                ),
+                "overheat"
+            );
+        }
+        else
+        {
+            //Debug.Log(":) " + distToCStar);
+        }
     }
 
     private void SlowFixedUpdate()
@@ -1046,6 +1067,7 @@ public class Player : MonoBehaviour
 
             if (
                 !binds.GetInput(binds.bindCameraFreeLook) &&
+                !canAndIsMoving &&
                 Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY
                 )
             {

@@ -119,7 +119,7 @@ public class CBodyPlanetoid : MonoBehaviour
 
     public GameObject SpawnStation(bool forced, string titleOverride, bool generateOffers, float pricePlatinoid, float pricePreciousMetal, float priceWater, int[] upgradeIndex)
     {
-        //Remember that this planetoid has a station oribting it
+        //Remember that this planetoid has a station oribting it, or at least we tried to spawn one (should this really be true before spawning it?)
         hasStation = true;
 
         //4 in 5 chance of having a space station. Option to force-spawn the station
@@ -171,6 +171,14 @@ public class CBodyPlanetoid : MonoBehaviour
                 //Upgrades
                 scriptStationDocking.upgradeIndexAtButton = upgradeIndex;
             }
+
+            //Keep track of this station in generation
+            control.generation.instanceStationTran[control.generation.instanceStationIndex] = instancedStation.transform;
+
+            //Iterate to next index position to prepare for the next station to generate
+            control.generation.instanceStationIndex++;
+            //Keep track of how many stations we have in the array
+            control.generation.instanceStationLength++;
         }
 
         //Return coords so that player can spawn near station

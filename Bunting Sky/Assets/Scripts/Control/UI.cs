@@ -593,6 +593,19 @@ public class UI : MonoBehaviour
                 //Update UI
                 SetWaypointUI(hit);
             }
+            else if (!displayMap && hit.collider.gameObject.name == control.generation.heighliner.name + "(Clone)")
+            {
+                //Waypoint
+                waypointTextType.text = "Heighliner";
+                waypointTextTitle.text = hit.collider.gameObject.GetComponent<HumanName>().title;
+                waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
+
+                //Console waypoint
+                consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
+
+                //Update UI
+                SetWaypointUI(hit);
+            }
             else if (!displayMap && hit.collider.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
             {
                 //Waypoint

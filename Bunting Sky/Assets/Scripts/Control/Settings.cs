@@ -19,7 +19,7 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public readonly float MOUSE_SENSITIVITY_MIN = 0.001f;
     [System.NonSerialized] public readonly float MOUSE_SENSITIVITY_MAX = 1000f;
     [System.NonSerialized] public readonly float H_FIELD_OF_VIEW_MIN = 0.1f;
-    [System.NonSerialized] public readonly float H_FIELD_OF_VIEW_MAX = 142f;
+    [System.NonSerialized] public readonly float H_FIELD_OF_VIEW_MAX = 360f;
     [System.NonSerialized] public readonly float CAMERA_DISTANCE_MIN = 0.18f;
     [System.NonSerialized] public readonly float CAMERA_DISTANCE_MAX = 2.4f;
     [System.NonSerialized] public readonly float CAMERA_HEIGHT_MIN = 0f;
@@ -43,6 +43,7 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool refine;
     [System.NonSerialized] public bool music;
     [System.NonSerialized] public bool tips;
+    [System.NonSerialized] public bool fullscreen;
     [System.NonSerialized] public int asteroidsConcurrentMin;
     [System.NonSerialized] public int asteroidsConcurrentMax;
 
@@ -62,23 +63,46 @@ public class Settings : MonoBehaviour
 
     public void InitIOBuffer()
     {
-        ioBuffer = new IOBuffer
+        ioBuffer = new IOBuffer();
+        ioBuffer.mouseSensitivity = 3f;
+        ioBuffer.hFieldOfView = 103f;
+        ioBuffer.cameraFollowDistance = CAMERA_DISTANCE_MIN; //0.025 increments from scroll wheel
+        ioBuffer.cameraFollowHeight = 0.2f;
+        ioBuffer.displayFPS = false;
+        ioBuffer.displayHUD = true;
+        ioBuffer.targetFPS = 300;
+        ioBuffer.spotlightOn = true;
+        ioBuffer.refine = true;
+        ioBuffer.music = true;
+        ioBuffer.tips = true;
+        ioBuffer.fullscreen = true;
+        if (control.IS_EDITOR)
         {
-            //Set defaults
-            mouseSensitivity = 3f,
-            hFieldOfView = 103f,
-            cameraFollowDistance = CAMERA_DISTANCE_MIN, //1.0f, //0.025 increments from scroll wheel
-            cameraFollowHeight = 0.2f,
-            displayFPS = false,
-            displayHUD = true,
-            targetFPS = 300,
-            spotlightOn = true,
-            refine = true,
-            music = true,
-            tips = true,
-            asteroidsConcurrentMin = 16,
-            asteroidsConcurrentMax = 40
-        };
+            ioBuffer.asteroidsConcurrentMin = 16;
+            ioBuffer.asteroidsConcurrentMax = 40;
+        }
+        else
+        {
+            ioBuffer.asteroidsConcurrentMin = 40;
+            ioBuffer.asteroidsConcurrentMax = 65;
+        }
+        //ioBuffer = new IOBuffer
+        //{
+        //    //Set defaults
+        //    mouseSensitivity = 3f,
+        //    hFieldOfView = 103f,
+        //    cameraFollowDistance = CAMERA_DISTANCE_MIN, //1.0f, //0.025 increments from scroll wheel
+        //    cameraFollowHeight = 0.2f,
+        //    displayFPS = false,
+        //    displayHUD = true,
+        //    targetFPS = 300,
+        //    spotlightOn = true,
+        //    refine = true,
+        //    music = true,
+        //    tips = true,
+        //    asteroidsConcurrentMin = 16,
+        //    asteroidsConcurrentMax = 40
+        //};
     }
 
     public void SetIOBufferToSettings()
@@ -95,6 +119,7 @@ public class Settings : MonoBehaviour
         ioBuffer.refine = refine;
         ioBuffer.music = music;
         ioBuffer.tips = tips;
+        ioBuffer.fullscreen = fullscreen;
         ioBuffer.asteroidsConcurrentMin = asteroidsConcurrentMin;
         ioBuffer.asteroidsConcurrentMax = asteroidsConcurrentMax;
     }
@@ -113,6 +138,7 @@ public class Settings : MonoBehaviour
         refine = ioBuffer.refine;
         music = ioBuffer.music;
         tips = ioBuffer.tips;
+        fullscreen = ioBuffer.fullscreen;
         asteroidsConcurrentMin = ioBuffer.asteroidsConcurrentMin;
         asteroidsConcurrentMax = ioBuffer.asteroidsConcurrentMax;
     }
@@ -132,6 +158,7 @@ public class Settings : MonoBehaviour
         public bool refine;
         public bool music;
         public bool tips;
+        public bool fullscreen;
         public int asteroidsConcurrentMin;
         public int asteroidsConcurrentMax;
     }

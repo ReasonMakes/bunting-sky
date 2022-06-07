@@ -38,6 +38,12 @@ public class Control : MonoBehaviour
     [System.NonSerialized] public static string screenshotsFolder = "/screenshots";
     [System.NonSerialized] public readonly float AUTO_SAVE_FREQUENCY = 60f; //10f; //30f;
 
+    #if UNITY_EDITOR
+    [System.NonSerialized] public readonly bool IS_EDITOR = true;
+    #elif !UNITY_EDITOR
+    [System.NonSerialized] public readonly bool IS_EDITOR = false;
+    #endif
+
     //UI
     public UI ui;
 
