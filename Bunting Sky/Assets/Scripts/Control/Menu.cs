@@ -19,6 +19,8 @@ public class Menu : MonoBehaviour
     public TMP_InputField menuSettingsCameraDistanceIn;
     public TMP_InputField menuSettingsCameraHeightIn;
     public TMP_InputField menuSettingsTargetFPSIn;
+    public TMP_InputField menuSettingsAsteroidsMinIn;
+    public TMP_InputField menuSettingsAsteroidsMaxIn;
     public Toggle menuSettingsToggleDisplayHUD;
     public Toggle menuSettingsToggleDisplayFPS;
     public Toggle menuSettingsToggleSpotlight;
@@ -155,14 +157,16 @@ public class Menu : MonoBehaviour
     {
         control.generation.SaveGame();
 
-        if (Application.isEditor)
-        {
-            UnityEditor.EditorApplication.isPlaying = false;
-        }
-        else
-        {
-            Application.Quit();
-        }
+        Application.Quit();
+
+        //if (Application.isEditor)
+        //{
+        //    UnityEditor.EditorApplication.isPlaying = false;
+        //}
+        //else
+        //{
+        //    Application.Quit();
+        //}
     }
     #endregion
 
@@ -195,6 +199,8 @@ public class Menu : MonoBehaviour
         menuSettingsCameraDistanceIn.text = control.settings.cameraDistance.ToString();
         menuSettingsCameraHeightIn.text = control.settings.cameraHeight.ToString();
         menuSettingsTargetFPSIn.text = control.settings.targetFPS.ToString();
+        menuSettingsAsteroidsMinIn.text = control.settings.asteroidsConcurrentMin.ToString();
+        menuSettingsAsteroidsMaxIn.text = control.settings.asteroidsConcurrentMax.ToString();
 
         //Toggles
         menuSettingsToggleDisplayHUD.isOn = control.settings.displayHUD;
@@ -421,6 +427,54 @@ public class Menu : MonoBehaviour
         control.settings.Save();
 
         control.ui.tipText.gameObject.SetActive(control.settings.tips);
+    }
+
+    public void MenuSettingsAsteroidsMinSet()
+    {
+        //Ensure input is a float
+        if (int.TryParse(menuSettingsAsteroidsMinIn.text, out int inputField))
+        {
+            //Ensure input value is within specified parameters
+            if (inputField < control.settings.ASTEROIDS_MIN_MIN)
+            {
+                inputField = control.settings.ASTEROIDS_MIN_MIN;
+            }
+            else if (inputField > control.settings.ASTEROIDS_MIN_MAX)
+            {
+                inputField = control.settings.ASTEROIDS_MIN_MAX;
+            }
+
+            //Update in settings and save
+            control.settings.asteroidsConcurrentMin = inputField;
+            control.settings.Save();
+
+            //Update in menu
+            menuSettingsAsteroidsMinIn.text = inputField.ToString();
+        }
+    }
+
+    public void MenuSettingsAsteroidsMaxSet()
+    {
+        //Ensure input is a float
+        if (int.TryParse(menuSettingsAsteroidsMaxIn.text, out int inputField))
+        {
+            //Ensure input value is within specified parameters
+            if (inputField < control.settings.ASTEROIDS_MAX_MIN)
+            {
+                inputField = control.settings.ASTEROIDS_MAX_MIN;
+            }
+            else if (inputField > control.settings.ASTEROIDS_MAX_MAX)
+            {
+                inputField = control.settings.ASTEROIDS_MAX_MAX;
+            }
+
+            //Update in settings and save
+            control.settings.asteroidsConcurrentMax = inputField;
+            control.settings.Save();
+
+            //Update in menu
+            menuSettingsAsteroidsMaxIn.text = inputField.ToString();
+        }
     }
     #endregion
 

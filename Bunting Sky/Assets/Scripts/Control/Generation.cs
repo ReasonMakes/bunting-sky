@@ -23,13 +23,11 @@ public class Generation : MonoBehaviour
     [System.NonSerialized] public GameObject instanceCentreStar;
     [System.NonSerialized] public readonly float C_BODIES_DISTANCE_OUT = 150f;
     [System.NonSerialized] public readonly float C_BODIES_SPACING_BASE_MAX = 50f;
-    [System.NonSerialized] public readonly float C_BODIES_SPACING_POWER = 2f;
-    private readonly int PLANETOIDS_RANGE_LOW = 5; //6;
-    private readonly int PLANETOIDS_RANGE_HIGH = 8; //10;
+    [System.NonSerialized] public readonly float C_BODIES_SPACING_POWER = 1.5f;
+    private readonly int PLANETOIDS_RANGE_LOW = 6;
+    private readonly int PLANETOIDS_RANGE_HIGH = 10;
     private readonly int ASTEROID_CLUSTERS_RANGE_LOW = 6;
     private readonly int ASTEROID_CLUSTERS_RANGE_HIGH = 9;
-    private readonly int ASTEROIDS_CONCURRENT_MINIMUM = 16;
-    private readonly int ASTEROIDS_CONCURRENT_MAXIMUM = 40;
 
     //Verse hierarchy
     public GameObject verseSpace;
@@ -79,7 +77,7 @@ public class Generation : MonoBehaviour
     {
         //Asteroid count manager
         //Minimum
-        if (cBodiesAsteroids.transform.childCount < ASTEROIDS_CONCURRENT_MINIMUM)
+        if (cBodiesAsteroids.transform.childCount < control.settings.asteroidsConcurrentMin)
         {
             //Debug.Log("Under-limit");
 
@@ -87,7 +85,7 @@ public class Generation : MonoBehaviour
         }
 
         //Limit
-        if (cBodiesAsteroids.transform.childCount >= ASTEROIDS_CONCURRENT_MAXIMUM)
+        if (cBodiesAsteroids.transform.childCount >= control.settings.asteroidsConcurrentMax)
         {
             //Destroy asteroids that are far from the player
             //Limit number of attempts to prevent getting stuck
@@ -339,6 +337,22 @@ public class Generation : MonoBehaviour
                 //Randomize size and type
                 instanceCBodyAsteroidScript.SetSize(CBodyAsteroid.GetRandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
                 instanceCBodyAsteroidScript.SetType(clusterType);
+                //Ignore all collisions unless explicitly enabled (once asteroid is separated from siblings)
+                instanceCBodyAsteroidScript.rb.detectCollisions = false;
+                instanceCBodyAsteroidScript.rb.AddForce(
+                    new Vector3(
+                        Random.Range(0f, 1f),
+                        Random.Range(0f, 1f),
+                        Random.Range(0f, 1f)
+                    ) * Random.Range(0f, 20f)
+                );
+                instanceCBodyAsteroidScript.rb.AddTorque(
+                    new Vector3(
+                        Random.Range(0f, 1f),
+                        Random.Range(0f, 1f),
+                        Random.Range(0f, 1f)
+                    ) * (Random.Range(0f, 100f) + (float)Control.LowBiasedRandomIntSquared(400))
+                );
                 //Give control reference
                 instanceCBodyAsteroidScript.control = control;
             }
@@ -609,7 +623,7 @@ public class Generation : MonoBehaviour
 
         //Only load if a save file exists. If a save file doesn't exist, generate a new game
         //ALWAYS generate a new game if in editor
-        if (data == null || Application.isEditor)
+        if (data == null)// || Application.isEditor)
         {
             //Debug.Log("No save exists; generating new game");
             GenerateGame(GENERATION_TYPE_NEW_GAME);

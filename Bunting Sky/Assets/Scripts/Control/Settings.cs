@@ -25,7 +25,11 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public readonly float CAMERA_HEIGHT_MIN = 0f;
     [System.NonSerialized] public readonly float CAMERA_HEIGHT_MAX = 1f;
     [System.NonSerialized] public readonly int TARGET_FPS_MIN = 1;
-    [System.NonSerialized] public readonly int TARGET_FPS_MAX = 300;
+    [System.NonSerialized] public readonly int TARGET_FPS_MAX = 2000;
+    [System.NonSerialized] public readonly int ASTEROIDS_MIN_MIN = 1;
+    [System.NonSerialized] public readonly int ASTEROIDS_MIN_MAX = 100;
+    [System.NonSerialized] public readonly int ASTEROIDS_MAX_MIN = 1;
+    [System.NonSerialized] public readonly int ASTEROIDS_MAX_MAX = 100;
 
     //Settings initializations
     [System.NonSerialized] public float mouseSensitivity;
@@ -39,6 +43,8 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool refine;
     [System.NonSerialized] public bool music;
     [System.NonSerialized] public bool tips;
+    [System.NonSerialized] public int asteroidsConcurrentMin;
+    [System.NonSerialized] public int asteroidsConcurrentMax;
 
     public void Start()
     {
@@ -69,7 +75,9 @@ public class Settings : MonoBehaviour
             spotlightOn = true,
             refine = true,
             music = true,
-            tips = true
+            tips = true,
+            asteroidsConcurrentMin = 16,
+            asteroidsConcurrentMax = 40
         };
     }
 
@@ -87,6 +95,8 @@ public class Settings : MonoBehaviour
         ioBuffer.refine = refine;
         ioBuffer.music = music;
         ioBuffer.tips = tips;
+        ioBuffer.asteroidsConcurrentMin = asteroidsConcurrentMin;
+        ioBuffer.asteroidsConcurrentMax = asteroidsConcurrentMax;
     }
 
     public void SetSettingsToIOBuffer()
@@ -103,6 +113,8 @@ public class Settings : MonoBehaviour
         refine = ioBuffer.refine;
         music = ioBuffer.music;
         tips = ioBuffer.tips;
+        asteroidsConcurrentMin = ioBuffer.asteroidsConcurrentMin;
+        asteroidsConcurrentMax = ioBuffer.asteroidsConcurrentMax;
     }
 
     //This entire object is what we save/load. It must contain duplicates for all settings definitions that its parent class has
@@ -120,6 +132,8 @@ public class Settings : MonoBehaviour
         public bool refine;
         public bool music;
         public bool tips;
+        public int asteroidsConcurrentMin;
+        public int asteroidsConcurrentMax;
     }
 
     #region Save/load
