@@ -467,12 +467,12 @@ public class Player : MonoBehaviour
             SlowFixedUpdate();
         }
 
-        //Don't run if paused
-        if (!Menu.menuOpenAndGamePaused)
-        {
-            UpdatePlayerMovementTorque();   //Automatically torque the ship so that it is always facing "up" relative to the system
-            UpdatePlayerMovementThrust();   //Move in the direction of player input
-        }
+        ////Don't run if paused
+        //if (!Menu.menuOpenAndGamePaused)
+        //{
+        //    UpdatePlayerMovementTorque();   //Automatically torque the ship so that it is always facing "up" relative to the system
+        //    UpdatePlayerMovementThrust();   //Move in the direction of player input
+        //}
 
         UpdatePlayerMovementDrag();         //Drag the ship relative to either the system or the nearest planetoid, depending on distance to nearest planetoid
 
@@ -483,6 +483,16 @@ public class Player : MonoBehaviour
     private void LateUpdate()
     {
         UpdateCameraMovement();         //Make camera follow player at specified distance and height, plus speed feedback
+
+        //Don't run if paused
+        if (!Menu.menuOpenAndGamePaused)
+        {
+            UpdatePlayerMovementTorque();   //Automatically torque the ship so that it is always facing "up" relative to the system
+            UpdatePlayerMovementThrust();   //Move in the direction of player input
+        }
+
+        //Need to force an update to FP cam AFTER torquing the ship, otherwise it lags
+        UpdateFPCamMountPosition();
     }
 
     private void SlowUpdate()
@@ -620,99 +630,28 @@ public class Player : MonoBehaviour
         //Auto torque in the direction of camera
         if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
-            //Smoothly orient toward camera look direction
+            //Desired rotation
+            //transform.rotation = centreMountTran.rotation;
 
-            float torqueStrengthFactor = 3f;
+            //Distance in degrees from current yaw to desired yaw
+            Quaternion yawCameraQuaternion = Quaternion.Euler(0f, centreMountTran.rotation.eulerAngles.y, 0f);
+            Quaternion yawShipQuaternion = Quaternion.Euler(0f, transform.rotation.eulerAngles.y, 0f);
+            float yawDist = Quaternion.Angle(yawCameraQuaternion, yawShipQuaternion);
+            
+            //Direction
+            //Quaternions to Z vector
+            Vector3 yawCameraVec = yawCameraQuaternion * Vector3.forward;
+            Vector3 yawShipVec = yawShipQuaternion * Vector3.forward;
+            //Rotation projections on XZ plane
+            float yawCameraProjAngle = Mathf.Atan2(yawCameraVec.x, yawCameraVec.z) * Mathf.Rad2Deg;
+            float yawShipProjAngle = Mathf.Atan2(yawShipVec.x, yawShipVec.z) * Mathf.Rad2Deg;
+            //Signed angle of the difference between these angles (+left, -right)
+            float yawSignedAngle = Mathf.DeltaAngle(yawCameraProjAngle, yawShipProjAngle);
+            float yawNormal = yawSignedAngle / -180f; //dividing by negative here to flip the angle (we could probably just switch out tthe x and z in arctan but idk)
 
-            //Pitch
-            TorqueAxisRelative(torqueStrengthFactor * 500f, centreMountTran.forward, transform.forward);
-
-            //Yaw
-            TorqueAxisRelative(torqueStrengthFactor * 0.3f, centreMountTran.right, transform.right);
-
-            //Roll
-            TorqueAxisRelative(torqueStrengthFactor * 100f, centreMountTran.up, transform.up);
-
-
-            //ORIGINAL SOLUTION
-            /*
-            //Pitch
-            Vector3 pitchCameraToShipCross = Vector3.Cross(-fpCamMountTran.forward, transform.forward);
-            float pitchDifference = Mathf.Abs(Vector3.Cross(rb.angularVelocity, transform.forward).magnitude);
-            if (Mathf.Abs(pitchCameraToShipCross.magnitude) > errorThreshold * pitchDifference)
-            {
-                rb.AddTorque(pitchCameraToShipCross * torquePitch * turnRate * Time.deltaTime);
-            }
-
-            //Yaw
-            Vector3 yawCameraToShipCross = Vector3.Cross(-fpCamMountTran.right, transform.right);
-            float yawDifference = Mathf.Abs(Vector3.Cross(rb.angularVelocity, transform.right).magnitude);
-            if (Mathf.Abs(yawCameraToShipCross.magnitude) > errorThreshold * yawDifference)
-            {
-                rb.AddTorque(yawCameraToShipCross * torqueYaw * turnRate * Time.deltaTime);
-            }
-
-            //Roll
-            Vector3 rollCameraToShipCross = Vector3.Cross(-fpCamMountTran.up, transform.up);
-            float rollDifference = Mathf.Abs(Vector3.Cross(rb.angularVelocity, transform.up).magnitude);
-            if (Mathf.Abs(rollCameraToShipCross.magnitude) > errorThreshold * rollDifference)
-            {
-                rb.AddTorque(rollCameraToShipCross * torqueRoll * turnRate * Time.deltaTime);
-            }
-            */
-
-            /*
-            //Orient to always be "above" system plane
-            if (transform.position.y >= 0)
-            {
-                if ((Mathf.Abs(Vector3.Cross(-fpCamMountTran.up, transform.up).magnitude)) > (0.25f * Mathf.Abs(Vector3.Cross(rb.angularVelocity, transform.up).magnitude)))
-                {
-                    rb.AddTorque(Vector3.Cross(-Vector3.up, transform.up) * playerRollTorque * Time.deltaTime);
-                }
-            }
-            else
-            {
-                if ((Mathf.Abs(Vector3.Cross(-fpCamMountTran.up, -transform.up).magnitude)) > (0.25f * Mathf.Abs(Vector3.Cross(rb.angularVelocity, -transform.up).magnitude)))
-                {
-                    rb.AddTorque(Vector3.Cross(-Vector3.up, -transform.up) * playerRollTorque * Time.deltaTime);
-                }
-            }
-            */
-
-            //ALTERNATIVE SOLUTIONS
-            /*
-            float interpolateSpeed = 5f;
-            Quaternion rotCurrent = rb.rotation;
-            Quaternion rotTarget = Quaternion.LookRotation(fpCamMountTran.forward, fpCamMountTran.up);
-            //rb.rotation = rotTarget;
-            Quaternion rotInterpolate = Quaternion.Slerp(
-                rotCurrent,
-                rotTarget,
-                interpolateSpeed * Time.deltaTime
-            );
-            //rb.rotation = rotInterpolate;
-            Quaternion rotICT = Quaternion.Inverse(rotCurrent) * rotInterpolate; //ICT = InterpolatedDirectionFromCurrentToTarget
-            //rb.rotation *= rotDiff;
-
-            //Vector3 rotCurrentVector = rb.rotation * transform.forward;
-
-            Vector3 vectorTorque = rotICT * Vector3.one;
-
-            float torqueStr = 2000f * (vectorTorque - transform.forward).magnitude;
-
-            rb.AddTorque(vectorTorque * torqueStr * Time.deltaTime);
-
-
-            //THE ISSUE IS **ALONG WHAT AXIS SHOULD THE ROTATION BE APPLIED?**
-            //HOW DOES rb.rotation DETERMINE THIS?
-            */
-
-            /*
-             * using 3 points that you have (ship front, ship center, rotation target) you can calculate a plane,
-             * then you can easily find a perpendicular axis to the center of the ship,
-             * use that as axis you need to rotate the ship around,
-             * you might also need to calculate 2nd force to level the ship if you have a free camera
-             */
+            //Apply torque
+            float yawTorqueMag = 100f * Mathf.Sign(yawNormal) * Time.deltaTime;
+            rb.AddTorque(transform.up * yawTorqueMag);
         }
     }
 
@@ -1017,12 +956,7 @@ public class Player : MonoBehaviour
         centreMountTran.localRotation = Quaternion.Euler(centreMountPitch, centreMountYaw, 0f);
 
         //FIRST-PERSON
-        fpCamMount.transform.position = centreMountTran.position + (transform.forward * 0.115f) + (transform.up * 0.008f);
-
-        //fpCamMount.transform.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
-
-        //0.14 y
-        //2.5 z
+        UpdateFPCamMountPosition();
 
         //THIRD-PERSON
         //tpCamMount.transform.position = transform.position;
@@ -1033,6 +967,14 @@ public class Player : MonoBehaviour
         Vector3 cameraForward = centreMountTran.forward * control.settings.cameraDistance * cameraSpeedEffect;
         tpCamMount.transform.position = transform.position + cameraUp - cameraForward; //subtracting forward results in the camera following behind the player, this should be more performant than *-1
         //tpCamMount.transform.position = (transform.position + (fpCamMountTran.up * set_tpCamFollowDistance * set_tpCamFollowHeight) - (fpCamMountTran.forward * set_tpCamFollowDistance));
+    }
+
+    private void UpdateFPCamMountPosition()
+    {
+        //fpCamMount.transform.position = centreMountTran.position + (transform.forward * 0.115f) + (transform.up * 0.008f);
+        fpCamMount.transform.position = transform.position + (transform.forward * 0.115f) + (transform.up * 0.008f);
+
+        //fpCamMount.transform.localRotation = Quaternion.Euler(fpCamPitch, fpCamYaw, 0f);
     }
 
     public void SetCameraSettings()

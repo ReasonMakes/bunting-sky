@@ -638,15 +638,16 @@ public class UI : MonoBehaviour
         }
 
         //Don't render when in first-person
-        if (!playerScript.isDestroyed && Player.firstPerson)
-        {
-            renderWaypoint = false;
-            waypointImage.gameObject.SetActive(true);
-        }
-        else
-        {
-            waypointImage.gameObject.SetActive(renderWaypoint);
-        }
+        //if (!playerScript.isDestroyed && Player.firstPerson)
+        //{
+        //    renderWaypoint = false;
+        //    waypointImage.gameObject.SetActive(true);
+        //}
+        //else
+        //{
+        //    waypointImage.gameObject.SetActive(renderWaypoint);
+        //}
+        waypointImage.gameObject.SetActive(renderWaypoint);
         waypointTextType.gameObject.SetActive(renderWaypoint);
         waypointTextTitle.gameObject.SetActive(renderWaypoint);
         waypointTextBody.gameObject.SetActive(renderWaypoint);
