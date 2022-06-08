@@ -664,26 +664,27 @@ public class Player : MonoBehaviour
             //Signed angle of the difference between these angles (-up, +down)
             float pitchSignedAngle = Mathf.DeltaAngle(pitchCameraProjAngle, pitchShipProjAngle);
 
-            //Offset by 5 degrees for some reason
-            pitchSignedAngle += 5f;
             //Turn normal
             float pitchNormal = pitchSignedAngle / 90f; //dividing by negative here to flip the angle (we could probably just switch out tthe x and z in arctan but idk)
             //Flip when upside down
             if (centreMountPitch > 90f && centreMountPitch < 270f)
             {
-                Debug.Log("Upside down");
+                pitchNormal *= -1f;
             }
-            else
-            {
-                Debug.Log("Right-side up");
-            }
-            //Debug.Log(centreMountPitch);
+
+            //Limit amount to rotate when near end rotation so we don't overshoot
+            //if (Mathf.Abs(pitchNormal) < 0.1f && Mathf.Abs(pitchNormal) > 0f)
+            //{
+            //    pitchNormal *= Mathf.Abs(pitchNormal);
+            //}
+            //float pitchDistToTorque = Quaternion.Angle(pitchCameraQuaternion, pitchShipQuaternion);
+            //Debug.Log(pitchDistToTorque);
 
             //TORQUE
-            float yawTorqueMag = 40f * Mathf.Sign(yawNormal) * Time.deltaTime;
-            float pitchTorqueMag = 5f * Mathf.Sign(pitchNormal) * Time.deltaTime;
-            //rb.AddTorque(transform.up * yawTorqueMag);
-            //rb.AddTorque(transform.right * pitchTorqueMag);
+            float yawTorqueMag = 10f * Mathf.Sign(yawNormal) * Time.deltaTime;
+            float pitchTorqueMag = 10f * Mathf.Sign(pitchNormal) * Time.deltaTime;
+            rb.AddTorque(transform.up * yawTorqueMag);
+            rb.AddTorque(transform.right * pitchTorqueMag);
         }
     }
 
