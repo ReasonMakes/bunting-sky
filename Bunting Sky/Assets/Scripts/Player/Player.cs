@@ -633,10 +633,10 @@ public class Player : MonoBehaviour
             //Desired rotation
             //transform.rotation = centreMountTran.rotation;
 
+            //YAW
             //Distance in degrees from current yaw to desired yaw
             Quaternion yawCameraQuaternion = Quaternion.Euler(0f, centreMountTran.rotation.eulerAngles.y, 0f);
             Quaternion yawShipQuaternion = Quaternion.Euler(0f, transform.rotation.eulerAngles.y, 0f);
-            float yawDist = Quaternion.Angle(yawCameraQuaternion, yawShipQuaternion);
             
             //Direction
             //Quaternions to Z vector
@@ -649,9 +649,41 @@ public class Player : MonoBehaviour
             float yawSignedAngle = Mathf.DeltaAngle(yawCameraProjAngle, yawShipProjAngle);
             float yawNormal = yawSignedAngle / -180f; //dividing by negative here to flip the angle (we could probably just switch out tthe x and z in arctan but idk)
 
-            //Apply torque
-            float yawTorqueMag = 100f * Mathf.Sign(yawNormal) * Time.deltaTime;
-            rb.AddTorque(transform.up * yawTorqueMag);
+            //PITCH
+            //Distance in degrees from current yaw to desired yaw
+            Quaternion pitchCameraQuaternion = Quaternion.Euler(centreMountTran.rotation.eulerAngles.x, 0f, 0f);
+            Quaternion pitchShipQuaternion = Quaternion.Euler(transform.rotation.eulerAngles.x, 0f, 0f);
+
+            //Direction
+            //Quaternions to Z vector
+            Vector3 pitchCameraVec = pitchCameraQuaternion * Vector3.up;
+            Vector3 pitchShipVec = pitchShipQuaternion * Vector3.up;
+            //Rotation projections on YZ plane
+            float pitchCameraProjAngle = Mathf.Atan2(pitchCameraVec.y, pitchCameraVec.z) * Mathf.Rad2Deg;
+            float pitchShipProjAngle = Mathf.Atan2(pitchShipVec.y, pitchShipVec.z) * Mathf.Rad2Deg;
+            //Signed angle of the difference between these angles (-up, +down)
+            float pitchSignedAngle = Mathf.DeltaAngle(pitchCameraProjAngle, pitchShipProjAngle);
+
+            //Offset by 5 degrees for some reason
+            pitchSignedAngle += 5f;
+            //Turn normal
+            float pitchNormal = pitchSignedAngle / 90f; //dividing by negative here to flip the angle (we could probably just switch out tthe x and z in arctan but idk)
+            //Flip when upside down
+            if (centreMountPitch > 90f && centreMountPitch < 270f)
+            {
+                Debug.Log("Upside down");
+            }
+            else
+            {
+                Debug.Log("Right-side up");
+            }
+            //Debug.Log(centreMountPitch);
+
+            //TORQUE
+            float yawTorqueMag = 40f * Mathf.Sign(yawNormal) * Time.deltaTime;
+            float pitchTorqueMag = 5f * Mathf.Sign(pitchNormal) * Time.deltaTime;
+            //rb.AddTorque(transform.up * yawTorqueMag);
+            //rb.AddTorque(transform.right * pitchTorqueMag);
         }
     }
 
@@ -944,9 +976,9 @@ public class Player : MonoBehaviour
         //Roll
         centreMountRoll = 0f;
 
-        Control.LoopEulerAngle(centreMountYaw);
-        Control.LoopEulerAngle(centreMountPitch);
-        Control.LoopEulerAngle(centreMountRoll);
+        centreMountYaw = Control.LoopEulerAngle(centreMountYaw);
+        centreMountPitch = Control.LoopEulerAngle(centreMountPitch);
+        centreMountRoll = Control.LoopEulerAngle(centreMountRoll);
     }
 
     private void UpdateMountPositions()
