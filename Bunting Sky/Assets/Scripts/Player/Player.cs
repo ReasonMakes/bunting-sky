@@ -656,8 +656,20 @@ public class Player : MonoBehaviour
 
             //Direction
             //Quaternions to Z vector
-            Vector3 pitchCameraVec = pitchCameraQuaternion * Vector3.up;
-            Vector3 pitchShipVec = pitchShipQuaternion * Vector3.up;
+            Vector3 pitchCameraVec = pitchCameraQuaternion * transform.up;
+            Vector3 pitchShipVec = pitchShipQuaternion * transform.up;
+
+            //Base
+            Vector3 pitchCameraVector = transform.position + (centreMountTran.forward * 2f);
+            Vector3 pitchShipVector = transform.position + (transform.forward * 2f);
+
+            Debug.DrawLine(transform.position, pitchCameraVector, Color.red, Time.deltaTime, false);
+            Debug.DrawLine(transform.position, pitchShipVector, Color.green, Time.deltaTime, false);
+
+            //Direction to torque
+            Debug.Log(Vector3.Angle(pitchShipVector, pitchCameraVector));
+            Debug.DrawLine(pitchShipVector, pitchCameraVector, Color.yellow, Time.deltaTime, false);
+
             //Rotation projections on YZ plane
             float pitchCameraProjAngle = Mathf.Atan2(pitchCameraVec.y, pitchCameraVec.z) * Mathf.Rad2Deg;
             float pitchShipProjAngle = Mathf.Atan2(pitchShipVec.y, pitchShipVec.z) * Mathf.Rad2Deg;
@@ -683,8 +695,12 @@ public class Player : MonoBehaviour
             //TORQUE
             float yawTorqueMag = 10f * Mathf.Sign(yawNormal) * Time.deltaTime;
             float pitchTorqueMag = 10f * Mathf.Sign(pitchNormal) * Time.deltaTime;
-            rb.AddTorque(transform.up * yawTorqueMag);
-            rb.AddTorque(transform.right * pitchTorqueMag);
+
+            if (binds.GetInput(binds.bindCycleMovementMode))
+            {
+                //rb.AddTorque(transform.up * yawTorqueMag);
+                rb.AddTorque(transform.right * pitchTorqueMag);
+            }
         }
     }
 
