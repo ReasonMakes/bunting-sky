@@ -618,6 +618,99 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
+        Vector3 currentDirection = transform.forward;
+        Vector3 newDirection = centreMountTran.forward;
+
+        Vector3 crossProduct = Vector3.Cross(currentDirection.normalized, newDirection.normalized);
+
+        float theta = Mathf.Asin(crossProduct.magnitude);
+        Vector3 w = crossProduct.normalized * theta / Time.fixedDeltaTime;
+        Quaternion q = transform.rotation * rb.inertiaTensorRotation;
+        Vector3 torqueVector = q * Vector3.Scale(rb.inertiaTensor, Quaternion.Inverse(q) * w);
+        torqueVector -= rb.angularVelocity;
+
+        float torqueStrength = 500f * Time.deltaTime;
+
+        if (torqueVector.magnitude > 0f)
+        {
+            rb.AddTorque(torqueVector * torqueStrength);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        ////By user hellcats - Feb 25, 2011
+        ////https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html
+        //
+        ////T = I alpha for angular forces. T is the torque, I is the inertia 3x3 tensor, and alpha is the angular acceleration.
+        ////So basically your question amounts to finding an angular acceleration from a given change in rotation, and then multiplying that by I to get T.
+        //
+        ////Angular acceleration is a Vector3 whose direction is the axis of rotation and magnitude is rotational acc. in radians / sec ^ 2.
+        ////Since you already have two direction vectors(which need to be normalized), you can simply compute x = Vector3.Cross(oldPoint, newPoint) to get the required axis of rotation.
+        ////This is the direction of alpha, but you still need the correct magnitude. We want radians / sec ^ 2, so we need the angle between the two vectors.
+        ////The magnitude of cross product is sin(theta) | v | | u |, since length of v and u are both 1, we just need Asin(x.magnitude).
+        //
+        ////Since you want to fully reach your newPoint in one frame, you can instead apply an impulse which is sort of like an instantaneous acceleration or change in velocity.
+        ////So to summarize.
+        //
+        ////This gives us the desired change in angular velocity(w).
+        //Vector3 oldPoint = transform.forward;
+        //Vector3 newPoint = centreMountTran.forward;
+        //
+        //Vector3 oldToNewCrossProduct = Vector3.Cross(oldPoint.normalized, newPoint.normalized);
+        //float theta = Mathf.Asin(oldToNewCrossProduct.magnitude);
+        //Vector3 deltaAngularVelocity = oldToNewCrossProduct.normalized * theta / Time.deltaTime;
+        //
+        ////Now we just multiply by the inertia tensor. Unfortunately this is in some weird diagonal space.
+        ////It is easiest to transform w into this space, compute T, then transform T back to global coords.
+        //Quaternion q = transform.rotation * rb.inertiaTensorRotation;
+        //Vector3 torqueVector = q * Vector3.Scale(rb.inertiaTensor, (Quaternion.Inverse(q) * deltaAngularVelocity));
+        //
+        ////Then just apply T to the rigidbody:
+        ////rb.AddTorque(T, ForceMode.Impulse);
+        //float torqueStrength = 5f * Time.deltaTime;
+        //rb.AddTorque(torqueVector * torqueStrength);
+
+
+
+
+
+
+
+        //Quaternion cameraRotation = centreMountTran.rotation;
+        //Quaternion shipRotation = transform.rotation;
+        //Quaternion torqueRotation = Quaternion.Inverse(cameraRotation) * shipRotation;
+        ////Difference: destinationQ = Quaternion.inverse(fromQ) * toQ
+        ////To add difference to D: addedQ = destinationQ * addedQ;
+        ////Quaternion multiplication is not commutative: A * B != B * A
+        ////"Left side is global rotation, right side is local rotation"
+
+        //Vector3 torqueVector = torqueRotation * transform.forward;
+
+        //Quaternion torqueRotation = Quaternion.FromToRotation(transform.forward, centreMountTran.forward);
+        //Quaternion torqueRotation = centreMountTran.rotation;
+
+        //float torqueStrength = 5f * Time.deltaTime;
+
+
+        //transform.rotation *= torqueRotation;
+        //transform.rotation = centreMountTran.rotation;
+        //rb.AddTorque(torqueVector * torqueStrength);
+
+        //rb.AddTorque
+        //rb.AddRelativeTorque
+    }
+
+    private void UpdatePlayerMovementTorqueOld()
+    {
         //Manual roll for combat mode
         /*
         if(movementMode == 2)
@@ -650,40 +743,25 @@ public class Player : MonoBehaviour
             float yawNormal = yawSignedAngle / -180f; //dividing by negative here to flip the angle (we could probably just switch out tthe x and z in arctan but idk)
 
             //PITCH
-            //Distance in degrees from current yaw to desired yaw
-            Quaternion pitchCameraQuaternion = Quaternion.Euler(centreMountTran.rotation.eulerAngles.x, 0f, 0f);
-            Quaternion pitchShipQuaternion = Quaternion.Euler(transform.rotation.eulerAngles.x, 0f, 0f);
-
-            //Direction
-            //Quaternions to Z vector
-            Vector3 pitchCameraVec = pitchCameraQuaternion * transform.up;
-            Vector3 pitchShipVec = pitchShipQuaternion * transform.up;
-
-            //Base
-            Vector3 pitchCameraVector = transform.position + (centreMountTran.forward * 2f);
-            Vector3 pitchShipVector = transform.position + (transform.forward * 2f);
-
-            Debug.DrawLine(transform.position, pitchCameraVector, Color.red, Time.deltaTime, false);
-            Debug.DrawLine(transform.position, pitchShipVector, Color.green, Time.deltaTime, false);
-
-            //Direction to torque
-            Debug.Log(Vector3.Angle(pitchShipVector, pitchCameraVector));
-            Debug.DrawLine(pitchShipVector, pitchCameraVector, Color.yellow, Time.deltaTime, false);
-
-            //Rotation projections on YZ plane
-            float pitchCameraProjAngle = Mathf.Atan2(pitchCameraVec.y, pitchCameraVec.z) * Mathf.Rad2Deg;
-            float pitchShipProjAngle = Mathf.Atan2(pitchShipVec.y, pitchShipVec.z) * Mathf.Rad2Deg;
-            //Signed angle of the difference between these angles (-up, +down)
-            float pitchSignedAngle = Mathf.DeltaAngle(pitchCameraProjAngle, pitchShipProjAngle);
-
-            //Turn normal
-            float pitchNormal = pitchSignedAngle / 90f; //dividing by negative here to flip the angle (we could probably just switch out tthe x and z in arctan but idk)
-            //Flip when upside down
-            if (centreMountPitch > 90f && centreMountPitch < 270f)
+            float pitchCamera = centreMountPitch;
+            if (pitchCamera >= 180f)
             {
-                pitchNormal *= -1f;
+                pitchCamera -= 360f;
             }
+            //Absolute/relative to plane:
+            //0/-0 = forward
+            //-90 = up
+            //180/-180 = behind
+            //90 = down
 
+            float pitchShip = transform.rotation.eulerAngles.x;
+
+            Debug.Log(
+                "pitchCamera = " + pitchCamera
+                + "\npitchShip = " + pitchShip
+            );
+
+            
             //Limit amount to rotate when near end rotation so we don't overshoot
             //if (Mathf.Abs(pitchNormal) < 0.1f && Mathf.Abs(pitchNormal) > 0f)
             //{
@@ -694,12 +772,12 @@ public class Player : MonoBehaviour
 
             //TORQUE
             float yawTorqueMag = 10f * Mathf.Sign(yawNormal) * Time.deltaTime;
-            float pitchTorqueMag = 10f * Mathf.Sign(pitchNormal) * Time.deltaTime;
+            //float pitchTorqueMag = 10f * Mathf.Sign(pitchNormal) * Time.deltaTime;
 
             if (binds.GetInput(binds.bindCycleMovementMode))
             {
                 //rb.AddTorque(transform.up * yawTorqueMag);
-                rb.AddTorque(transform.right * pitchTorqueMag);
+                rb.AddTorque(transform.right * 1f * Time.deltaTime);
             }
         }
     }
