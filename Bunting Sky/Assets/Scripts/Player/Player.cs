@@ -27,7 +27,7 @@ public class Player : MonoBehaviour
     public GameObject fpCam;
     public GameObject fpCamInterior;
     private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_NEAR = 0.001f; //0.002f; //0.0005f;
-    private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_FAR = 10f; //1e21f;
+    private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_FAR = 0.04f; //1e21f;
     public GameObject tpCam;
     public GameObject tpModel;
     public GameObject fpModel;
