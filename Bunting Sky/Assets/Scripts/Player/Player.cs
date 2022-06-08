@@ -620,12 +620,18 @@ public class Player : MonoBehaviour
     {
         if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
-            //This method finds an angular acceleration from a given change in rotation, and then multiplies it by the inertia tensor to get the desired torque
-            //By remigillig who modified hellcat's method
+            //This method torques the player's ship in the direction their camera is facing, without overshooting
+            //It finds an angular acceleration from a given change in rotation, and then multiplies it by the inertia tensor to get the desired torque
+            //When the ship's rotation is similar to the player's camera, it slows the rotation or even reverses it to prevent jittering or overshooting
+
+            //Original code modified from remigillig's modification of hellcat's code
             //https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html
 
             //T = I * alpha
             //Torque = inertia 3x3 tensor * angular acceleration
+
+            //Torque is a Vector3 [poorly explained]
+            //Inertia 3x3 tensor is how mass/momentum is distributed [poorly explained]
             //Angular acceleration is a Vector3 whose direction is the axis of rotation and magnitude is rotational acceleration in radians / sec ^ 2.
 
             //Point to rotate from and point to rotate to
@@ -646,30 +652,45 @@ public class Player : MonoBehaviour
             float magnitudeOfAngularAcceleration = Mathf.Asin(directionOfAngularAcceleration.magnitude);
 
             //This gives us the desired change in angular velocity
-            Vector3 deltaAngularVelocity = directionOfAngularAcceleration.normalized * magnitudeOfAngularAcceleration / Time.fixedDeltaTime;
+            Vector3 deltaAngularVelocity = directionOfAngularAcceleration.normalized * magnitudeOfAngularAcceleration / Time.deltaTime;
 
             //Now we just multiply by the inertia tensor. Unfortunately this is in some weird diagonal space.
             //It is easiest to transform deltaAngularVelocity into this space, compute torqueVector, then transform torqueVector back to global coords.
             Quaternion diagonalSpaceOfUnityTensors = transform.rotation * rb.inertiaTensorRotation;
             Vector3 torqueVector = diagonalSpaceOfUnityTensors * Vector3.Scale(rb.inertiaTensor, Quaternion.Inverse(diagonalSpaceOfUnityTensors) * deltaAngularVelocity);
 
-            //Smoothing (to modify torque strength with) so we don't overshoot
-            //torqueVector -= rb.angularVelocity;
-            //float torqueSmoothing = Mathf.Min(1f, torqueVector.magnitude * 5f);
-            //float torqueStrength = 25f * torqueSmoothing * Time.deltaTime;
+            //Torque strength
+            //Start with a base torque strength based on the magnitude of the torque vector we just calculated, relative to the current angular velocity
+            float torqueStrength = (torqueVector - rb.angularVelocity).magnitude;
 
-            //Final torque strength
-            //float torqueStrength = 25f * Time.deltaTime;
-            float torqueStrength = torqueVector.magnitude;
 
-            //Avoid NaN, NaN, Nan error
-            if (torqueVector.magnitude > 0f)
+
+            Debug.Log(torqueVector.magnitude);
+
+            //Smoothing so we don't jitter like crazy
+            if (torqueVector.magnitude < 0.1f)
             {
-                //Apply torque
-                rb.AddTorque(torqueVector.normalized * torqueStrength);
+                torqueStrength *= 0.75f;
             }
 
-            Debug.Log(rb.angularVelocity.magnitude);
+            //Debug.Log(magnitudeOfAngularAcceleration);
+
+            //torqueStrength = (torqueStrength + torqueVector.magnitude) / 2f;
+
+            //if (Mathf.Min(1f, torqueVector.magnitude * 5f) < 1f)
+            //{
+            //    torqueStrength = (torqueStrength + torqueVector.magnitude) / 2f;
+            //}
+
+            //float torqueSmoothing = Mathf.Min(1f, torqueVector.magnitude * 5f);
+            //float torqueStrength = 25f * torqueSmoothing * Time.deltaTime;
+            //float torqueStrength = 25f * Time.deltaTime;
+
+            //Apply torque
+            if (torqueVector.magnitude > 0f) //Avoid NaN, NaN, Nan error
+            {
+                rb.AddTorque(torqueVector.normalized * torqueStrength);
+            }
         }
 
 
