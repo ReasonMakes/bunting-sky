@@ -618,24 +618,59 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
-        Vector3 currentDirection = transform.forward;
-        Vector3 newDirection = centreMountTran.forward;
-
-        Vector3 crossProduct = Vector3.Cross(currentDirection.normalized, newDirection.normalized);
-
-        float theta = Mathf.Asin(crossProduct.magnitude);
-        Vector3 w = crossProduct.normalized * theta / Time.fixedDeltaTime;
-        Quaternion q = transform.rotation * rb.inertiaTensorRotation;
-        Vector3 torqueVector = q * Vector3.Scale(rb.inertiaTensor, Quaternion.Inverse(q) * w);
-        torqueVector -= rb.angularVelocity;
-
-        float torqueStrength = 500f * Time.deltaTime;
-
-        if (torqueVector.magnitude > 0f)
+        if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
-            rb.AddTorque(torqueVector * torqueStrength);
-        }
+            //This method finds an angular acceleration from a given change in rotation, and then multiplies it by the inertia tensor to get the desired torque
+            //By remigillig who modified hellcat's method
+            //https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html
 
+            //T = I * alpha
+            //Torque = inertia 3x3 tensor * angular acceleration
+            //Angular acceleration is a Vector3 whose direction is the axis of rotation and magnitude is rotational acceleration in radians / sec ^ 2.
+
+            //Point to rotate from and point to rotate to
+            Vector3 currentDirection = transform.forward;
+            Vector3 newDirection = centreMountTran.forward;
+
+            //DIRECTION of angular acceleration (the axis of rotation)
+            Vector3 directionOfAngularAcceleration = Vector3.Cross(currentDirection.normalized, newDirection.normalized);
+            
+            //MAGNITUDE of angular acceleration
+            //We want radians / sec ^ 2, so we need the ANGLE between the two vectors
+            //Magnitude of a cross product = sin(theta) | v | | u |
+            //| cross product | = sin(angle) | v | | u |
+            //| cross product | = sin(angle) | 1 | | 1 |
+            //| cross product | = sin(angle)
+            //Arcsin(| cross product |) = angle
+            //Since length of v and u are both 1, we just need Asin(cross.magnitude)
+            float magnitudeOfAngularAcceleration = Mathf.Asin(directionOfAngularAcceleration.magnitude);
+
+            //This gives us the desired change in angular velocity
+            Vector3 deltaAngularVelocity = directionOfAngularAcceleration.normalized * magnitudeOfAngularAcceleration / Time.fixedDeltaTime;
+
+            //Now we just multiply by the inertia tensor. Unfortunately this is in some weird diagonal space.
+            //It is easiest to transform deltaAngularVelocity into this space, compute torqueVector, then transform torqueVector back to global coords.
+            Quaternion diagonalSpaceOfUnityTensors = transform.rotation * rb.inertiaTensorRotation;
+            Vector3 torqueVector = diagonalSpaceOfUnityTensors * Vector3.Scale(rb.inertiaTensor, Quaternion.Inverse(diagonalSpaceOfUnityTensors) * deltaAngularVelocity);
+
+            //Smoothing (to modify torque strength with) so we don't overshoot
+            //torqueVector -= rb.angularVelocity;
+            //float torqueSmoothing = Mathf.Min(1f, torqueVector.magnitude * 5f);
+            //float torqueStrength = 25f * torqueSmoothing * Time.deltaTime;
+
+            //Final torque strength
+            //float torqueStrength = 25f * Time.deltaTime;
+            float torqueStrength = torqueVector.magnitude;
+
+            //Avoid NaN, NaN, Nan error
+            if (torqueVector.magnitude > 0f)
+            {
+                //Apply torque
+                rb.AddTorque(torqueVector.normalized * torqueStrength);
+            }
+
+            Debug.Log(rb.angularVelocity.magnitude);
+        }
 
 
 
