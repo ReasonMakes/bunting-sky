@@ -618,6 +618,8 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
+        //remigillig's and hellcat's method
+        /*
         if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
             //This method torques the player's ship in the direction their camera is facing, without overshooting
@@ -663,20 +665,7 @@ public class Player : MonoBehaviour
             //Start with a base torque strength based on the magnitude of the torque vector we just calculated, relative to the current angular velocity
             float torqueStrength = (torqueVector - rb.angularVelocity).magnitude;
 
-
-
-            Debug.Log(torqueVector.magnitude);
-
             //Smoothing so we don't jitter like crazy
-            if (torqueVector.magnitude < 0.1f)
-            {
-                torqueStrength *= 0.75f;
-            }
-
-            //Debug.Log(magnitudeOfAngularAcceleration);
-
-            //torqueStrength = (torqueStrength + torqueVector.magnitude) / 2f;
-
             //if (Mathf.Min(1f, torqueVector.magnitude * 5f) < 1f)
             //{
             //    torqueStrength = (torqueStrength + torqueVector.magnitude) / 2f;
@@ -692,15 +681,7 @@ public class Player : MonoBehaviour
                 rb.AddTorque(torqueVector.normalized * torqueStrength);
             }
         }
-
-
-
-
-
-
-
-
-
+        */
 
 
         ////By user hellcats - Feb 25, 2011
@@ -748,34 +729,59 @@ public class Player : MonoBehaviour
         ////To add difference to D: addedQ = destinationQ * addedQ;
         ////Quaternion multiplication is not commutative: A * B != B * A
         ////"Left side is global rotation, right side is local rotation"
-
+        //
         //Vector3 torqueVector = torqueRotation * transform.forward;
-
-        //Quaternion torqueRotation = Quaternion.FromToRotation(transform.forward, centreMountTran.forward);
-        //Quaternion torqueRotation = centreMountTran.rotation;
-
+        //
+        ////Quaternion torqueRotation = Quaternion.FromToRotation(transform.forward, centreMountTran.forward);
+        ////Quaternion torqueRotation = centreMountTran.rotation;
+        //
         //float torqueStrength = 5f * Time.deltaTime;
-
-
+        //
+        //
         //transform.rotation *= torqueRotation;
         //transform.rotation = centreMountTran.rotation;
         //rb.AddTorque(torqueVector * torqueStrength);
+        //
+        ////rb.AddTorque
+        ////rb.AddRelativeTorque
 
-        //rb.AddTorque
-        //rb.AddRelativeTorque
+        //Vector3 shipVector = (transform.position + transform.forward).normalized;
+        //Vector3 cameraVector = (tpCamMount.transform.position + tpCamMount.transform.forward).normalized;
+        //Debug.DrawLine(transform.position, shipVector, Color.red);
+        //Debug.DrawLine(transform.position, cameraVector, Color.green);
+        //
+        //Debug.DrawLine(shipVector, cameraVector, Color.yellow);
+
+        //Quaternion rotationFromShipToCamera = Quaternion.FromToRotation(startPos, endPos);
+
+        Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
+        Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
+
+        //rb.maxAngularVelocity = 1000;
+
+        float torqueStrength = 0.1f;
+
+        Quaternion rotation = rotationToWhereCameraIsLooking * Quaternion.Inverse(rb.rotation);
+        rb.AddTorque(
+            (rotation.x * torqueStrength) / Time.deltaTime,
+            (rotation.y * torqueStrength) / Time.deltaTime,
+            (rotation.z * torqueStrength) / Time.deltaTime
+        );
+
+        //rb.angularVelocity = Vector3.zero;
+
+
+        if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
+        {
+            //transform.rotation *= rotationFromShipToCamera;
+            //transform.rotation = centreMountTran.rotation;
+            //rb.AddTorque((tpCamMount.transform.forward - transform.forward) * 5f);
+            //transform.localRotation = rotationToWhereCameraIsLooking;
+        }
     }
 
     private void UpdatePlayerMovementTorqueOld()
     {
-        //Manual roll for combat mode
-        /*
-        if(movementMode == 2)
-        {
-            if (Input.GetKey("q")) rb.AddTorque(transform.forward * playerRollTorque);
-            if (Input.GetKey("e")) rb.AddTorque(transform.forward * -playerRollTorque);
-        }
-        */
-
         //Auto torque in the direction of camera
         if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
@@ -810,30 +816,32 @@ public class Player : MonoBehaviour
             //180/-180 = behind
             //90 = down
 
-            float pitchShip = transform.rotation.eulerAngles.x;
+            //float pitchShip = transform.rotation.eulerAngles.x;
+            //Up:
+            //360(forward) to 270(up) to 360(back)
+            //Down:
+            //0(forward) to 90(down) to 0(back)
 
-            Debug.Log(
-                "pitchCamera = " + pitchCamera
-                + "\npitchShip = " + pitchShip
-            );
+            float pitchShip = transform.up.y;
 
-            
-            //Limit amount to rotate when near end rotation so we don't overshoot
-            //if (Mathf.Abs(pitchNormal) < 0.1f && Mathf.Abs(pitchNormal) > 0f)
-            //{
-            //    pitchNormal *= Mathf.Abs(pitchNormal);
-            //}
-            //float pitchDistToTorque = Quaternion.Angle(pitchCameraQuaternion, pitchShipQuaternion);
-            //Debug.Log(pitchDistToTorque);
+            Vector3 forwardVector = transform.rotation * centreMount.transform.up;
+            float angle = Mathf.Atan2(forwardVector.z, forwardVector.y);
+
+            Debug.Log(angle);
+
 
             //TORQUE
-            float yawTorqueMag = 10f * Mathf.Sign(yawNormal) * Time.deltaTime;
-            //float pitchTorqueMag = 10f * Mathf.Sign(pitchNormal) * Time.deltaTime;
+            float yawTorqueMag = 14f * Mathf.Sign(yawNormal) * Time.deltaTime;
+            //float pitchTorqueMag = 14f * Mathf.Sign(pitchNormal) * Time.deltaTime;
+            float pitchTorqueMag = 14f * Time.deltaTime;
 
             if (binds.GetInput(binds.bindCycleMovementMode))
             {
+                //Yaw
                 //rb.AddTorque(transform.up * yawTorqueMag);
-                rb.AddTorque(transform.right * 1f * Time.deltaTime);
+
+                //Pitch
+                rb.AddTorque(transform.right * pitchTorqueMag);
             }
         }
     }
