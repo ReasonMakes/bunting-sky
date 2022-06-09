@@ -221,7 +221,7 @@ public class Generation : MonoBehaviour
             playerScript.vitalsHealth = playerScript.vitalsHealthMax;
             playerScript.vitalsFuel = playerScript.vitalsFuelMax;
             playerScript.isDestroyed = false;
-            instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
+            //instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
             instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnPlanetoid.GetComponent<Rigidbody>().velocity;
         }
 
