@@ -39,12 +39,13 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool displayFPS;
     [System.NonSerialized] public bool displayHUD;
     [System.NonSerialized] public int targetFPS;
-    [System.NonSerialized] public bool spotlightOn;
+    [System.NonSerialized] public bool spotlight;
     [System.NonSerialized] public bool refine;
     [System.NonSerialized] public bool music;
     [System.NonSerialized] public bool tips;
     [System.NonSerialized] public bool fullscreen;
     [System.NonSerialized] public bool matchVelocity;
+    [System.NonSerialized] public bool spinStabilizers;
     [System.NonSerialized] public int asteroidsConcurrentMin;
     [System.NonSerialized] public int asteroidsConcurrentMax;
 
@@ -78,6 +79,7 @@ public class Settings : MonoBehaviour
         ioBuffer.tips = true;
         ioBuffer.fullscreen = true;
         ioBuffer.matchVelocity = true;
+        ioBuffer.spinStabilizers = true;
         if (control.IS_EDITOR)
         {
             ioBuffer.asteroidsConcurrentMin = 16;
@@ -117,12 +119,13 @@ public class Settings : MonoBehaviour
         ioBuffer.displayFPS = displayFPS;
         ioBuffer.displayHUD = displayHUD;
         ioBuffer.targetFPS = targetFPS;
-        ioBuffer.spotlightOn = spotlightOn;
+        ioBuffer.spotlightOn = spotlight;
         ioBuffer.refine = refine;
         ioBuffer.music = music;
         ioBuffer.tips = tips;
         ioBuffer.fullscreen = fullscreen;
         ioBuffer.matchVelocity = matchVelocity;
+        ioBuffer.spinStabilizers = spinStabilizers;
         ioBuffer.asteroidsConcurrentMin = asteroidsConcurrentMin;
         ioBuffer.asteroidsConcurrentMax = asteroidsConcurrentMax;
     }
@@ -137,12 +140,13 @@ public class Settings : MonoBehaviour
         displayFPS = ioBuffer.displayFPS;
         displayHUD = ioBuffer.displayHUD;
         targetFPS = ioBuffer.targetFPS;
-        spotlightOn = ioBuffer.spotlightOn;
+        spotlight = ioBuffer.spotlightOn;
         refine = ioBuffer.refine;
         music = ioBuffer.music;
         tips = ioBuffer.tips;
         fullscreen = ioBuffer.fullscreen;
         matchVelocity = ioBuffer.matchVelocity;
+        spinStabilizers = ioBuffer.spinStabilizers;
         asteroidsConcurrentMin = ioBuffer.asteroidsConcurrentMin;
         asteroidsConcurrentMax = ioBuffer.asteroidsConcurrentMax;
     }
@@ -164,6 +168,7 @@ public class Settings : MonoBehaviour
         public bool tips;
         public bool fullscreen;
         public bool matchVelocity;
+        public bool spinStabilizers;
         public int asteroidsConcurrentMin;
         public int asteroidsConcurrentMax;
     }

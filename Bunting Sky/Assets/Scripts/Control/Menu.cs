@@ -28,6 +28,8 @@ public class Menu : MonoBehaviour
     public Toggle menuSettingsToggleMusic;
     public Toggle menuSettingsToggleTips;
     public Toggle menuSettingsToggleFullscreen;
+    public Toggle menuSettingsToggleMatchVelocity;
+    public Toggle menuSettingsToggleSpinStabilizers;
 
     public GameObject menuKeybinds;
     private bool menuKeybindsIsSettingBind = false;
@@ -165,15 +167,6 @@ public class Menu : MonoBehaviour
         #endif
 
         Application.Quit();
-
-        //if (control.IS_EDITOR)
-        //{
-        //    UnityEditor.EditorApplication.isPlaying = false;
-        //}
-        //else
-        //{
-        //    Application.Quit();
-        //}
     }
     #endregion
 
@@ -210,20 +203,33 @@ public class Menu : MonoBehaviour
         menuSettingsAsteroidsMaxIn.text = control.settings.asteroidsConcurrentMax.ToString();
 
         //Toggles
-        menuSettingsToggleDisplayHUD.isOn = control.settings.displayHUD;
-        menuSettingsToggleDisplayFPS.isOn = control.settings.displayFPS;
-        menuSettingsToggleFullscreen.isOn = control.settings.fullscreen;
+        //Changing isOn activates the method, so we need to run methods twice to cancel-out running them once
+        if (menuSettingsToggleDisplayHUD.isOn       != control.settings.displayHUD)         { menuSettingsToggleDisplayHUD.isOn         = control.settings.displayHUD;      MenuSettingsHUDToggle();                }
+        if (menuSettingsToggleDisplayFPS.isOn       != control.settings.displayFPS)         { menuSettingsToggleDisplayFPS.isOn         = control.settings.displayFPS;      MenuSettingsFPSToggle();                }
+        if (menuSettingsToggleFullscreen.isOn       != control.settings.fullscreen)         { menuSettingsToggleFullscreen.isOn         = control.settings.fullscreen;      MenuSettingsFullscreenToggle();         }
+        if (menuSettingsToggleMatchVelocity.isOn    != control.settings.matchVelocity)      { menuSettingsToggleMatchVelocity.isOn      = control.settings.matchVelocity;   MenuSettingsMatchVelocityToggle();      }
+        if (menuSettingsToggleSpinStabilizers.isOn  != control.settings.spinStabilizers)    { menuSettingsToggleSpinStabilizers.isOn    = control.settings.spinStabilizers; MenuSettingsSpinStabilizersToggle();    }
+        if (menuSettingsToggleSpotlight.isOn        != control.settings.spotlight)          { menuSettingsToggleSpotlight.isOn          = control.settings.spotlight;       MenuSettingsSpotlightToggle();          }
+        if (menuSettingsToggleRefine.isOn           != control.settings.refine)             { menuSettingsToggleRefine.isOn             = control.settings.refine;          MenuSettingsRefineToggle();             }
+        if (menuSettingsToggleMusic.isOn            != control.settings.music)              { menuSettingsToggleMusic.isOn              = control.settings.music;           MenuSettingsMusicToggle();              }
+        if (menuSettingsToggleTips.isOn             != control.settings.tips)               { menuSettingsToggleTips.isOn               = control.settings.tips;            MenuSettingsTipsToggle();               }
 
-        //Changing isOn activates the method, so we need to run it twice to cancel-out running it once
-        if (menuSettingsToggleSpotlight.isOn != control.settings.spotlightOn)
-        {
-            menuSettingsToggleSpotlight.isOn = control.settings.spotlightOn;
-            MenuSettingsSpotlightToggle();
-        }
-        
-        menuSettingsToggleRefine.isOn = control.settings.refine;
-        menuSettingsToggleMusic.isOn = control.settings.music;
-        menuSettingsToggleTips.isOn = control.settings.tips;
+        //menuSettingsToggleDisplayHUD.isOn = control.settings.displayHUD;
+        //menuSettingsToggleDisplayFPS.isOn = control.settings.displayFPS;
+        //menuSettingsToggleFullscreen.isOn = control.settings.fullscreen;
+        //menuSettingsToggleMatchVelocity.isOn = control.settings.matchVelocity;
+        //menuSettingsToggleSpinStabilizers.isOn = control.settings.spinStabilizers;
+        //
+        ////Changing isOn activates the method, so we need to run it twice to cancel-out running it once
+        //if (menuSettingsToggleSpotlight.isOn != control.settings.spotlight)
+        //{
+        //    menuSettingsToggleSpotlight.isOn = control.settings.spotlight;
+        //    MenuSettingsSpotlightToggle();
+        //}
+        //
+        //menuSettingsToggleRefine.isOn = control.settings.refine;
+        //menuSettingsToggleMusic.isOn = control.settings.music;
+        //menuSettingsToggleTips.isOn = control.settings.tips;
     }
 
     public void MenuSettingsMouseSensitivitySet()
@@ -355,6 +361,13 @@ public class Menu : MonoBehaviour
         control.settings.Save();
     }
 
+    public void MenuSettingsSpinStabilizersToggle()
+    {
+        //Update in settings and save
+        control.settings.spinStabilizers = !control.settings.spinStabilizers;
+        control.settings.Save();
+    }
+
     public void MenuSettingsHUDToggle()
     {
         //Update in settings and save
@@ -368,25 +381,13 @@ public class Menu : MonoBehaviour
         control.ui.canvas.transform.Find("HUD Top-Right").gameObject.SetActive(control.settings.displayHUD);
         control.ui.canvas.transform.Find("HUD Bottom-Right").gameObject.SetActive(control.settings.displayHUD);
         control.ui.canvas.transform.Find("HUD Bottom-Left").gameObject.SetActive(control.settings.displayHUD);
-
-        //control.canvas.transform.Find("HUD").gameObject.SetActive(control.settings.displayHUD);
-
-        /*
-        control.canvas.transform.Find("CameraReticle").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("SystemInfo").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("WarningText").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("Vitals").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("Resources").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("Weapons").gameObject.SetActive(control.settings.displayHUD);
-        control.canvas.transform.Find("Waypoint").gameObject.SetActive(control.settings.displayHUD);
-        */
     }
 
     public void MenuSettingsSpotlightToggle()
     {
         //Rectify toggle button being out-of-phase with actual setting boolean
         //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
-        if (menuSettingsToggleSpotlight.isOn == control.settings.spotlightOn)
+        if (menuSettingsToggleSpotlight.isOn == control.settings.spotlight)
         {
             //Rectifying this also calls the method again, causing the spotlight to still be updated from just one button toggle
             menuSettingsToggleSpotlight.isOn = !menuSettingsToggleSpotlight.isOn;
@@ -394,7 +395,7 @@ public class Menu : MonoBehaviour
         else
         {
             //Toggle spotlight setting
-            control.settings.spotlightOn = !control.settings.spotlightOn;
+            control.settings.spotlight = !control.settings.spotlight;
             control.settings.Save();
         }
         

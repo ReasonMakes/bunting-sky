@@ -47,6 +47,7 @@ public class Player : MonoBehaviour
     private readonly float THRUST = 4E3f; //3E3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
+    private float matchVelOffThrustModifier = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
     private readonly float THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER = 9.0f; //5.0f; //16f;
     private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.5f; //3f;
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
@@ -641,49 +642,58 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
-        if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
+        if (vitalsFuel > 0.0)
         {
-            //Thank you Tobias, Conkex, HiddenMonk, and Derakon
-            //https://answers.unity.com/questions/727254/use-rigidbodyaddtorque-with-quaternions-or-forward.html
-
-            //ANGULAR DRAG TO SMOOTH OUT TORQUE
-            rb.angularDrag = 10f;
-
-            //TORQUE DRIECTION
-            //Vector of where the camera is pointing (where the ship is relative to the camera)
-            Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
-
-            //The rotation to look at that point
-            Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
-
-            //The rotation from how the ship is currently rotated to where the camera is looking
-            //Multiplying by inverse is equivalent to subtracting
-            Quaternion rotation = rotationToWhereCameraIsLooking * Quaternion.Inverse(rb.rotation);
-            
-            //Parse Quaternion to Vector3
-            Vector3 torqueVector = new Vector3(rotation.x, rotation.y, rotation.z) * rotation.w;
-
-            //TORQURE STRENGTH
-            //Base strength modifier
-            float torqueBaseStrength = 300f;
-
-            //Smoothing modifier so we don't overshoot
-            //If the rotation needed is very small but we have a ton of angular velocity, we need to slow down - not speed up
-            //How far the rotation is, where 2 is directly behind
-            float rotationDistance = (shipRelativeToCamera.normalized - transform.forward).magnitude;
-            //Larger values mean a smaller window in which the torque reduces
-            float threshold = 2f;
-            //Normalizing
-            float torqueDistanceModifier = Mathf.Min(1f, rotationDistance * threshold);
-
-            //Adding all modifiers together
-            float torqueStrength = torqueBaseStrength * torqueDistanceModifier * Time.deltaTime;
-
-            //APPLY TORQUE
-            Vector3 torqueFinal = torqueVector * torqueStrength;
-            if (torqueFinal.magnitude != 0f) //so we don't get NaN error
+            if (control.settings.spinStabilizers)
             {
-                rb.AddTorque(torqueFinal);
+                //ANGULAR DRAG TO SMOOTH OUT TORQUE
+                rb.angularDrag = 10f;
+            }
+
+            if (!binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
+            {
+                //ANGULAR DRAG TO SMOOTH OUT TORQUE
+                rb.angularDrag = 10f;
+
+                //Thank you Tobias, Conkex, HiddenMonk, and Derakon
+                //https://answers.unity.com/questions/727254/use-rigidbodyaddtorque-with-quaternions-or-forward.html
+
+                //TORQUE DRIECTION
+                //Vector of where the camera is pointing (where the ship is relative to the camera)
+                Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
+
+                //The rotation to look at that point
+                Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
+
+                //The rotation from how the ship is currently rotated to where the camera is looking
+                //Multiplying by inverse is equivalent to subtracting
+                Quaternion rotation = rotationToWhereCameraIsLooking * Quaternion.Inverse(rb.rotation);
+
+                //Parse Quaternion to Vector3
+                Vector3 torqueVector = new Vector3(rotation.x, rotation.y, rotation.z) * rotation.w;
+
+                //TORQURE STRENGTH
+                //Base strength modifier
+                float torqueBaseStrength = 300f;
+
+                //Smoothing modifier so we don't overshoot
+                //If the rotation needed is very small but we have a ton of angular velocity, we need to slow down - not speed up
+                //How far the rotation is, where 2 is directly behind
+                float rotationDistance = (shipRelativeToCamera.normalized - transform.forward).magnitude;
+                //Larger values mean a smaller window in which the torque reduces
+                float threshold = 2f;
+                //Normalizing
+                float torqueDistanceModifier = Mathf.Min(1f, rotationDistance * threshold);
+
+                //Adding all modifiers together
+                float torqueStrength = torqueBaseStrength * torqueDistanceModifier * Time.deltaTime;
+
+                //APPLY TORQUE
+                Vector3 torqueFinal = torqueVector * torqueStrength;
+                if (torqueFinal.magnitude != 0f) //so we don't get NaN error
+                {
+                    rb.AddTorque(torqueFinal);
+                }
             }
         }
         else
@@ -726,12 +736,9 @@ public class Player : MonoBehaviour
                 thrustMultiplier = 1f;
             }
 
-            float maxVelocityMultiplier = 1f;
-            if (control.settings.matchVelocity)
+            if (!control.settings.matchVelocity)
             {
-                //40f is about the max vel
-                maxVelocityMultiplier = Mathf.Max(0.16f, 1f - (rb.velocity.magnitude / 40f));
-                maxVelocityMultiplier *= maxVelocityMultiplier;
+                thrustMultiplier *= matchVelOffThrustModifier;
             }
             
             //We don't want the player to be able to move if the moving check fails
@@ -745,7 +752,7 @@ public class Player : MonoBehaviour
                 if (binds.GetInput(binds.bindThrustUp)) thrustVector += transform.up;
                 if (binds.GetInput(binds.bindThrustDown)) thrustVector += -transform.up;
 
-                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * maxVelocityMultiplier * Time.deltaTime);
+                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * matchVelOffThrustModifier * Time.deltaTime);
             }
         }
     }
@@ -954,7 +961,7 @@ public class Player : MonoBehaviour
         tpModel.SetActive(thirdPerson);
 
         //Spotlight
-        if (!isDestroyed && control.settings.spotlightOn)
+        if (!isDestroyed && control.settings.spotlight)
         {
             transform.Find("Spotlight").gameObject.SetActive(true);
         }
