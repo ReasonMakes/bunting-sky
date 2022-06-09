@@ -53,7 +53,6 @@ public class Player : MonoBehaviour
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f;
-    public GameObject jetGlow;
     private float engineBrightness = 0f;
     public Material engineGlowMat;
     private Color engineEmissionColorRunning = new Color(191, 102, 43);
@@ -595,7 +594,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            jetGlow.SetActive(false);
+            transform.Find("Blackness Behind Jet").gameObject.SetActive(false);
             //engineEmissionColor = engineEmissionColorDead;
         }
     }
@@ -642,17 +641,23 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
+        Debug.Log(control.settings.spinStabilizers);
         if (vitalsFuel > 0.0)
         {
             if (control.settings.spinStabilizers)
             {
-                //ANGULAR DRAG TO SMOOTH OUT TORQUE
+                //Angular drag to bring rotations to rest
                 rb.angularDrag = 10f;
+            }
+            else
+            {
+                //Reset angular drag when engines not on
+                rb.angularDrag = 0f;
             }
 
             if (!binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
             {
-                //ANGULAR DRAG TO SMOOTH OUT TORQUE
+                //Angular drag to smooth out torque
                 rb.angularDrag = 10f;
 
                 //Thank you Tobias, Conkex, HiddenMonk, and Derakon
@@ -752,7 +757,7 @@ public class Player : MonoBehaviour
                 if (binds.GetInput(binds.bindThrustUp)) thrustVector += transform.up;
                 if (binds.GetInput(binds.bindThrustDown)) thrustVector += -transform.up;
 
-                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * matchVelOffThrustModifier * Time.deltaTime);
+                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * Time.deltaTime);
             }
         }
     }
@@ -971,6 +976,7 @@ public class Player : MonoBehaviour
         }
 
         //Jet glow
+        transform.Find("Blackness Behind Jet").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
         transform.Find("Jet Glow").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
 
         //Ship direction reticles
