@@ -52,9 +52,11 @@ public class Player : MonoBehaviour
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f;
+    public GameObject jetGlow;
     private float engineBrightness = 0f;
     public Material engineGlowMat;
-    private Color engineEmissionColor = new Color(191, 102, 43);
+    private Color engineEmissionColorRunning = new Color(191, 102, 43);
+    public Color engineEmissionColorDead = new Color(49, 195, 255);
     private float engineEmissionIntensity = 1.3f * 0.00748f; //1.4f * 0.00748f; //1.631096f;
     public Light engineLight;
     private bool canAndIsMoving = false;
@@ -329,6 +331,14 @@ public class Player : MonoBehaviour
             control.ui.SetTip("+1000 currency");
         }
 
+        //Very low fuel
+        if (binds.GetInputDown(binds.bindCheat2))
+        {
+            vitalsFuel = 0.05d;
+            control.ui.UpdatePlayerVitalsDisplay();
+            control.ui.SetTip("Running on fumes");
+        }
+
         //Unlock In Situ Refinery
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
@@ -356,20 +366,20 @@ public class Player : MonoBehaviour
 
         //Spawn
         //Press O to spawn asteroid
-        if (binds.GetInputDown(binds.bindCheat2))
-        {
-            control.generation.SpawnAsteroidManually(
-                transform.position + transform.forward * 3f,
-                rb.velocity,
-                CBodyAsteroid.GetRandomSize(),
-                CBodyAsteroid.GetRandomType(),
-                CBodyAsteroid.HEALTH_MAX
-            );
-            control.ui.SetTip("Spawned one asteroid.");
-            upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-            control.ui.SetTip("Seismic charges unlocked.");
-        }
-        
+        //if (binds.GetInputDown(binds.bindCheat2))
+        //{
+        //    control.generation.SpawnAsteroidManually(
+        //        transform.position + transform.forward * 3f,
+        //        rb.velocity,
+        //        CBodyAsteroid.GetRandomSize(),
+        //        CBodyAsteroid.GetRandomType(),
+        //        CBodyAsteroid.HEALTH_MAX
+        //    );
+        //    control.ui.SetTip("Spawned one asteroid.");
+        //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+        //    control.ui.SetTip("Seismic charges unlocked.");
+        //}
+
         /*
         if (binds.GetInputDown(binds.bindThrustVectorDecrease))
         {
@@ -571,19 +581,29 @@ public class Player : MonoBehaviour
     private void UpdatePlayerEngineEffect()
     {
         //Engine effect
-        //Set engine emission colour
-        engineGlowMat.SetColor("_EmissionColor", engineEmissionColor * engineEmissionIntensity);
-        //If the colour intensity reaches zero the material can never get bright again for some reason, so we ensure the lowest value is never equal to zero
-        engineGlowMat.SetColor("_EmissionColor", engineEmissionColor * engineEmissionIntensity * (1f + (engineBrightness)));
-        engineLight.intensity = (1 + engineBrightness) * 0.5f * 3.15f;
-        //Subtract from engine effect brightness
-        engineBrightness = Math.Max(0, engineBrightness - (1.5f * Time.deltaTime));
+        Color engineEmissionColor = engineEmissionColorRunning;
+        if (vitalsFuel > 0.0d)
+        {
+            //Set engine emission colour
+            //engineGlowMat.SetColor("_EmissionColor", engineEmissionColorRunning * engineEmissionIntensity);
+            //If the colour intensity reaches zero the material can never get bright again for some reason, so we ensure the lowest value is never equal to zero
+            engineGlowMat.SetColor("_EmissionColor", engineEmissionColor * engineEmissionIntensity * (1f + (engineBrightness)));
+            engineLight.intensity = (1 + engineBrightness) * 1.575f;
+            //Subtract from engine effect brightness
+            engineBrightness = Math.Max(0, engineBrightness - (1.5f * Time.deltaTime));
+        }
+        else
+        {
+            jetGlow.SetActive(false);
+            //engineEmissionColor = engineEmissionColorDead;
+        }
     }
 
     private void UpdatePlayerMovementDrag()
     {
         /*
-         * Drag-relative-to-object if possible, otherwise drag-relative-to-universe
+         * Drag relative-to-object if possible, otherwise drag relative-to-universe
+         * If no fuel, no drag
          * 
          * Which object we drag relative to is based on this hierarchy:
          * - Planetoids
@@ -594,25 +614,28 @@ public class Player : MonoBehaviour
          * Can set the relative drag to only happen when not moving to allow for more realistic (but less intuitive) acceleration by surrounding this with an if (!moving) check
          */
 
-        if (closestPlanetoidTransform != null && distToClosestPlanetoid <= ORBITAL_DRAG_MODE_THRESHOLD)
+        if (vitalsFuel > 0.0d && control.settings.matchVelocity)
         {
-            //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
-            rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestPlanetoidTransform.GetComponent<Rigidbody>().velocity, DRAG);
-        }
-        else if (closestAsteroidTransform != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)
-        {
-            //Asteroid-relative drag (we check if the transform is null because asteroids are destructible)
-            rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestAsteroidTransform.GetComponent<Rigidbody>().velocity, DRAG);
-        }
-        else if (targetObject != null)
-        {
-            //Target-relative drag
-            rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, targetObject.GetComponent<Rigidbody>().velocity, DRAG);
-        }
-        else
-        {
-            //System/centre star-relative drag
-            rb.velocity *= (1f - (DRAG * Time.deltaTime));
+            if (closestPlanetoidTransform != null && distToClosestPlanetoid <= ORBITAL_DRAG_MODE_THRESHOLD)
+            {
+                //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestPlanetoidTransform.GetComponent<Rigidbody>().velocity, DRAG);
+            }
+            else if (closestAsteroidTransform != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)
+            {
+                //Asteroid-relative drag (we check if the transform is null because asteroids are destructible)
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestAsteroidTransform.GetComponent<Rigidbody>().velocity, DRAG);
+            }
+            else if (targetObject != null)
+            {
+                //Target-relative drag
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, targetObject.GetComponent<Rigidbody>().velocity, DRAG);
+            }
+            else
+            {
+                //System/centre star-relative drag
+                rb.velocity *= (1f - (DRAG * Time.deltaTime));
+            }
         }
     }
 
@@ -620,6 +643,9 @@ public class Player : MonoBehaviour
     {
         if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
+            //Thank you Tobias, Conkex, HiddenMonk, and Derakon
+            //https://answers.unity.com/questions/727254/use-rigidbodyaddtorque-with-quaternions-or-forward.html
+
             //ANGULAR DRAG TO SMOOTH OUT TORQUE
             rb.angularDrag = 10f;
 
@@ -630,9 +656,10 @@ public class Player : MonoBehaviour
             //The rotation to look at that point
             Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
 
-            //The rotation to look where the camera is looking relative to where we already are, added to how the ship is currently rotated
+            //The rotation from how the ship is currently rotated to where the camera is looking
+            //Multiplying by inverse is equivalent to subtracting
             Quaternion rotation = rotationToWhereCameraIsLooking * Quaternion.Inverse(rb.rotation);
-
+            
             //Parse Quaternion to Vector3
             Vector3 torqueVector = new Vector3(rotation.x, rotation.y, rotation.z) * rotation.w;
 
@@ -644,7 +671,7 @@ public class Player : MonoBehaviour
             //If the rotation needed is very small but we have a ton of angular velocity, we need to slow down - not speed up
             //How far the rotation is, where 2 is directly behind
             float rotationDistance = (shipRelativeToCamera.normalized - transform.forward).magnitude;
-            //larger values mean a smaller window in which the torque reduces
+            //Larger values mean a smaller window in which the torque reduces
             float threshold = 2f;
             //Normalizing
             float torqueDistanceModifier = Mathf.Min(1f, rotationDistance * threshold);
@@ -661,6 +688,7 @@ public class Player : MonoBehaviour
         }
         else
         {
+            //Reset angular drag when engines not on
             rb.angularDrag = 0f;
         }
     }
@@ -697,6 +725,14 @@ public class Player : MonoBehaviour
                 //Total multiplier
                 thrustMultiplier = 1f;
             }
+
+            float maxVelocityMultiplier = 1f;
+            if (control.settings.matchVelocity)
+            {
+                //40f is about the max vel
+                maxVelocityMultiplier = Mathf.Max(0.16f, 1f - (rb.velocity.magnitude / 40f));
+                maxVelocityMultiplier *= maxVelocityMultiplier;
+            }
             
             //We don't want the player to be able to move if the moving check fails
             //(it's not just a shotcut to detect any input, it also detects if the player CAN move)
@@ -709,7 +745,7 @@ public class Player : MonoBehaviour
                 if (binds.GetInput(binds.bindThrustUp)) thrustVector += transform.up;
                 if (binds.GetInput(binds.bindThrustDown)) thrustVector += -transform.up;
 
-                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * Time.deltaTime);
+                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * maxVelocityMultiplier * Time.deltaTime);
             }
         }
     }
@@ -928,7 +964,7 @@ public class Player : MonoBehaviour
         }
 
         //Jet glow
-        transform.Find("Jet Glow").gameObject.SetActive(!isDestroyed);
+        transform.Find("Jet Glow").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
 
         //Ship direction reticles
         control.ui.playerShipDirectionReticleTree.SetActive(!isDestroyed);

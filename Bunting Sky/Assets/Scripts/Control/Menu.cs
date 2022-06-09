@@ -348,6 +348,13 @@ public class Menu : MonoBehaviour
         Screen.fullScreen = control.settings.fullscreen;
     }
 
+    public void MenuSettingsMatchVelocityToggle()
+    {
+        //Update in settings and save
+        control.settings.matchVelocity = !control.settings.matchVelocity;
+        control.settings.Save();
+    }
+
     public void MenuSettingsHUDToggle()
     {
         //Update in settings and save

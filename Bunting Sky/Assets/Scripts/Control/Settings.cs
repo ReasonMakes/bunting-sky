@@ -44,6 +44,7 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool music;
     [System.NonSerialized] public bool tips;
     [System.NonSerialized] public bool fullscreen;
+    [System.NonSerialized] public bool matchVelocity;
     [System.NonSerialized] public int asteroidsConcurrentMin;
     [System.NonSerialized] public int asteroidsConcurrentMax;
 
@@ -76,6 +77,7 @@ public class Settings : MonoBehaviour
         ioBuffer.music = true;
         ioBuffer.tips = true;
         ioBuffer.fullscreen = true;
+        ioBuffer.matchVelocity = true;
         if (control.IS_EDITOR)
         {
             ioBuffer.asteroidsConcurrentMin = 16;
@@ -120,6 +122,7 @@ public class Settings : MonoBehaviour
         ioBuffer.music = music;
         ioBuffer.tips = tips;
         ioBuffer.fullscreen = fullscreen;
+        ioBuffer.matchVelocity = matchVelocity;
         ioBuffer.asteroidsConcurrentMin = asteroidsConcurrentMin;
         ioBuffer.asteroidsConcurrentMax = asteroidsConcurrentMax;
     }
@@ -139,6 +142,7 @@ public class Settings : MonoBehaviour
         music = ioBuffer.music;
         tips = ioBuffer.tips;
         fullscreen = ioBuffer.fullscreen;
+        matchVelocity = ioBuffer.matchVelocity;
         asteroidsConcurrentMin = ioBuffer.asteroidsConcurrentMin;
         asteroidsConcurrentMax = ioBuffer.asteroidsConcurrentMax;
     }
@@ -159,6 +163,7 @@ public class Settings : MonoBehaviour
         public bool music;
         public bool tips;
         public bool fullscreen;
+        public bool matchVelocity;
         public int asteroidsConcurrentMin;
         public int asteroidsConcurrentMax;
     }
