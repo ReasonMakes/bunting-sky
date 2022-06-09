@@ -618,165 +618,33 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
-        //remigillig's and hellcat's method
-        /*
         if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
         {
-            //This method torques the player's ship in the direction their camera is facing, without overshooting
-            //It finds an angular acceleration from a given change in rotation, and then multiplies it by the inertia tensor to get the desired torque
-            //When the ship's rotation is similar to the player's camera, it slows the rotation or even reverses it to prevent jittering or overshooting
-
-            //Original code modified from remigillig's modification of hellcat's code
-            //https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html
-
-            //T = I * alpha
-            //Torque = inertia 3x3 tensor * angular acceleration
-
-            //Torque is a Vector3 [poorly explained]
-            //Inertia 3x3 tensor is how mass/momentum is distributed [poorly explained]
-            //Angular acceleration is a Vector3 whose direction is the axis of rotation and magnitude is rotational acceleration in radians / sec ^ 2.
-
-            //Point to rotate from and point to rotate to
-            Vector3 currentDirection = transform.forward;
-            Vector3 newDirection = centreMountTran.forward;
-
-            //DIRECTION of angular acceleration (the axis of rotation)
-            Vector3 directionOfAngularAcceleration = Vector3.Cross(currentDirection.normalized, newDirection.normalized);
-            
-            //MAGNITUDE of angular acceleration
-            //We want radians / sec ^ 2, so we need the ANGLE between the two vectors
-            //Magnitude of a cross product = sin(theta) | v | | u |
-            //| cross product | = sin(angle) | v | | u |
-            //| cross product | = sin(angle) | 1 | | 1 |
-            //| cross product | = sin(angle)
-            //Arcsin(| cross product |) = angle
-            //Since length of v and u are both 1, we just need Asin(cross.magnitude)
-            float magnitudeOfAngularAcceleration = Mathf.Asin(directionOfAngularAcceleration.magnitude);
-
-            //This gives us the desired change in angular velocity
-            Vector3 deltaAngularVelocity = directionOfAngularAcceleration.normalized * magnitudeOfAngularAcceleration / Time.deltaTime;
-
-            //Now we just multiply by the inertia tensor. Unfortunately this is in some weird diagonal space.
-            //It is easiest to transform deltaAngularVelocity into this space, compute torqueVector, then transform torqueVector back to global coords.
-            Quaternion diagonalSpaceOfUnityTensors = transform.rotation * rb.inertiaTensorRotation;
-            Vector3 torqueVector = diagonalSpaceOfUnityTensors * Vector3.Scale(rb.inertiaTensor, Quaternion.Inverse(diagonalSpaceOfUnityTensors) * deltaAngularVelocity);
-
-            //Torque strength
-            //Start with a base torque strength based on the magnitude of the torque vector we just calculated, relative to the current angular velocity
-            float torqueStrength = (torqueVector - rb.angularVelocity).magnitude;
-
-            //Smoothing so we don't jitter like crazy
-            //if (Mathf.Min(1f, torqueVector.magnitude * 5f) < 1f)
-            //{
-            //    torqueStrength = (torqueStrength + torqueVector.magnitude) / 2f;
-            //}
-
-            //float torqueSmoothing = Mathf.Min(1f, torqueVector.magnitude * 5f);
-            //float torqueStrength = 25f * torqueSmoothing * Time.deltaTime;
-            //float torqueStrength = 25f * Time.deltaTime;
-
-            //Apply torque
-            if (torqueVector.magnitude > 0f) //Avoid NaN, NaN, Nan error
-            {
-                rb.AddTorque(torqueVector.normalized * torqueStrength);
-            }
-        }
-        */
-
-
-        ////By user hellcats - Feb 25, 2011
-        ////https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html
-        //
-        ////T = I alpha for angular forces. T is the torque, I is the inertia 3x3 tensor, and alpha is the angular acceleration.
-        ////So basically your question amounts to finding an angular acceleration from a given change in rotation, and then multiplying that by I to get T.
-        //
-        ////Angular acceleration is a Vector3 whose direction is the axis of rotation and magnitude is rotational acc. in radians / sec ^ 2.
-        ////Since you already have two direction vectors(which need to be normalized), you can simply compute x = Vector3.Cross(oldPoint, newPoint) to get the required axis of rotation.
-        ////This is the direction of alpha, but you still need the correct magnitude. We want radians / sec ^ 2, so we need the angle between the two vectors.
-        ////The magnitude of cross product is sin(theta) | v | | u |, since length of v and u are both 1, we just need Asin(x.magnitude).
-        //
-        ////Since you want to fully reach your newPoint in one frame, you can instead apply an impulse which is sort of like an instantaneous acceleration or change in velocity.
-        ////So to summarize.
-        //
-        ////This gives us the desired change in angular velocity(w).
-        //Vector3 oldPoint = transform.forward;
-        //Vector3 newPoint = centreMountTran.forward;
-        //
-        //Vector3 oldToNewCrossProduct = Vector3.Cross(oldPoint.normalized, newPoint.normalized);
-        //float theta = Mathf.Asin(oldToNewCrossProduct.magnitude);
-        //Vector3 deltaAngularVelocity = oldToNewCrossProduct.normalized * theta / Time.deltaTime;
-        //
-        ////Now we just multiply by the inertia tensor. Unfortunately this is in some weird diagonal space.
-        ////It is easiest to transform w into this space, compute T, then transform T back to global coords.
-        //Quaternion q = transform.rotation * rb.inertiaTensorRotation;
-        //Vector3 torqueVector = q * Vector3.Scale(rb.inertiaTensor, (Quaternion.Inverse(q) * deltaAngularVelocity));
-        //
-        ////Then just apply T to the rigidbody:
-        ////rb.AddTorque(T, ForceMode.Impulse);
-        //float torqueStrength = 5f * Time.deltaTime;
-        //rb.AddTorque(torqueVector * torqueStrength);
-
-
-
-
-
-
-
-        //Quaternion cameraRotation = centreMountTran.rotation;
-        //Quaternion shipRotation = transform.rotation;
-        //Quaternion torqueRotation = Quaternion.Inverse(cameraRotation) * shipRotation;
-        ////Difference: destinationQ = Quaternion.inverse(fromQ) * toQ
-        ////To add difference to D: addedQ = destinationQ * addedQ;
-        ////Quaternion multiplication is not commutative: A * B != B * A
-        ////"Left side is global rotation, right side is local rotation"
-        //
-        //Vector3 torqueVector = torqueRotation * transform.forward;
-        //
-        ////Quaternion torqueRotation = Quaternion.FromToRotation(transform.forward, centreMountTran.forward);
-        ////Quaternion torqueRotation = centreMountTran.rotation;
-        //
-        //float torqueStrength = 5f * Time.deltaTime;
-        //
-        //
-        //transform.rotation *= torqueRotation;
-        //transform.rotation = centreMountTran.rotation;
-        //rb.AddTorque(torqueVector * torqueStrength);
-        //
-        ////rb.AddTorque
-        ////rb.AddRelativeTorque
-
-        //Vector3 shipVector = (transform.position + transform.forward).normalized;
-        //Vector3 cameraVector = (tpCamMount.transform.position + tpCamMount.transform.forward).normalized;
-        //Debug.DrawLine(transform.position, shipVector, Color.red);
-        //Debug.DrawLine(transform.position, cameraVector, Color.green);
-        //
-        //Debug.DrawLine(shipVector, cameraVector, Color.yellow);
-
-        //Quaternion rotationFromShipToCamera = Quaternion.FromToRotation(startPos, endPos);
-
-        Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
-        Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
-
-        //rb.maxAngularVelocity = 1000;
-
-        float torqueStrength = 0.1f;
-
-        Quaternion rotation = rotationToWhereCameraIsLooking * Quaternion.Inverse(rb.rotation);
-        rb.AddTorque(
-            (rotation.x * torqueStrength) / Time.deltaTime,
-            (rotation.y * torqueStrength) / Time.deltaTime,
-            (rotation.z * torqueStrength) / Time.deltaTime
-        );
-
-        //rb.angularVelocity = Vector3.zero;
-
-
-        if (vitalsFuel > 0.0 && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
-        {
-            //transform.rotation *= rotationFromShipToCamera;
-            //transform.rotation = centreMountTran.rotation;
-            //rb.AddTorque((tpCamMount.transform.forward - transform.forward) * 5f);
+            ////DIRECT ASSIGNMENT
+            /////Calculate torque
+            //Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
+            //Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
+            //
+            ////Apply torque
             //transform.localRotation = rotationToWhereCameraIsLooking;
+
+            //SEPARATED COMPONENTS
+            //Calculate torque
+            Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
+            Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
+            Quaternion rotation = rotationToWhereCameraIsLooking * Quaternion.Inverse(rb.rotation);
+            
+            //Apply torque
+            //Vector3 torqueVector = new Vector3(rotation.x / Time.deltaTime, rotation.y / Time.deltaTime, rotation.z / Time.deltaTime) * rotation.w;
+            Vector3 torqueVector = new Vector3(rotation.x, rotation.y, rotation.z) * rotation.w * Time.deltaTime;
+            rb.AddTorque(torqueVector * 100f);
+
+            ////INTEGRATED ROTATION
+            ////Calculate torque
+            //Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
+            //Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
+
+
         }
     }
 
