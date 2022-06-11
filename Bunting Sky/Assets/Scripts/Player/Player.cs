@@ -511,7 +511,7 @@ public class Player : MonoBehaviour
         UpdateWarningText();
 
         //Too close to the sun?
-        float distToCStar = Vector3.Distance(transform.position, control.generation.instanceCentreStar.transform.position);
+        float distToCStar = Vector3.Distance(transform.position, control.generation.instanceCenterPlanet.transform.position);
         float maxDist = 150f;
         float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
         if (distToCStar < maxDist)
@@ -641,7 +641,6 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
-        Debug.Log(control.settings.spinStabilizers);
         if (vitalsFuel > 0.0)
         {
             if (control.settings.spinStabilizers)
@@ -1320,10 +1319,10 @@ public class Player : MonoBehaviour
 
         //IMPACTED OBJECT
         //If an asteroid, deal damage to it
-        if (collision.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
+        if (collision.gameObject.name == control.generation.asteroid.name + "(Clone)")
         {
             //Get ref
-            CBodyAsteroid asteroidScript = collision.transform.GetComponent<CBodyAsteroid>();
+            Asteroid asteroidScript = collision.transform.GetComponent<Asteroid>();
             //Get direction and contact point (sloppy)
             Vector3 direction = (transform.position - collision.transform.position).normalized;
             Vector3 contactPoint = collision.transform.position;

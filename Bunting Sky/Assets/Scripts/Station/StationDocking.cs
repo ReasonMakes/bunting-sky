@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class StationDocking : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    private HumanName humanName;
+    private NameHuman humanName;
 
     private bool host = false;
 
@@ -29,7 +29,7 @@ public class StationDocking : MonoBehaviour
     private void Start()
     {
         //Get station name
-        humanName = transform.parent.GetComponent<HumanName>();
+        humanName = transform.parent.GetComponent<NameHuman>();
 
         //Remember is initialized
         initialized = true;

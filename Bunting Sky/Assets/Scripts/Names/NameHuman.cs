@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-public class HumanName : MonoBehaviour
+public class NameHuman : MonoBehaviour
 {
     //private string path = "Names/Humans/";
     [System.NonSerialized] public string title = "Error: could not load"; //default title

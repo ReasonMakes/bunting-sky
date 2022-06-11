@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-public class CBodyStarName : MonoBehaviour
+public class NameStar : MonoBehaviour
 {
     public string title = "Error: could not load";
     string[] lines;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-public class CBodyPlanetoidName : MonoBehaviour
+public class NameMoon : MonoBehaviour
 {
     [System.NonSerialized] public string title = "Error: could not generate name";
     string[] lines;

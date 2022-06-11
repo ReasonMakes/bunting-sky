@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-public class CelestialName: MonoBehaviour
+public class NameCelestial : MonoBehaviour
 {
     //private string path = "Names/Stars/";
     [System.NonSerialized] public string title = "Error: could not load"; //default title

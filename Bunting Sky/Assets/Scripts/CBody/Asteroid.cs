@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-public class CBodyAsteroid : MonoBehaviour
+public class Asteroid : MonoBehaviour
 {
     private GameObject model;
     private GameObject activeModel;
@@ -70,7 +70,7 @@ public class CBodyAsteroid : MonoBehaviour
     private void SlowUpdate()
     {
         //Destroy asteroids that are out of play
-        if (Vector3.Distance(transform.position, control.generation.instanceCentreStar.transform.position) > Mathf.Pow(control.generation.C_BODIES_SPACING_BASE_MAX, control.generation.C_BODIES_SPACING_POWER) + 250f
+        if (Vector3.Distance(transform.position, control.generation.instanceCenterPlanet.transform.position) > Mathf.Pow(control.generation.C_BODIES_SPACING_BASE_MAX, control.generation.C_BODIES_SPACING_POWER) + 250f
             && Vector3.Distance(transform.position, playerTran.position) > 400.0f)
         {
             //Debug.Log("Asteroid that was too far from centre star and player has been destroyed.");
@@ -90,13 +90,13 @@ public class CBodyAsteroid : MonoBehaviour
     {
         //Ignore all collisions until separated from siblings (problem: this will ignore collisions with player and with weapons)
 
-        CBodyAsteroid[] asteroids = FindObjectsOfType<CBodyAsteroid>();
-        foreach (CBodyAsteroid asteroid in asteroids)
+        Asteroid[] asteroids = FindObjectsOfType<Asteroid>();
+        foreach (Asteroid asteroid in asteroids)
         {
             if (asteroid != this)
             {
                 if (activeModel.transform.GetComponent<MeshCollider>().bounds.Intersects(
-                    asteroid.GetComponent<CBodyAsteroid>().activeModel.transform.GetComponent<MeshCollider>().bounds
+                    asteroid.GetComponent<Asteroid>().activeModel.transform.GetComponent<MeshCollider>().bounds
                 ))
                 {
                     //Debug.Log("Intersecting");
@@ -213,8 +213,8 @@ public class CBodyAsteroid : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         //Fatal collisions
-        if (collision.collider.gameObject.name == control.generation.cBodyPlanetoid.name + "(Clone)"
-            || collision.collider.gameObject.name == control.generation.cBodyStar.name + "(Clone)")
+        if (collision.collider.gameObject.name == control.generation.moon.name + "(Clone)"
+            || collision.collider.gameObject.name == control.generation.planet.name + "(Clone)")
         {
             //Destroy self, but don't drop any ore
             Damage(health, Vector3.zero, transform.position, false);
@@ -281,7 +281,7 @@ public class CBodyAsteroid : MonoBehaviour
     {
         //Instantiate at parent position, plus some randomness
         GameObject instanceCBodyAsteroid = Instantiate(
-            control.generation.cBodyAsteroid,
+            control.generation.asteroid,
             transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)),
             Quaternion.Euler(
                 Random.Range(0f, 360f),
@@ -290,7 +290,7 @@ public class CBodyAsteroid : MonoBehaviour
             )
         );
         //Put in CBodies tree
-        instanceCBodyAsteroid.transform.parent = control.generation.cBodiesAsteroids.transform;
+        instanceCBodyAsteroid.transform.parent = control.generation.asteroids.transform;
 
         //Rigidbody
         Rigidbody instanceCBodyAsteroidRb = instanceCBodyAsteroid.GetComponent<Rigidbody>();
@@ -313,7 +313,7 @@ public class CBodyAsteroid : MonoBehaviour
         ));
 
         //Script
-        CBodyAsteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<CBodyAsteroid>();
+        Asteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<Asteroid>();
         instanceCBodyAsteroidScript.control = control;
         instanceCBodyAsteroidScript.SetSize(size);
         instanceCBodyAsteroidScript.SetType(type);

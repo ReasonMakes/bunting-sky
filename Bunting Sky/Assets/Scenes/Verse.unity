@@ -17935,7 +17935,7 @@ GameObject:
   m_Component:
   - component: {fileID: 976266826}
   m_Layer: 0
-  m_Name: Planetoids
+  m_Name: Moons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -31796,11 +31796,11 @@ MonoBehaviour:
   control: {fileID: 2000740122}
   playerPrefab: {fileID: 3053305805003596234, guid: e7cefad2da74c8940b402dee83242130, type: 3}
   verseSpace: {fileID: 1231246584}
-  cBodyStar: {fileID: 4286574223158942659, guid: 60611ee4f5669a54a9997778a15d7b17, type: 3}
-  cBodyPlanetoid: {fileID: 2037984649228943110, guid: c127c2bda42bb664cae642402bcda398, type: 3}
+  planet: {fileID: 0}
+  moon: {fileID: 0}
   station: {fileID: 3535112129357172416, guid: 188c3194560817b48becf027043164ae, type: 3}
   heighliner: {fileID: 1332874778361589555, guid: dcd46b3301c89f24aa44608e45b26f95, type: 3}
-  cBodyAsteroid: {fileID: 1333070546947983284, guid: 23162748d9fabbf489f60072e3d2378c, type: 3}
+  asteroid: {fileID: 0}
 --- !u!114 &2000740129
 MonoBehaviour:
   m_ObjectHideFlags: 0

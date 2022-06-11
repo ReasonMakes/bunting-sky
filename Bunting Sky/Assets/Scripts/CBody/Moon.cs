@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CBodyPlanetoid : MonoBehaviour
+public class Moon : MonoBehaviour
 {
     //Main references
     [System.NonSerialized] public Control control;
@@ -45,8 +45,8 @@ public class CBodyPlanetoid : MonoBehaviour
         (
             !disabled
             && (
-                collision.collider.gameObject.name == control.generation.cBodyPlanetoid.name + "(Clone)"
-                || collision.collider.gameObject.name == control.generation.cBodyStar.name + "(Clone)"
+                collision.collider.gameObject.name == control.generation.moon.name + "(Clone)"
+                || collision.collider.gameObject.name == control.generation.planet.name + "(Clone)"
             )
         )
         {
@@ -76,16 +76,16 @@ public class CBodyPlanetoid : MonoBehaviour
         }
 
         //Spawn regular asteroids
-        byte type = CBodyAsteroid.GetRandomType();
+        byte type = Asteroid.GetRandomType();
         for (int i = 0; i < 7; i++)
         {
             //Spawn
             GameObject asteroid = control.generation.SpawnAsteroidManually(
                 transform.position,
                 rb.velocity,
-                CBodyAsteroid.GetRandomSize(),
+                Asteroid.GetRandomSize(),
                 type,
-                CBodyAsteroid.HEALTH_MAX
+                Asteroid.HEALTH_MAX
             );
 
             //Spread out
@@ -149,11 +149,11 @@ public class CBodyPlanetoid : MonoBehaviour
             //Generate name
             if (titleOverride == null)
             {
-                instancedStation.GetComponent<HumanName>().GenerateName();
+                instancedStation.GetComponent<NameHuman>().GenerateName();
             }
             else
             {
-                instancedStation.GetComponent<HumanName>().title = titleOverride;
+                instancedStation.GetComponent<NameHuman>().title = titleOverride;
             }
 
             //Offers
@@ -202,6 +202,6 @@ public class CBodyPlanetoid : MonoBehaviour
         instancedHeighliner.transform.parent = transform.parent;
 
         //Set name
-        instancedHeighliner.GetComponent<HumanName>().title = titleOverride;
+        instancedHeighliner.GetComponent<NameHuman>().title = titleOverride;
     }
 }

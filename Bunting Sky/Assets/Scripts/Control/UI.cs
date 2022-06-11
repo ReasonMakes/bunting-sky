@@ -146,7 +146,7 @@ public class UI : MonoBehaviour
         {
             if (Time.frameCount % FPS_PRINT_PERIOD == 0) control.fps = (int)(1f / Time.unscaledDeltaTime);
             systemInfo.text = control.fps.ToString() + "FPS"
-                + "\n Asteroids: " + control.generation.cBodiesAsteroids.transform.childCount;
+                + "\n Asteroids: " + control.generation.asteroids.transform.childCount;
             /*
                 + "\nPosition: " + instancePlayer.transform.Find("Body").position
                 + "\nPos relative verse: " + (instancePlayer.transform.Find("Body").position - verseSpace.transform.position);
@@ -426,7 +426,7 @@ public class UI : MonoBehaviour
     private void SetPlayerTargetUI()
     {
         //Cancel and remove target if object (such as an asteroid) has been destroyed
-        if (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject == null || (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.name == "CBodyAsteroid(Clone)" && control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.GetComponent<CBodyAsteroid>().destroyed))
+        if (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject == null || (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.name == "CBodyAsteroid(Clone)" && control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.GetComponent<Asteroid>().destroyed))
         {
             targetImage.gameObject.SetActive(false);
             renderTarget = false;
@@ -554,11 +554,11 @@ public class UI : MonoBehaviour
             Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, out hit, maxDist);
             //Debug.DrawRay(waypointRaycastOrigin, waypointRaycastDirection * hit.distance, Color.green, Time.deltaTime, false);
 
-            if (hit.collider.gameObject.name == control.generation.cBodyStar.name + "(Clone)")
+            if (hit.collider.gameObject.name == control.generation.planet.name + "(Clone)")
             {
                 //Waypoint
                 waypointTextType.text = "Star";
-                waypointTextTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
+                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameCelestial>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 
                 //Console waypoint
@@ -567,11 +567,11 @@ public class UI : MonoBehaviour
                 //Update UI
                 SetWaypointUI(hit);
             }
-            else if (hit.collider.gameObject.name == control.generation.cBodyPlanetoid.name + "(Clone)")
+            else if (hit.collider.gameObject.name == control.generation.moon.name + "(Clone)")
             {
                 //Waypoint
                 waypointTextType.text = "Planetoid";
-                waypointTextTitle.text = hit.collider.gameObject.GetComponent<CelestialName>().title;
+                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameCelestial>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 
                 //Console waypoint
@@ -584,7 +584,7 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Station";
-                waypointTextTitle.text = hit.collider.gameObject.GetComponent<HumanName>().title;
+                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameHuman>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, true);
                 
                 //Console waypoint
@@ -597,7 +597,7 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Heighliner";
-                waypointTextTitle.text = hit.collider.gameObject.GetComponent<HumanName>().title;
+                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameHuman>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
 
                 //Console waypoint
@@ -606,11 +606,11 @@ public class UI : MonoBehaviour
                 //Update UI
                 SetWaypointUI(hit);
             }
-            else if (!displayMap && hit.collider.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
+            else if (!displayMap && hit.collider.gameObject.name == control.generation.asteroid.name + "(Clone)")
             {
                 //Waypoint
                 waypointTextType.text = "Asteroid";
-                waypointTextTitle.text = "Class: " + hit.collider.gameObject.GetComponent<CBodyAsteroid>().sizeClassDisplay;
+                waypointTextTitle.text = "Class: " + hit.collider.gameObject.GetComponent<Asteroid>().sizeClassDisplay;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 
                 //Console waypoint

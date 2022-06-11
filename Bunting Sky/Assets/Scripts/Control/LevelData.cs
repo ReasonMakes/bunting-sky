@@ -33,7 +33,7 @@ public static class LevelData
         [SerializeField] public byte[] controlAsteroidHealth;
         
         //Centre star
-        [SerializeField] public string controlCentreStarName;
+        [SerializeField] public string controlCenterPlanetName;
         //Verse space
         [SerializeField] public float[] controlVerseSpacePosition;
         //Player

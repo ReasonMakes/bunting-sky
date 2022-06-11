@@ -132,9 +132,9 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                     //Make sure the ray is hitting an asteroid (something else could be in the way blocking LOS) that is within range
                     float distanceBetweenHitAndEpicentre = (transform.position - hit.point).magnitude;
                     //Debug.Log(hit.transform.name);
-                    if (distanceBetweenHitAndEpicentre < EXPLOSION_RADIUS && hit.transform.name == control.generation.cBodyAsteroid.name + "(Clone)")
+                    if (distanceBetweenHitAndEpicentre < EXPLOSION_RADIUS && hit.transform.name == control.generation.asteroid.name + "(Clone)")
                     {
-                        CBodyAsteroid asteroidScript = hit.transform.GetComponent<CBodyAsteroid>();
+                        Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                         //Don't bother with already destroyed asteroids
                         if (!asteroidScript.destroyed)
@@ -216,7 +216,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
             if (hit.transform.name == "CBodyAsteroid(Clone)")
             {
-                CBodyAsteroid asteroidScript = hit.transform.GetComponent<CBodyAsteroid>();
+                Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                 //Break apart asteroid
                 if (!asteroidScript.destroyed)

@@ -16,7 +16,7 @@ public class PlayerWeaponSeismicChargeProjectileExplosion : MonoBehaviour
         foreach (Collider collider in collidersInRadius)
         {
             //Don't bother raycasting unless the collider in the area is an asteroid
-            if (collider.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
+            if (collider.gameObject.name == control.generation.asteroid.name + "(Clone)")
             {
                 //Cast a ray to make sure the asteroid is in LOS
                 LayerMask someLayerMask = -1;
@@ -28,7 +28,7 @@ public class PlayerWeaponSeismicChargeProjectileExplosion : MonoBehaviour
                     //Make sure the ray is hitting an asteroid (something else could be in the way blocking LOS)
                     if (hit.transform.name == "CBodyAsteroid(Clone)")
                     {
-                        CBodyAsteroid asteroidScript = hit.transform.GetComponent<CBodyAsteroid>();
+                        Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                         //Don't bother with already destroyed asteroids
                         if (!asteroidScript.destroyed)

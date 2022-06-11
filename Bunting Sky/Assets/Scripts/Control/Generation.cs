@@ -17,33 +17,33 @@ public class Generation : MonoBehaviour
     public GameObject playerPrefab;
     [System.NonSerialized] public GameObject instancePlayer;
     [System.NonSerialized] public bool playerSpawned = false;
-    [System.NonSerialized] private GameObject playerSpawnPlanetoid;
+    [System.NonSerialized] private GameObject playerSpawnMoon;
 
     //CBodies
-    [System.NonSerialized] public GameObject instanceCentreStar;
+    [System.NonSerialized] public GameObject instanceCenterPlanet;
     [System.NonSerialized] public readonly float C_BODIES_DISTANCE_OUT = 150f;
     [System.NonSerialized] public readonly float C_BODIES_SPACING_BASE_MAX = 50f;
     [System.NonSerialized] public readonly float C_BODIES_SPACING_POWER = 1.5f;
-    private readonly int PLANETOIDS_RANGE_LOW = 6;
-    private readonly int PLANETOIDS_RANGE_HIGH = 10;
+    private readonly int MOONS_RANGE_LOW = 6;
+    private readonly int MOONS_RANGE_HIGH = 10;
     private readonly int ASTEROID_CLUSTERS_RANGE_LOW = 6;
     private readonly int ASTEROID_CLUSTERS_RANGE_HIGH = 9;
 
     //Verse hierarchy
     public GameObject verseSpace;
         [System.NonSerialized] public GameObject cBodies;
-            public GameObject cBodyStar;
+            public GameObject planet;
 
-            [System.NonSerialized] public GameObject cBodiesPlanetoids;
-                public GameObject cBodyPlanetoid;
+            [System.NonSerialized] public GameObject moons;
+                public GameObject moon;
                 public GameObject station;
                 [System.NonSerialized] public Transform[] instanceStationTran;
                 [System.NonSerialized] public int instanceStationIndex = 0;
                 [System.NonSerialized] public int instanceStationLength = 0;
                 public GameObject heighliner;
 
-            [System.NonSerialized] public GameObject cBodiesAsteroids;
-                public GameObject cBodyAsteroid;
+            [System.NonSerialized] public GameObject asteroids;
+                public GameObject asteroid;
 
         [System.NonSerialized] public GameObject ores;
 
@@ -53,12 +53,12 @@ public class Generation : MonoBehaviour
     {
         //Verse hierarchy
         cBodies = verseSpace.transform.Find("CBodies").gameObject;
-        cBodiesPlanetoids = cBodies.transform.Find("Planetoids").gameObject;
-        cBodiesAsteroids = cBodies.transform.Find("Asteroids").gameObject;
+        moons = cBodies.transform.Find("Moons").gameObject;
+        asteroids = cBodies.transform.Find("Asteroids").gameObject;
         ores = verseSpace.transform.Find("Ores").gameObject;
 
         //Station instances array
-        instanceStationTran = new Transform[PLANETOIDS_RANGE_HIGH];
+        instanceStationTran = new Transform[MOONS_RANGE_HIGH];
     }
 
     private void Start()
@@ -105,24 +105,24 @@ public class Generation : MonoBehaviour
     {
         //Asteroid count manager
         //Minimum
-        if (cBodiesAsteroids.transform.childCount < control.settings.asteroidsConcurrentMin)
+        if (asteroids.transform.childCount < control.settings.asteroidsConcurrentMin)
         {
             //Debug.Log("Under-limit");
 
-            GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
+            GenerateAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCenterPlanet);
         }
 
         //Limit
-        if (cBodiesAsteroids.transform.childCount >= control.settings.asteroidsConcurrentMax)
+        if (asteroids.transform.childCount >= control.settings.asteroidsConcurrentMax)
         {
             //Destroy asteroids that are far from the player
             //Limit number of attempts to prevent getting stuck
             int ASTEROIDS_TO_DESTROY = 5;
             int asteroidsDestroyed = 0;
-            int ATTEMPT_QUIT = cBodiesAsteroids.transform.childCount;
+            int ATTEMPT_QUIT = asteroids.transform.childCount;
             for (int attempt = 0; attempt < ATTEMPT_QUIT; attempt++)
             {
-                GameObject asteroidToDestroy = cBodiesAsteroids.transform.GetChild(Random.Range(0, cBodiesAsteroids.transform.childCount)).gameObject;
+                GameObject asteroidToDestroy = asteroids.transform.GetChild(Random.Range(0, asteroids.transform.childCount)).gameObject;
 
                 if (Vector3.Distance(asteroidToDestroy.transform.position, instancePlayer.transform.Find("Body").position) > 250.0f)
                 {
@@ -145,9 +145,9 @@ public class Generation : MonoBehaviour
         if (generationType == GENERATION_TYPE_RESTARTED_GAME)
         {
             //Destroy verse
-            Destroy(instanceCentreStar, 0f);
-            Control.DestroyAllChildren(cBodiesPlanetoids, 0f);
-            Control.DestroyAllChildren(cBodiesAsteroids, 0f);
+            Destroy(instanceCenterPlanet, 0f);
+            Control.DestroyAllChildren(moons, 0f);
+            Control.DestroyAllChildren(asteroids, 0f);
             Control.DestroyAllChildren(ores, 0f);
             Destroy(control.ui.playerShipDirectionReticleTree, 0f);
             control.ui.playerShipDirectionReticleList.Clear();
@@ -160,47 +160,47 @@ public class Generation : MonoBehaviour
             Destroy(instancePlayer, 0f);
         }
 
-        //CENTRE STAR CELESTIAL BODY
-        SpawnCBodyStar(Vector3.zero, null);
+        //CENTRE PLANET
+        SpawnPlanet(Vector3.zero, null);
 
-        //Planetoids
-        playerSpawnPlanetoid = GenerateCBodiesPlanetoidsAndGetPlayerCoords(Random.Range(PLANETOIDS_RANGE_LOW, PLANETOIDS_RANGE_HIGH + 1), instanceCentreStar); ;
+        //Moons
+        playerSpawnMoon = GenerateCBodiesMoonsAndGetPlayerCoords(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), instanceCenterPlanet); ;
         //Reset the station index after generated all stations
         instanceStationIndex = 0;
 
         //Player
         SpawnPlayer(
             generationType,
-            playerSpawnPlanetoid.transform.position + new Vector3(6f, 14f, 2f)
+            playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
         );
 
         //Asteroids
-        GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
+        GenerateAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCenterPlanet);
 
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
         SaveGame();
     }
 
-    private void SpawnCBodyStar(Vector3 position, string titleOverride)
+    private void SpawnPlanet(Vector3 position, string titleOverride)
     {
         //Instantiate
-        instanceCentreStar = Instantiate(
-            cBodyStar,
+        instanceCenterPlanet = Instantiate(
+            planet,
             position,
             Quaternion.Euler(0f, 0f, 0f)
         );
 
         //Put in CBodies tree
-        instanceCentreStar.transform.parent = cBodies.transform;
+        instanceCenterPlanet.transform.parent = cBodies.transform;
 
         //Set name
         if (titleOverride == null)
         {
-            instanceCentreStar.GetComponent<CelestialName>().GenerateName();
+            instanceCenterPlanet.GetComponent<NameCelestial>().GenerateName();
         }
         else
         {
-            instanceCentreStar.GetComponent<CelestialName>().title = titleOverride;
+            instanceCenterPlanet.GetComponent<NameCelestial>().title = titleOverride;
         }
     }
 
@@ -222,7 +222,7 @@ public class Generation : MonoBehaviour
             playerScript.vitalsFuel = playerScript.vitalsFuelMax;
             playerScript.isDestroyed = false;
             //instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
-            instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnPlanetoid.GetComponent<Rigidbody>().velocity;
+            instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnMoon.GetComponent<Rigidbody>().velocity;
         }
 
         //Script properties
@@ -250,7 +250,7 @@ public class Generation : MonoBehaviour
         playerSpawned = true;
     }
 
-    private GameObject GenerateCBodiesPlanetoidsAndGetPlayerCoords(int nCBodiesPlanetoids, GameObject centreCBodyStar)
+    private GameObject GenerateCBodiesMoonsAndGetPlayerCoords(int nMoons, GameObject centerPlanet)
     {
         GameObject outPlayerSpawnPlanetoid = null;
 
@@ -261,7 +261,7 @@ public class Generation : MonoBehaviour
         float spawnAngle;
 
         //Spawn all
-        for (int i = 0; i < nCBodiesPlanetoids; i++)
+        for (int i = 0; i < nMoons; i++)
         {
             //Instance cBody
             randSpacing = Mathf.Pow(Random.Range(0f, C_BODIES_SPACING_BASE_MAX), Random.Range(1f, C_BODIES_SPACING_POWER));
@@ -269,8 +269,8 @@ public class Generation : MonoBehaviour
             distanceOut = spawnRadius; //incremenet distanceOut for the next cBody
             spawnAngle = Random.Range(0f, 365f);
 
-            GameObject instanceCBodyPlanetoid = Instantiate(
-                cBodyPlanetoid,
+            GameObject instanceMoon = Instantiate(
+                moon,
                 new Vector3(
                     Mathf.Cos(spawnAngle) * spawnRadius,
                     0f,
@@ -284,41 +284,41 @@ public class Generation : MonoBehaviour
             );
 
             //Put in CBodies tree
-            instanceCBodyPlanetoid.transform.parent = cBodiesPlanetoids.transform;
+            instanceMoon.transform.parent = moons.transform;
 
             //Give control reference
-            instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = control;
+            instanceMoon.GetComponent<Moon>().control = control;
 
             //Spin
-            instanceCBodyPlanetoid.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
+            instanceMoon.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
 
             //Generate name
-            instanceCBodyPlanetoid.GetComponent<CelestialName>().GenerateName();
+            instanceMoon.GetComponent<NameCelestial>().GenerateName();
 
             //Spawn player station, other stations, and system heighliner
             if (i == 0)
             {
                 //Player station
                 //Force a station to spawn and return those coords to spawn the player there
-                outPlayerSpawnPlanetoid = instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(true, null, true, 0f, 0f, 0f, null);
+                outPlayerSpawnPlanetoid = instanceMoon.GetComponent<Moon>().SpawnStation(true, null, true, 0f, 0f, 0f, null);
             }
             else if (i == 1)
             {
                 //Heighliner
                 //Force a heighliner to spawn
-                instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnHeighliner("Heighliner");
+                instanceMoon.GetComponent<Moon>().SpawnHeighliner("Heighliner");
             }
             else
             {
                 //Other stations (random chance)
-                instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(false, null, true, 0f, 0f, 0f, null);
+                instanceMoon.GetComponent<Moon>().SpawnStation(false, null, true, 0f, 0f, 0f, null);
             }
         }
 
         return outPlayerSpawnPlanetoid;
     }
 
-    private void GenerateCBodiesAsteroids(int nCBodiesAsteroidClusters, GameObject centreCBodyStar)
+    private void GenerateAsteroids(int nAsteroidClusters, GameObject centerPlanet)
     {
         //Properties
         float distanceOut = C_BODIES_DISTANCE_OUT;
@@ -329,7 +329,7 @@ public class Generation : MonoBehaviour
         byte clusterType;
 
         //Spawn all
-        for (int i = 0; i < nCBodiesAsteroidClusters; i++)
+        for (int i = 0; i < nAsteroidClusters; i++)
         {
             //Instance cBody
             randSpacing = Mathf.Pow(Random.Range(0f, C_BODIES_SPACING_BASE_MAX), Random.Range(1f, C_BODIES_SPACING_POWER));
@@ -343,8 +343,8 @@ public class Generation : MonoBehaviour
 
             for (int clusterI = 0; clusterI < clusterSize; clusterI++)
             {
-                GameObject instanceCBodyAsteroid = Instantiate(
-                    cBodyAsteroid,
+                GameObject instanceAsteroid = Instantiate(
+                    asteroid,
                     new Vector3(
                         Mathf.Cos(spawnAngle) * spawnRadius,
                         0f,
@@ -358,25 +358,25 @@ public class Generation : MonoBehaviour
                 );
 
                 //Put in CBodies tree
-                instanceCBodyAsteroid.transform.parent = cBodiesAsteroids.transform;
+                instanceAsteroid.transform.parent = asteroids.transform;
 
                 //Spread out within cluster
-                instanceCBodyAsteroid.transform.position += 2f * new Vector3(Random.value, Random.value, Random.value);
+                instanceAsteroid.transform.position += 2f * new Vector3(Random.value, Random.value, Random.value);
 
-                CBodyAsteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<CBodyAsteroid>();
+                Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
                 //Randomize size and type
-                instanceCBodyAsteroidScript.SetSize(CBodyAsteroid.GetRandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
-                instanceCBodyAsteroidScript.SetType(clusterType);
+                instanceAsteroidScript.SetSize(Asteroid.GetRandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
+                instanceAsteroidScript.SetType(clusterType);
                 //Ignore all collisions unless explicitly enabled (once asteroid is separated from siblings)
-                instanceCBodyAsteroidScript.rb.detectCollisions = false;
-                instanceCBodyAsteroidScript.rb.AddForce(
+                instanceAsteroidScript.rb.detectCollisions = false;
+                instanceAsteroidScript.rb.AddForce(
                     new Vector3(
                         Random.Range(0f, 1f),
                         Random.Range(0f, 1f),
                         Random.Range(0f, 1f)
                     ) * Random.Range(0f, 20f)
                 );
-                instanceCBodyAsteroidScript.rb.AddTorque(
+                instanceAsteroidScript.rb.AddTorque(
                     new Vector3(
                         Random.Range(0f, 1f),
                         Random.Range(0f, 1f),
@@ -384,7 +384,7 @@ public class Generation : MonoBehaviour
                     ) * (Random.Range(0f, 100f) + (float)Control.LowBiasedRandomIntSquared(400))
                 );
                 //Give control reference
-                instanceCBodyAsteroidScript.control = control;
+                instanceAsteroidScript.control = control;
             }
         }
     }
@@ -392,7 +392,7 @@ public class Generation : MonoBehaviour
     public GameObject SpawnPlanetoidManually(Vector3 position, Vector3 velocity, string titleOverride, bool stationForced, string stationTitleOverride, bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
     {
         GameObject instanceCBodyPlanetoid = Instantiate(
-                cBodyPlanetoid,
+                moon,
                 position,
                 Quaternion.Euler(
                     Random.Range(0f, 360f),
@@ -402,10 +402,10 @@ public class Generation : MonoBehaviour
             );
 
         //Put in CBodies tree
-        instanceCBodyPlanetoid.transform.parent = cBodiesPlanetoids.transform;
+        instanceCBodyPlanetoid.transform.parent = moons.transform;
 
         //Give control reference
-        instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().control = control;
+        instanceCBodyPlanetoid.GetComponent<Moon>().control = control;
 
         //Set velocity
         instanceCBodyPlanetoid.GetComponent<Rigidbody>().velocity = velocity;
@@ -413,17 +413,17 @@ public class Generation : MonoBehaviour
         //Override title
         if (titleOverride == null)
         {
-            instanceCBodyPlanetoid.GetComponent<CelestialName>().GenerateName();
+            instanceCBodyPlanetoid.GetComponent<NameCelestial>().GenerateName();
         }
         else
         {
-            instanceCBodyPlanetoid.GetComponent<CelestialName>().title = titleOverride;
+            instanceCBodyPlanetoid.GetComponent<NameCelestial>().title = titleOverride;
         }
 
         //Spawn station?
         if (stationForced)
         {
-            instanceCBodyPlanetoid.GetComponent<CBodyPlanetoid>().SpawnStation(
+            instanceCBodyPlanetoid.GetComponent<Moon>().SpawnStation(
                 stationForced,
                 stationTitleOverride,
                 stationGenerateOffers,
@@ -440,7 +440,7 @@ public class Generation : MonoBehaviour
     public GameObject SpawnAsteroidManually(Vector3 position, Vector3 velocity, string size, byte type, byte health) //bool randomType)
     {
         GameObject instanceCBodyAsteroid = Instantiate(
-            cBodyAsteroid,
+            asteroid,
             position,
             Quaternion.Euler(
                 Random.Range(0f, 360f),
@@ -449,10 +449,10 @@ public class Generation : MonoBehaviour
             )
         );
 
-        CBodyAsteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<CBodyAsteroid>();
+        Asteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<Asteroid>();
 
         //Put in CBodies tree
-        instanceCBodyAsteroid.transform.parent = cBodiesAsteroids.transform;
+        instanceCBodyAsteroid.transform.parent = asteroids.transform;
 
         //Give control reference
         instanceCBodyAsteroidScript.control = control;
@@ -491,7 +491,7 @@ public class Generation : MonoBehaviour
 
         //World properties
         //Planetoids
-        CBodyPlanetoid[] planetoidArray = FindObjectsOfType<CBodyPlanetoid>();
+        Moon[] planetoidArray = FindObjectsOfType<Moon>();
 
         float[,] controlScriptPlanetoidPosition = new float[planetoidArray.Length, 3];
         float[,] controlScriptPlanetoidVelocity = new float[planetoidArray.Length, 3];
@@ -505,7 +505,7 @@ public class Generation : MonoBehaviour
         int[,] controlScriptPlanetoidStationUpgradeIndex = new int[planetoidArray.Length, StationDocking.upgradeButtons];
 
         byte planetoidArrayIndex = 0;
-        foreach (CBodyPlanetoid planetoid in planetoidArray)
+        foreach (Moon planetoid in planetoidArray)
         {
             //Position
             controlScriptPlanetoidPosition[planetoidArrayIndex, 0] = planetoid.transform.position.x;
@@ -518,13 +518,13 @@ public class Generation : MonoBehaviour
             controlScriptPlanetoidVelocity[planetoidArrayIndex, 2] = planetoid.GetComponent<Rigidbody>().velocity.z;
 
             //Name
-            controlScriptPlanetoidName[planetoidArrayIndex] = planetoid.GetComponent<CelestialName>().title;
+            controlScriptPlanetoidName[planetoidArrayIndex] = planetoid.GetComponent<NameCelestial>().title;
 
             //Station
-            controlScriptPlanetoidHasStation[planetoidArrayIndex] = planetoid.GetComponent<CBodyPlanetoid>().hasStation;
+            controlScriptPlanetoidHasStation[planetoidArrayIndex] = planetoid.GetComponent<Moon>().hasStation;
             if (planetoid.hasStation && planetoid.instancedStation != null)
             {
-                controlScriptPlanetoidStationTitle[planetoidArrayIndex] = planetoid.instancedStation.GetComponent<HumanName>().title;
+                controlScriptPlanetoidStationTitle[planetoidArrayIndex] = planetoid.instancedStation.GetComponent<NameHuman>().title;
                 controlScriptPlanetoidPricePlatinoid[planetoidArrayIndex] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().pricePlatinoid;
                 controlScriptPlanetoidPricePreciousMetal[planetoidArrayIndex] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().pricePreciousMetal;
                 controlScriptPlanetoidPriceWater[planetoidArrayIndex] = planetoid.instancedStation.GetComponentInChildren<StationDocking>().priceWater;
@@ -552,7 +552,7 @@ public class Generation : MonoBehaviour
         }
 
         //Asteroids
-        CBodyAsteroid[] asteroidArray = FindObjectsOfType<CBodyAsteroid>();
+        Asteroid[] asteroidArray = FindObjectsOfType<Asteroid>();
 
         float[,] controlScriptAsteroidPosition = new float[asteroidArray.Length, 3];
         float[,] controlScriptAsteroidVelocity = new float[asteroidArray.Length, 3];
@@ -561,7 +561,7 @@ public class Generation : MonoBehaviour
         byte[] controlScriptAsteroidHealth = new byte[asteroidArray.Length];
 
         byte asteroidArrayIndex = 0;
-        foreach (CBodyAsteroid asteroid in asteroidArray)
+        foreach (Asteroid asteroid in asteroidArray)
         {
             //Position
             controlScriptAsteroidPosition[asteroidArrayIndex, 0] = asteroid.transform.position.x;
@@ -624,8 +624,8 @@ public class Generation : MonoBehaviour
             controlAsteroidType = controlScriptAsteroidType,
             controlAsteroidHealth = controlScriptAsteroidHealth,
 
-            //Centre star
-            controlCentreStarName = instanceCentreStar.GetComponent<CelestialName>().title,
+            //Centre planet
+            controlCenterPlanetName = instanceCenterPlanet.GetComponent<NameCelestial>().title,
             
             //Verse space
             controlVerseSpacePosition = controlScriptVersePosition,
@@ -664,7 +664,7 @@ public class Generation : MonoBehaviour
 
             //VERSE
             //Centre Star
-            SpawnCBodyStar(Vector3.zero, data.controlCentreStarName);
+            SpawnPlanet(Vector3.zero, data.controlCenterPlanetName);
 
             //Verse position relative to origin
             verseSpace.transform.position = new Vector3(
@@ -777,7 +777,7 @@ public class Generation : MonoBehaviour
             playerScript.ore = data.playerOre;
 
             //Asteroids (generate)
-            GenerateCBodiesAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCentreStar);
+            GenerateAsteroids(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH), instanceCenterPlanet);
         }
 
         //Update UI to reflect loaded data

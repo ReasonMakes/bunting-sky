@@ -88,7 +88,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
             if (hit.transform.name == "CBodyAsteroid(Clone)")
             {
-                CBodyAsteroid asteroidScript = hit.transform.GetComponent<CBodyAsteroid>();
+                Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                 //Break apart asteroid
                 if (!asteroidScript.destroyed)
