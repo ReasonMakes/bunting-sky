@@ -69,10 +69,6 @@ public class UI : MonoBehaviour
     public GameObject playerShipDirectionReticlePrefab;
     [System.NonSerialized] public List<GameObject> playerShipDirectionReticleList = new List<GameObject>();
     private short playerShipDirectionReticleListLength = 2; //16;
-    //private float playerShipDirectionReticleSpacing = 0.05f;
-    //private float playerShipDirectionReticleSpacingPower = 3f;
-    //private float playerShipDirectionReticleScale = 0.05f;
-    //private float playerShipDirectionReticleForwardOffset = 0.15f;
 
     //Map
     [System.NonSerialized] public static bool displayMap = false;
@@ -94,27 +90,29 @@ public class UI : MonoBehaviour
         systemInfo = canvas.transform.Find("HUD Top-Right").Find("SystemInfo").GetComponent<TextMeshProUGUI>();
         cameraReticle = canvas.transform.Find("HUD Centre").Find("CameraReticle").gameObject;
 
-        waypointImage = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint").GetComponent<Image>();
-        waypointTextType = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Type Text").GetComponent<TextMeshProUGUI>();
-        waypointTextTitle = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Title Text").GetComponent<TextMeshProUGUI>();
-        waypointTextBody = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Waypoint Body Text").GetComponent<TextMeshProUGUI>();
+        Transform waypointFolder = canvas.transform.Find("HUD Centre").Find("Waypoint");
+        waypointImage = waypointFolder.Find("Waypoint").GetComponent<Image>();
+        waypointTextType = waypointFolder.Find("Waypoint Type Text").GetComponent<TextMeshProUGUI>();
+        waypointTextTitle = waypointFolder.Find("Waypoint Title Text").GetComponent<TextMeshProUGUI>();
+        waypointTextBody = waypointFolder.Find("Waypoint Body Text").GetComponent<TextMeshProUGUI>();
+        targetImage = waypointFolder.Find("Target").GetComponent<Image>();
 
-        targetImage = canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Target").GetComponent<Image>();
+        Transform resourcesFolder = canvas.transform.Find("HUD Top-Left").Find("Resources");
+        resourcesImageCurrency = resourcesFolder.Find("Currency").GetComponent<Image>();
+        resourcesImagePlatinoid = resourcesFolder.Find("Platinoid").GetComponent<Image>();
+        resourcesImagePreciousMetal = resourcesFolder.Find("Precious Metals").GetComponent<Image>();
+        resourcesImageWater = resourcesFolder.Find("Water").GetComponent<Image>();
+        resourcesTextCurrency = resourcesFolder.Find("Currency Text").GetComponent<TextMeshProUGUI>();
+        resourcesTextPlatinoid = resourcesFolder.Find("Platinoid Text").GetComponent<TextMeshProUGUI>();
+        resourcesTextPreciousMetal = resourcesFolder.Find("Precious Metals Text").GetComponent<TextMeshProUGUI>();
+        resourcesTextWater = resourcesFolder.Find("Water Text").GetComponent<TextMeshProUGUI>();
 
-        resourcesImageCurrency = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Currency").GetComponent<Image>();
-        resourcesImagePlatinoid = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Platinoid").GetComponent<Image>();
-        resourcesImagePreciousMetal = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals").GetComponent<Image>();
-        resourcesImageWater = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water").GetComponent<Image>();
-        resourcesTextCurrency = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Currency Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextPlatinoid = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Platinoid Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextPreciousMetal = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Precious Metals Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextWater = canvas.transform.Find("HUD Top-Left").Find("Resources").Find("Water Text").GetComponent<TextMeshProUGUI>();
-
-        weaponCooldown = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Cooldown").GetComponent<Image>();
-        weaponSelectedClipRemainingText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Remaining Text").GetComponent<TextMeshProUGUI>();
-        weaponSelectedClipSizeText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
-        weaponSelectedTitleText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
-        weaponAlternateTitleText = canvas.transform.Find("HUD Bottom-Right").Find("Weapons").Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
+        Transform weaponsFolder = canvas.transform.Find("HUD Bottom-Right").Find("Weapons");
+        weaponCooldown = weaponsFolder.Find("Cooldown").GetComponent<Image>();
+        weaponSelectedClipRemainingText = weaponsFolder.Find("Selected Clip Remaining Text").GetComponent<TextMeshProUGUI>();
+        weaponSelectedClipSizeText = weaponsFolder.Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
+        weaponSelectedTitleText = weaponsFolder.Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
+        weaponAlternateTitleText = weaponsFolder.Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
 
         tipText = canvas.transform.Find("HUD Bottom").Find("Tips").Find("Tip Text").GetComponent<TextMeshProUGUI>();
 
@@ -341,14 +339,6 @@ public class UI : MonoBehaviour
                 GameObject instancePlayerShipDirectionReticle = playerShipDirectionReticleList[i];
                 DirectionReticle instancePlayerShipDirectionReticleScript = instancePlayerShipDirectionReticle.GetComponent<DirectionReticle>();
 
-                //Position in front of player ship at distance relative to index
-                /*
-                Vector3 reticleWorldPos = instancePlayerBodyTransform.position
-                    + ((instancePlayerBodyTransform.rotation * Vector3.forward)
-                    * (playerShipDirectionReticleForwardOffset + (playerShipDirectionReticleSpacing * Mathf.Pow(1f + instancePlayerShipDirectionReticleScript.index, playerShipDirectionReticleSpacingPower)) * playerShipDirectionReticleScale)
-                );
-                */
-
                 Vector3 reticleWorldPos = instancePlayerBodyTransform.position
                     + ((instancePlayerBodyTransform.rotation * Vector3.forward)
                     * (2.5f + (i * 500.0f))
@@ -557,7 +547,7 @@ public class UI : MonoBehaviour
             if (hit.collider.gameObject.name == control.generation.planet.name + "(Clone)")
             {
                 //Waypoint
-                waypointTextType.text = "Star";
+                waypointTextType.text = "Planet";
                 waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameCelestial>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 
@@ -570,7 +560,7 @@ public class UI : MonoBehaviour
             else if (hit.collider.gameObject.name == control.generation.moon.name + "(Clone)")
             {
                 //Waypoint
-                waypointTextType.text = "Planetoid";
+                waypointTextType.text = "Moon";
                 waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameCelestial>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 

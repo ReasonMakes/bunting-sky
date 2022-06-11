@@ -171,14 +171,6 @@ public class Moon : MonoBehaviour
                 //Upgrades
                 scriptStationDocking.upgradeIndexAtButton = upgradeIndex;
             }
-
-            //Keep track of this station in generation
-            control.generation.instanceStationTran[control.generation.instanceStationIndex] = instancedStation.transform;
-
-            //Iterate to next index position to prepare for the next station to generate
-            control.generation.instanceStationIndex++;
-            //Keep track of how many stations we have in the array
-            control.generation.instanceStationLength++;
         }
 
         //Return coords so that player can spawn near station

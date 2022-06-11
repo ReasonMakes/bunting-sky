@@ -27,7 +27,7 @@ public class Player : MonoBehaviour
     public GameObject fpCam;
     public GameObject fpCamInterior;
     private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_NEAR = 0.001f; //0.002f; //0.0005f;
-    private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_FAR = 0.06f; //1e21f;
+    private readonly float FP_CAM_INTERIOR_CLIPPING_PLANE_FAR = 0.1f; //1e21f;
     public GameObject tpCam;
     public GameObject tpModel;
     public GameObject fpModel;
@@ -65,8 +65,8 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public GameObject targetObject;
     [System.NonSerialized] public GameObject cBodies;
     [System.NonSerialized] public readonly float ORBITAL_DRAG_MODE_THRESHOLD = 50f;
-    private float distToClosestPlanetoid = 100f; //this should be greater than the orbitalDragModeThreshold so that the player starts with drag relative to system
-    private Transform closestPlanetoidTransform;
+    private float distToClosestMoon = 100f; //this should be greater than the orbitalDragModeThreshold so that the player starts with drag relative to system
+    private Transform closestMoonTransform;
     private float distToClosestAsteroid = 100f;
     private Transform closestAsteroidTransform;
     private readonly float DRAG = 3f; //Drag amount for all drag modes
@@ -484,7 +484,7 @@ public class Player : MonoBehaviour
         //    UpdatePlayerMovementThrust();   //Move in the direction of player input
         //}
 
-        UpdatePlayerMovementDrag();         //Drag the ship relative to either the system or the nearest planetoid, depending on distance to nearest planetoid
+        UpdatePlayerMovementDrag();         //Drag the ship relative to either the system or the nearest moon, depending on distance to nearest moon
 
         //Add thrust on/off to engine effect brightness (should be run AFTER UpdatePlayerMovementThrust)
         engineBrightness = Math.Max(engineBrightness, Math.Min(1f, engineBrightness + (thrustVector.normalized.magnitude / 40f)));
@@ -510,35 +510,35 @@ public class Player : MonoBehaviour
         control.ui.UpdatePlayerVitalsDisplay();
         UpdateWarningText();
 
-        //Too close to the sun?
-        float distToCStar = Vector3.Distance(transform.position, control.generation.instanceCenterPlanet.transform.position);
-        float maxDist = 150f;
-        float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
-        if (distToCStar < maxDist)
-        {
-            //Debug.Log("Too close to the sun: " + distToCStar);
-            DamagePlayer(
-                Math.Max(
-                    0d,
-                    //vitalsHealth - (Math.Pow(1d + (((maxDist - distToCStar)/maxDist) * maxBaseDPS), 2d) * Time.deltaTime)
-                    vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
-                ),
-                "overheat"
-            );
-        }
-        else
-        {
-            //Debug.Log(":) " + distToCStar);
-        }
+        ////Too close to the sun?
+        //float distToCStar = Vector3.Distance(transform.position, control.generation.instanceCenterStar.transform.position);
+        //float maxDist = 150f;
+        //float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
+        //if (distToCStar < maxDist)
+        //{
+        //    //Debug.Log("Too close to the sun: " + distToCStar);
+        //    DamagePlayer(
+        //        Math.Max(
+        //            0d,
+        //            //vitalsHealth - (Math.Pow(1d + (((maxDist - distToCStar)/maxDist) * maxBaseDPS), 2d) * Time.deltaTime)
+        //            vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
+        //        ),
+        //        "overheat"
+        //    );
+        //}
+        //else
+        //{
+        //    //Debug.Log(":) " + distToCStar);
+        //}
     }
 
     private void SlowFixedUpdate()
     {
-        //If one exists, find the nearest planetoid or asteroid to determine whether or not to drag relative to it
-        if (cBodies.transform.Find("Planetoids").childCount > 0)
+        //If one exists, find the nearest moon or asteroid to determine whether or not to drag relative to it
+        if (cBodies.transform.Find("Moons").childCount > 0)
         {
-            closestPlanetoidTransform = GetClosestPlanetoidTransform();
-            distToClosestPlanetoid = (transform.position - closestPlanetoidTransform.transform.position).magnitude;
+            closestMoonTransform = GetClosestMoonTransform();
+            distToClosestMoon = (transform.position - closestMoonTransform.transform.position).magnitude;
         }
 
         if (cBodies.transform.Find("Asteroids").childCount > 0)
@@ -616,10 +616,10 @@ public class Player : MonoBehaviour
 
         if (vitalsFuel > 0.0d && control.settings.matchVelocity)
         {
-            if (closestPlanetoidTransform != null && distToClosestPlanetoid <= ORBITAL_DRAG_MODE_THRESHOLD)
+            if (closestMoonTransform != null && distToClosestMoon <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
                 //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestPlanetoidTransform.GetComponent<Rigidbody>().velocity, DRAG);
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestMoonTransform.GetComponent<Rigidbody>().velocity, DRAG);
             }
             else if (closestAsteroidTransform != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
@@ -633,7 +633,7 @@ public class Player : MonoBehaviour
             }
             else
             {
-                //System/centre star-relative drag
+                //Centre planet-relative drag
                 rb.velocity *= (1f - (DRAG * Time.deltaTime));
             }
         }
@@ -1250,15 +1250,16 @@ public class Player : MonoBehaviour
         return closestTransform;
     }
 
-    private Transform GetClosestPlanetoidTransform()
+    private Transform GetClosestMoonTransform()
     {
-        Transform[] planetoidTransforms = new Transform[cBodies.transform.Find("Planetoids").childCount];
-        for (int i = 0; i < cBodies.transform.Find("Planetoids").childCount; i++)
+        Transform moonsFolderTransform = cBodies.transform.Find("Moons");
+        Transform[] moonTransforms = new Transform[moonsFolderTransform.childCount];
+        for (int i = 0; i < moonsFolderTransform.childCount; i++)
         {
-            planetoidTransforms[i] = cBodies.transform.Find("Planetoids").GetChild(i);
+            moonTransforms[i] = moonsFolderTransform.GetChild(i);
         }
 
-        return GetClosestTransform(planetoidTransforms);
+        return GetClosestTransform(moonTransforms);
     }
 
     private Transform GetClosestAsteroidTransform()

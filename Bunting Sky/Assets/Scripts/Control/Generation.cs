@@ -37,9 +37,6 @@ public class Generation : MonoBehaviour
             [System.NonSerialized] public GameObject moons;
                 public GameObject moon;
                 public GameObject station;
-                [System.NonSerialized] public Transform[] instanceStationTran;
-                [System.NonSerialized] public int instanceStationIndex = 0;
-                [System.NonSerialized] public int instanceStationLength = 0;
                 public GameObject heighliner;
 
             [System.NonSerialized] public GameObject asteroids;
@@ -56,9 +53,6 @@ public class Generation : MonoBehaviour
         moons = cBodies.transform.Find("Moons").gameObject;
         asteroids = cBodies.transform.Find("Asteroids").gameObject;
         ores = verseSpace.transform.Find("Ores").gameObject;
-
-        //Station instances array
-        instanceStationTran = new Transform[MOONS_RANGE_HIGH];
     }
 
     private void Start()
@@ -88,17 +82,28 @@ public class Generation : MonoBehaviour
     private void SlowUpdate()
     {
         //Mesh Collider to Sphere collider swapper (for performance)
-        //This will error if there are no stations (as instanceStationIndex will point to a non-existant station)
-        bool useMesh = (
-            Vector3.Distance(
-            instancePlayer.transform.Find("Body").position,
-            instanceStationTran[instanceStationIndex].position
-            ) < 40f
-        );
-        instanceStationTran[instanceStationIndex].Find("Mesh Collider").gameObject.SetActive(useMesh);
-        instanceStationTran[instanceStationIndex].Find("Sphere Collider").gameObject.SetActive(!useMesh);
-        //Prepare to check the next station in list on next slow update. (Iterates unless at the limit)
-        instanceStationIndex = (instanceStationIndex + 1) % (instanceStationLength - 1); //we -1 the length because we start counting from 0 in arrays
+        Transform moonsFolderTransform = cBodies.transform.Find("Moons");
+        for (int i = 0; i < moonsFolderTransform.childCount; i++)
+        {
+            //Check if this child is a station
+            Transform potentialStationTran = moonsFolderTransform.GetChild(i);
+            if (potentialStationTran.gameObject.name == station.name + "(Clone)")
+            {
+                //This is a station
+
+                //Check which colliders to use
+                bool useMesh = (
+                    Vector3.Distance(
+                    instancePlayer.transform.Find("Body").position,
+                    potentialStationTran.position
+                    ) < 40f
+                );
+
+                //Use proper colliders
+                potentialStationTran.Find("Mesh Collider").gameObject.SetActive(useMesh);
+                potentialStationTran.Find("Sphere Collider").gameObject.SetActive(!useMesh);
+            }
+        }
     }
 
     private void VerySlowUpdate()
@@ -164,9 +169,7 @@ public class Generation : MonoBehaviour
         SpawnPlanet(Vector3.zero, null);
 
         //Moons
-        playerSpawnMoon = GenerateCBodiesMoonsAndGetPlayerCoords(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), instanceCenterPlanet); ;
-        //Reset the station index after generated all stations
-        instanceStationIndex = 0;
+        playerSpawnMoon = GenerateCBodiesMoonsAndGetPlayerCoords(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), instanceCenterPlanet);
 
         //Player
         SpawnPlayer(
@@ -730,8 +733,6 @@ public class Generation : MonoBehaviour
                     );
                 }
             }
-            //Reset the station index after generated all stations
-            instanceStationIndex = 0;
 
             //Asteroids
             for (byte i = 0; i < data.controlAsteroidQuantity; i++)
