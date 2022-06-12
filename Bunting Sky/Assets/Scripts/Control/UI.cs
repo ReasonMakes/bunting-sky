@@ -544,7 +544,20 @@ public class UI : MonoBehaviour
             Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, out hit, maxDist);
             //Debug.DrawRay(waypointRaycastOrigin, waypointRaycastDirection * hit.distance, Color.green, Time.deltaTime, false);
 
-            if (hit.collider.gameObject.name == control.generation.planet.name + "(Clone)")
+            if (hit.collider.gameObject.name == control.generation.star.name + "(Clone)")
+            {
+                //Waypoint
+                waypointTextType.text = "Star";
+                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameCelestial>().title;
+                waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
+
+                //Console waypoint
+                consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
+
+                //Update UI
+                SetWaypointUI(hit);
+            }
+            else if (hit.collider.gameObject.name == control.generation.planet.name + "(Clone)")
             {
                 //Waypoint
                 waypointTextType.text = "Planet";

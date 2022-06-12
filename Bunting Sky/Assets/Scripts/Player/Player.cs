@@ -35,6 +35,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public static bool thirdPerson = false;
     public GameObject mapCam;
     public GameObject mapLight;
+    private Vector3 mapOffset = Vector3.zero;
     #endregion
 
     //Spotlight
@@ -119,9 +120,9 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
     private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
     [System.NonSerialized] public bool isDestroyed = false;
-    [System.NonSerialized] public double vitalsFuel = 10.0;
-    [System.NonSerialized] public double vitalsFuelMax = 15.0;
-    private readonly double VITALS_FUEL_MAX_STARTER = 15.0;
+    [System.NonSerialized] public double vitalsFuel = 3.0;
+    [System.NonSerialized] public double vitalsFuelMax = 4.0;
+    private readonly double VITALS_FUEL_MAX_STARTER = 4.0;
     [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.025;
     [System.NonSerialized] public GameObject vitalsHealthUI;
     [System.NonSerialized] public TextMeshProUGUI vitalsHealthUIText;
@@ -356,13 +357,10 @@ public class Player : MonoBehaviour
         //}
 
         //Teleport forward
-        /*
-        if (binds.GetInputDown(binds.bindThrustVectorIncrease))
+        if (binds.GetInputDown(binds.bindCheat1))
         {
-            transform.position += transform.forward * 1e4f;
-            Debug.Log("Teleported forward: distance to star " + (control.generation.instanceCentreStar.transform.position - transform.position).magnitude);
+            transform.position += transform.forward * 400f;
         }
-        */
 
         //Spawn
         //Press O to spawn asteroid
@@ -510,26 +508,26 @@ public class Player : MonoBehaviour
         control.ui.UpdatePlayerVitalsDisplay();
         UpdateWarningText();
 
-        ////Too close to the sun?
-        //float distToCStar = Vector3.Distance(transform.position, control.generation.instanceCenterStar.transform.position);
-        //float maxDist = 150f;
-        //float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
-        //if (distToCStar < maxDist)
-        //{
-        //    //Debug.Log("Too close to the sun: " + distToCStar);
-        //    DamagePlayer(
-        //        Math.Max(
-        //            0d,
-        //            //vitalsHealth - (Math.Pow(1d + (((maxDist - distToCStar)/maxDist) * maxBaseDPS), 2d) * Time.deltaTime)
-        //            vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
-        //        ),
-        //        "overheat"
-        //    );
-        //}
-        //else
-        //{
-        //    //Debug.Log(":) " + distToCStar);
-        //}
+        //Too close to the sun?
+        float distToCStar = Vector3.Distance(transform.position, control.generation.instanceStar.transform.position);
+        float maxDist = 150f;
+        float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
+        if (distToCStar < maxDist)
+        {
+            //Debug.Log("Too close to the sun: " + distToCStar);
+            DamagePlayer(
+                Math.Max(
+                    0d,
+                    //vitalsHealth - (Math.Pow(1d + (((maxDist - distToCStar)/maxDist) * maxBaseDPS), 2d) * Time.deltaTime)
+                    vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
+                ),
+                "overheat"
+            );
+        }
+        else
+        {
+            //Debug.Log(":) " + distToCStar);
+        }
     }
 
     private void SlowFixedUpdate()
@@ -776,12 +774,19 @@ public class Player : MonoBehaviour
             if (UI.displayMap)
             {
                 //Set map to player position
-                mapCam.transform.position = transform.position + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
+                mapCam.transform.position = transform.position + mapOffset + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
+
+                if (binds.GetInput(binds.bindPanMap))
+                {
+                    float mapRatio = 0.03f;
+                    mapOffset -= Vector3.right * (Input.GetAxisRaw("Mouse X") * mapCam.GetComponent<Camera>().orthographicSize * mapRatio);
+                    mapOffset -= Vector3.forward * (Input.GetAxisRaw("Mouse Y") * mapCam.GetComponent<Camera>().orthographicSize * mapRatio);
+                }
 
                 //Set map zoom (default 1560)
                 if (binds.GetInput(binds.bindCameraZoomOut))
                 {
-                    mapCam.GetComponent<Camera>().orthographicSize = Mathf.Min(7000.0f, mapCam.GetComponent<Camera>().orthographicSize *= 1.1f);
+                    mapCam.GetComponent<Camera>().orthographicSize = Mathf.Min(15000.0f, mapCam.GetComponent<Camera>().orthographicSize *= 1.1f);
                 }
                 else if (binds.GetInput(binds.bindCameraZoomIn))
                 {
@@ -791,6 +796,8 @@ public class Player : MonoBehaviour
             else
             {
                 //Not map
+                mapOffset = Vector3.zero;
+
                 if (binds.GetInput(binds.bindCameraZoomIn) || binds.GetInput(binds.bindCameraZoomOut))
                 {
                     SetCameraFollowDistance();
@@ -1335,8 +1342,6 @@ public class Player : MonoBehaviour
             {
                 asteroidScript.Damage(damageToDealToAsteroid, direction, contactPoint, true);
             }
-
-            Debug.Log("Damage dealt to asteroid:" + damageToDealToAsteroid);
         }
     }
 

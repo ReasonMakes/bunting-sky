@@ -160,6 +160,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 4925178499841355205}
+  asteroid: {fileID: 1333070546947983284, guid: 23162748d9fabbf489f60072e3d2378c, type: 3}
 --- !u!1 &6936775513180979249
 GameObject:
   m_ObjectHideFlags: 0

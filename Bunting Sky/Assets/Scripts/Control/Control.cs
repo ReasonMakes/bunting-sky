@@ -34,7 +34,7 @@ public class Control : MonoBehaviour
     public KeyBinds binds;
     public Settings settings;
     [System.NonSerialized] public static string userDataFolder = "/user";
-    [System.NonSerialized] public static string userLevelSaveFile = "/verse.bss"; //Bunting Sky Save
+    [System.NonSerialized] public static string userLevelSaveFile = "/verse.avs"; //Atroviolet save
     [System.NonSerialized] public static string screenshotsFolder = "/screenshots";
     [System.NonSerialized] public readonly float AUTO_SAVE_FREQUENCY = 60f; //10f; //30f;
 

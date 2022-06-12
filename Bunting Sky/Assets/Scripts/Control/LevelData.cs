@@ -10,43 +10,48 @@ public static class LevelData
     public class Data
     {
         //World properties
-        //Planetoids
-        [SerializeField] public byte controlPlanetoidQuantity;
-        [SerializeField] public float[,] controlPlanetoidPosition;
-        [SerializeField] public float[,] controlPlanetoidVelocity;
-        [SerializeField] public string[] controlPlanetoidName;
-        [SerializeField] public bool[] controlPlanetoidHasStation;
+        //Star
+        [SerializeField] public string starName;
 
-        //Planetoids: stations
-        [SerializeField] public string[] controlPlanetoidStationTitle;
-        [SerializeField] public float[] controlPlanetoidStationPricePlatinoid;
-        [SerializeField] public float[] controlPlanetoidStationPricePreciousMetal;
-        [SerializeField] public float[] controlPlanetoidStationPriceWater;
-        [SerializeField] public int[,] controlPlanetoidStationUpgradeIndex;
+        //Planets
+        [SerializeField] public byte planetQuantity;
+        [SerializeField] public byte[] planetarySystemMoonQuantity;
+        [SerializeField] public float[,] planetPosition;
+        [SerializeField] public string[] planetName;
+
+        //Moons
+        [SerializeField] public byte moonQuantity;
+        [SerializeField] public byte moonIndex;
+        [SerializeField] public float[,] moonPosition;
+        [SerializeField] public string[] moonName;
+        [SerializeField] public bool[] moonHasStation;
+
+        //Moons: stations
+        [SerializeField] public string[] stationTitle;
+        [SerializeField] public float[] stationPricePlatinoid;
+        [SerializeField] public float[] stationPricePreciousMetal;
+        [SerializeField] public float[] stationPriceWater;
+        [SerializeField] public int[,] stationUpgradeIndex;
 
         //Asteroids
-        [SerializeField] public int controlAsteroidQuantity;
-        [SerializeField] public float[,] controlAsteroidPosition;
-        [SerializeField] public float[,] controlAsteroidVelocity;
-        [SerializeField] public string[] controlAsteroidSize;
-        [SerializeField] public byte[] controlAsteroidType;
-        [SerializeField] public byte[] controlAsteroidHealth;
+        [SerializeField] public int asteroidQuantity;
+        [SerializeField] public float[,] asteroidPosition;
+        [SerializeField] public float[,] asteroidVelocity;
+        [SerializeField] public string[] asteroidSize;
+        [SerializeField] public byte[] asteroidType;
+        [SerializeField] public byte[] asteroidHealth;
         
-        //Centre star
-        [SerializeField] public string controlCenterPlanetName;
         //Verse space
-        [SerializeField] public float[] controlVerseSpacePosition;
+        [SerializeField] public float[] verseSpacePosition;
+
         //Player
         [SerializeField] public float[] playerPosition;
 
-        //Player properties
-        [SerializeField] public int[] playerUpgrades;
-
         [SerializeField] public double playerVitalsHealth;
         [SerializeField] public bool playerDestroyed;
-
         [SerializeField] public double playerVitalsFuel;
 
+        [SerializeField] public int[] playerUpgrades;
         [SerializeField] public double playerCurrency;
         [SerializeField] public double[] playerOre;
     }

@@ -44,7 +44,7 @@ public class Menu : MonoBehaviour
     private short BIND_ID_ALIGN_SHIP = 6;
     private short BIND_ID_CHEAT1 = 7;
     private short BIND_ID_CHEAT2 = 8;
-    private short BIND_ID_CYCLE_MM = 9;
+    private short BIND_ID_PAN_MAP = 9;
     private short BIND_ID_FREE_LOOK = 10;
     private short BIND_ID_ZOOM_IN = 11;
     private short BIND_ID_ZOOM_OUT = 12;
@@ -556,7 +556,7 @@ public class Menu : MonoBehaviour
                     if (menuKeybindsBindID == BIND_ID_ALIGN_SHIP) { control.binds.bindAlignShipToReticle = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_CHEAT1) { control.binds.bindCheat1 = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_CHEAT2) { control.binds.bindCheat2 = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_CYCLE_MM) { control.binds.bindCycleMovementMode = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_PAN_MAP) { control.binds.bindPanMap = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_FREE_LOOK) { control.binds.bindCameraFreeLook = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_ZOOM_IN) { control.binds.bindCameraZoomIn = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_ZOOM_OUT) { control.binds.bindCameraZoomOut = inputCode; }
@@ -651,7 +651,7 @@ public class Menu : MonoBehaviour
         menuBindsAlignShipToReticle.text    = MenuKeybindsGetBindString(control.binds.bindAlignShipToReticle);
         menuBindsCheat1.text                = MenuKeybindsGetBindString(control.binds.bindCheat1);
         menuBindsCheat2.text                = MenuKeybindsGetBindString(control.binds.bindCheat2);
-        menuBindsCycleMovementMode.text     = MenuKeybindsGetBindString(control.binds.bindCycleMovementMode);
+        menuBindsCycleMovementMode.text     = MenuKeybindsGetBindString(control.binds.bindPanMap);
         menuBindsCameraFreeLook.text        = MenuKeybindsGetBindString(control.binds.bindCameraFreeLook);
         menuBindsCameraZoomIn.text          = MenuKeybindsGetBindString(control.binds.bindCameraZoomIn);
         menuBindsCameraZoomOut.text         = MenuKeybindsGetBindString(control.binds.bindCameraZoomOut);
@@ -780,7 +780,7 @@ public class Menu : MonoBehaviour
     {
         menuKeybindsIsSettingBind = true;
         menuBindsCycleMovementMode.text = "";
-        menuKeybindsBindID = BIND_ID_CYCLE_MM;
+        menuKeybindsBindID = BIND_ID_PAN_MAP;
     }
 
     public void MenuKeybindsCameraFreeLookSet()

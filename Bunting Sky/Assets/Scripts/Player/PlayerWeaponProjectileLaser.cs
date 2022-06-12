@@ -8,6 +8,8 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
     private Transform playerBody;
     public Rigidbody rb;
 
+    public GameObject asteroid;
+
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
     private readonly float MIN_GLOW_DISTANCE = 1.0f;
@@ -86,7 +88,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         {
             //Debug.Log("Laser hit object: " + hit.transform.name);
 
-            if (hit.transform.name == "CBodyAsteroid(Clone)")
+            if (hit.transform.name == asteroid.name + "(Clone)")
             {
                 Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 

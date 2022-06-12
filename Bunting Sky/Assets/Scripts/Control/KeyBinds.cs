@@ -33,8 +33,7 @@ public class KeyBinds : MonoBehaviour
     [System.NonSerialized] public short bindCheat1;
     [System.NonSerialized] public short bindCheat2;
 
-    [System.NonSerialized] public short bindCycleMovementMode;
-
+    [System.NonSerialized] public short bindPanMap;
     [System.NonSerialized] public short bindCameraFreeLook;
     [System.NonSerialized] public short bindCameraZoomIn;
     [System.NonSerialized] public short bindCameraZoomOut;
@@ -85,8 +84,7 @@ public class KeyBinds : MonoBehaviour
             bindCheat1 = (short)KeyCode.I,
             bindCheat2 = (short)KeyCode.O,
 
-            bindCycleMovementMode = (short)KeyCode.Tab,
-
+            bindPanMap = MOUSE_MIDDLE,
             bindCameraFreeLook = MOUSE_SECONDARY,
             bindCameraZoomIn = MOUSE_SCROLL_UP,
             bindCameraZoomOut = MOUSE_SCROLL_DOWN,
@@ -123,8 +121,7 @@ public class KeyBinds : MonoBehaviour
         ioBuffer.bindCheat1 = bindCheat1;
         ioBuffer.bindCheat2 = bindCheat2;
 
-        ioBuffer.bindCycleMovementMode = bindCycleMovementMode;
-
+        ioBuffer.bindPanMap = bindPanMap;
         ioBuffer.bindCameraFreeLook = bindCameraFreeLook;
         ioBuffer.bindCameraZoomIn = bindCameraZoomIn;
         ioBuffer.bindCameraZoomOut = bindCameraZoomOut;
@@ -160,8 +157,7 @@ public class KeyBinds : MonoBehaviour
         bindCheat1 = ioBuffer.bindCheat1;
         bindCheat2 = ioBuffer.bindCheat2;
 
-        bindCycleMovementMode = ioBuffer.bindCycleMovementMode;
-
+        bindPanMap = ioBuffer.bindPanMap;
         bindCameraFreeLook = ioBuffer.bindCameraFreeLook;
         bindCameraZoomIn = ioBuffer.bindCameraZoomIn;
         bindCameraZoomOut = ioBuffer.bindCameraZoomOut;
@@ -201,8 +197,7 @@ public class KeyBinds : MonoBehaviour
         public short bindCheat1;
         public short bindCheat2;
 
-        public short bindCycleMovementMode;
-
+        public short bindPanMap;
         public short bindCameraFreeLook;
         public short bindCameraZoomIn;
         public short bindCameraZoomOut;

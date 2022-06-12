@@ -8,6 +8,7 @@ public class Moon : MonoBehaviour
     [System.NonSerialized] public Control control;
     public Rigidbody rb;
     public GameObject model;
+    public int planetIndex = 0; //which planet is this moon orbiting
 
     //Properties
     [System.NonSerialized] public bool disabled = false;
@@ -80,7 +81,7 @@ public class Moon : MonoBehaviour
         for (int i = 0; i < 7; i++)
         {
             //Spawn
-            GameObject asteroid = control.generation.SpawnAsteroidManually(
+            GameObject asteroid = control.generation.SpawnAsteroid(
                 transform.position,
                 rb.velocity,
                 Asteroid.GetRandomSize(),
