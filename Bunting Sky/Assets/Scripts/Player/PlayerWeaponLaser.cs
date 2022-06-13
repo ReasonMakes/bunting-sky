@@ -18,7 +18,7 @@ public class PlayerWeaponLaser : MonoBehaviour
 
     [System.NonSerialized] public short clipSize;
     [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 16;
-    [System.NonSerialized] public short clipRemaining;
+    [System.NonSerialized] public short clipRemaining = 16;
     [System.NonSerialized] public readonly float CLIP_COOLDOWN_DURATION = 1.5f; //reload period
     [System.NonSerialized] public float clipCooldownCurrent = 0f;
 

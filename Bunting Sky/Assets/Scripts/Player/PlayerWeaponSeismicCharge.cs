@@ -82,7 +82,8 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
     {
         //This upgrade has been changed to only affect the mining laser
         //clipSize = (short)(CLIP_SIZE_STARTER * (1 + player.upgradeLevels[control.commerce.UPGRADE_DUAL_BATTERIES]));
-        //clipRemaining = clipSize;
+        clipSize = (short)(CLIP_SIZE_STARTER);
+        clipRemaining = clipSize;
     }
 
     public void Fire()

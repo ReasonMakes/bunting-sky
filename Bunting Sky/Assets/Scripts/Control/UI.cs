@@ -416,13 +416,21 @@ public class UI : MonoBehaviour
     private void SetPlayerTargetUI()
     {
         //Cancel and remove target if object (such as an asteroid) has been destroyed
-        if (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject == null || (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.name == "CBodyAsteroid(Clone)" && control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.GetComponent<Asteroid>().destroyed))
+        GameObject targetObj = control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject;
+
+        if (
+            targetObj == null
+            || (
+                targetObj.name == control.generation.asteroid.name + "(Clone)"
+                && targetObj.GetComponent<Asteroid>().destroyed
+            )
+        )
         {
             targetImage.gameObject.SetActive(false);
             renderTarget = false;
             return;
         }
-
+        
         Vector3 targetWorldPos = control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.transform.position;
 
         Vector2 targetUIPos = Camera.main.WorldToScreenPoint(targetWorldPos);
