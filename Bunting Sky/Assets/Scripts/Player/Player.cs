@@ -72,7 +72,7 @@ public class Player : MonoBehaviour
     private Transform closestAsteroidTransform;
     private readonly float DRAG = 3f; //Drag amount for all drag modes
     #endregion
-
+    
     #region Init fields: Audio
     //Audio: Music
     public AudioSource music;
@@ -213,16 +213,6 @@ public class Player : MonoBehaviour
 
     public void LateStart()
     {
-        /*
-        //Print player ship model size
-        Vector3 meshFilterSize = transform.GetChild(0).GetChild(0).GetComponent<MeshFilter>().mesh.bounds.size;
-        Debug.Log(
-            "x: " + meshFilterSize.x
-            + ", y: " + meshFilterSize.y
-            + ", z: " + meshFilterSize.z
-        );
-        */
-
         //KeyBinds reference
         binds = control.binds;
 
@@ -250,10 +240,6 @@ public class Player : MonoBehaviour
 
         //Collection sound
         soundSourceOreCollected.clip = soundClipOreCollected;
-
-        //WEAPONS
-        //Called in update anyway
-        //UpdateWeaponSelected();
 
         //AUDIO
         //Play the first song 0 to 30 seconds after startup
@@ -430,7 +416,7 @@ public class Player : MonoBehaviour
             //Fuel decrement
             if (canAndIsMoving)
             {
-                vitalsFuel = Math.Max(0.0, vitalsFuel - ((vitalsFuelConsumptionRate / (1 + upgradeLevels[control.commerce.UPGRADE_FUEL_EFFICIENCY])) * Time.deltaTime));
+                vitalsFuel = Math.Max(0.0d, vitalsFuel - ((vitalsFuelConsumptionRate / (1.0d + (upgradeLevels[control.commerce.UPGRADE_FUEL_EFFICIENCY] * 0.33333333d))) * Time.deltaTime));
             }
 
             //Fuel increment (in-situ refinery)
@@ -639,6 +625,11 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementTorque()
     {
+        //TODO
+        //Don't overshoot: calculate if we have enough time to slow down rotation so we don't overshoot, and when we don't, torque in the opposite direction
+        //Adjust ship pitch: so it points at the same infinite-distance-away target the player is pointing at
+        //Add some pitch up to adjust for the offset between where the camera is vs where the ship is, so that they point at the same infinitely-distant point
+
         if (vitalsFuel > 0.0)
         {
             if (control.settings.spinStabilizers)
@@ -896,7 +887,7 @@ public class Player : MonoBehaviour
         vitalsHealthMax = VITALS_HEALTH_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_REINFORCED_HULL]);
         //vitalsHealth = vitalsHealthMax;
 
-        vitalsFuelMax = VITALS_FUEL_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
+        vitalsFuelMax = VITALS_FUEL_MAX_STARTER * (1.0d + (upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK] * 0.5d));
         //Debug.LogFormat("{0}, {1}, {2}", vitalsFuelMax, VITALS_FUEL_MAX_STARTER, upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
         //vitalsFuel = vitalsFuelMax;
 
@@ -914,19 +905,6 @@ public class Player : MonoBehaviour
     #endregion
 
     #region General methods: Movement
-    private void TorqueAxisRelative(float torque, Vector3 cameraDirection, Vector3 playerShipDirection)
-    {
-        float errorThreshold = 0.25f;
-        float turnRate = 0.12f; //0.12082853855005753739930955120829f;
-
-        Vector3 cameraToShipCross = Vector3.Cross(-cameraDirection, playerShipDirection);
-        float angleDifference = Mathf.Abs(Vector3.Cross(rb.angularVelocity, playerShipDirection).magnitude);
-
-        if (Mathf.Abs(cameraToShipCross.magnitude) > errorThreshold * angleDifference)
-        {
-            rb.AddTorque(cameraToShipCross * torque * turnRate * Time.deltaTime);
-        }
-    }
     #endregion
 
     #region General methods: Camera
@@ -1067,19 +1045,14 @@ public class Player : MonoBehaviour
         {
             playerWeaponLaser.Fire();
 
-            //Debug.LogFormat("Ship angle: {0}, view angle: {1}", transform.localRotation.eulerAngles, centreMountTran.localRotation.eulerAngles);
-            //Debug.Log("ship to look diff: " + (transform.localRotation.eulerAngles - centreMountTran.localRotation.eulerAngles).magnitude);
-            //Debug.Log("ship to look diff: " + (transform.localRotation * Quaternion.Inverse(centreMountTran.localRotation)));
-            //Debug.Log("ship to look diff: " + Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)));
-
             if (
                 !binds.GetInput(binds.bindCameraFreeLook) &&
                 !canAndIsMoving &&
+                !binds.GetInput(binds.bindAlignShipToReticle) &&
                 Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY
                 )
             {
                 control.ui.tipAimCertainty++;
-                //control.ui.SetTip("Not aiming at centre!");
             }
         }
         else if (weaponSelectedTitle == "Seismic charges")

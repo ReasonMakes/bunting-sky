@@ -16,7 +16,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
     private readonly float PROJECTILE_SPEED = 100f;
     
     [System.NonSerialized] public short clipSize;
-    [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 3;
+    [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 2;
     [System.NonSerialized] public short clipRemaining;
     [System.NonSerialized] public readonly float CLIP_COOLDOWN_DURATION = 9f; //reload period
     [System.NonSerialized] public float clipCooldownCurrent = 0f;
@@ -80,8 +80,9 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
 
     public void UpdateUpgrades()
     {
-        clipSize = (short)(CLIP_SIZE_STARTER * (1 + player.upgradeLevels[control.commerce.UPGRADE_DUAL_BATTERIES]));
-        clipRemaining = clipSize;
+        //This upgrade has been changed to only affect the mining laser
+        //clipSize = (short)(CLIP_SIZE_STARTER * (1 + player.upgradeLevels[control.commerce.UPGRADE_DUAL_BATTERIES]));
+        //clipRemaining = clipSize;
     }
 
     public void Fire()

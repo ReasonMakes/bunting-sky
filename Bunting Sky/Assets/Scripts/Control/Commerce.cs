@@ -109,19 +109,19 @@ public class Commerce : MonoBehaviour
         //Price
         UPGRADE_PRICE = 1;
         upgradeDictionary[UPGRADE_SOLD_OUT, UPGRADE_PRICE] = UPGRADE_PRICE_MAX.ToString();
-        upgradeDictionary[1, UPGRADE_PRICE] = "1000";
-        upgradeDictionary[2, UPGRADE_PRICE] = "500";
-        upgradeDictionary[3, UPGRADE_PRICE] = "500";
+        upgradeDictionary[1, UPGRADE_PRICE] = "500";
+        upgradeDictionary[2, UPGRADE_PRICE] = "2000";
+        upgradeDictionary[3, UPGRADE_PRICE] = "750";
         upgradeDictionary[4, UPGRADE_PRICE] = "1000";
-        upgradeDictionary[5, UPGRADE_PRICE] = "200";
-        upgradeDictionary[6, UPGRADE_PRICE] = "5000";
-        upgradeDictionary[7, UPGRADE_PRICE] = "3000";
+        upgradeDictionary[5, UPGRADE_PRICE] = "2000";
+        upgradeDictionary[6, UPGRADE_PRICE] = "4000";
+        upgradeDictionary[7, UPGRADE_PRICE] = "6000";
 
         //Description
         UPGRADE_DESCRIPTION = 2;
         upgradeDictionary[UPGRADE_SOLD_OUT, UPGRADE_DESCRIPTION] = "Item is out of stock";
-        upgradeDictionary[1, UPGRADE_DESCRIPTION] = "Halves the rate of fuel consumption for the same resultant thrust";
-        upgradeDictionary[2, UPGRADE_DESCRIPTION] = "Double-sized fuel tank with a superior design resulting in the same net weight";
+        upgradeDictionary[1, UPGRADE_DESCRIPTION] = "25% less fuel consumption for the same resultant thrust";
+        upgradeDictionary[2, UPGRADE_DESCRIPTION] = "1.5x larger fuel tank made of lighter material, resulting in the same weight";
         upgradeDictionary[3, UPGRADE_DESCRIPTION] = "Doubles outer hull integrity";
         upgradeDictionary[4, UPGRADE_DESCRIPTION] = "Increases maximum forward thrust output by 1.5x";
         upgradeDictionary[5, UPGRADE_DESCRIPTION] = "Doubles the mining laser's maximum ammunition per cycle";
@@ -279,8 +279,6 @@ public class Commerce : MonoBehaviour
             menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Control.colorTextEnabled;
             menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "Refuel to full";
         }
-        //menuButtonRepair.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsHealth >= playerScript.vitalsHealthMax || playerScript.currency < PRICE_REPAIR) ? Control.colorTextDisabled : Control.colorTextEnabled;
-        //menuButtonRefuel.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = (playerScript.vitalsFuel >= playerScript.vitalsFuelMax || playerScript.currency < PRICE_REFUEL) ? Control.colorTextDisabled : Control.colorTextEnabled;
     }
 
     public void EnableTooltip()
@@ -312,7 +310,6 @@ public class Commerce : MonoBehaviour
 
         //Correct next frame-ish
         Invoke("UpdateTooltipBackgroundWidth", Time.deltaTime);
-        //Debug.Log(tooltip.transform.Find("Text").GetComponent<TextMeshProUGUI>().textBounds.size);
     }
 
     private void UpdateTooltipBackgroundWidth()
@@ -337,8 +334,6 @@ public class Commerce : MonoBehaviour
     public void SetButtonUpgradeToDefaults(int buttonIndex)
     {
         Button menuButton = GetUpgradeButtonFromIndex(buttonIndex);
-
-        //Debug.LogFormat("Button {0} has upgradeIndex {1} and is named {2}", buttonIndex, upgradeIndexAtButton[buttonIndex], upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_NAME]);
 
         //GENERATE LEVEL TEXT
         //Init and references
@@ -489,14 +484,6 @@ public class Commerce : MonoBehaviour
             //Update UI
             playerScript.UpdateUpgrades();
             UpdatePlayerResourcesAndCommerceMenuUI();
-
-            //Debug
-            /*
-            for (int i = 0; i < playerScript.upgradeLevels.Length; i++)
-            {
-                Debug.LogFormat("upgrade level of {0}: {1}", upgradeDictionary[i, UPGRADE_NAME], playerScript.upgradeLevels[i]);
-            }
-            */
         }
     }
 
