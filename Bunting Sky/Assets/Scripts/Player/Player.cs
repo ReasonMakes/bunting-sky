@@ -61,6 +61,11 @@ public class Player : MonoBehaviour
     private float engineEmissionIntensity = 1.3f * 0.00748f; //1.4f * 0.00748f; //1.631096f;
     public Light engineLight;
     private bool canAndIsMoving = false;
+    private float tempEngineDisable = 0f;
+    private bool tempEngineDisableButFlickering = false;
+    private float tempEngineDisableCurrentDuration = 0f;
+    private float tempEngineDisablePeriodToPossiblyFlicker = 0.1f; //how many seconds to in between each flicker chance
+    private float tempEngineDisableFlickerChance = 0.25f; //1 = 100%
 
     //Movement: Relative drag
     [System.NonSerialized] public GameObject targetObject;
@@ -89,7 +94,7 @@ public class Player : MonoBehaviour
     public AudioSource soundSourceRocket;
     public AudioClip soundClipRocket;
     private readonly float SOUND_ROCKET_MAX_VOLUME = 0.02f;
-    private readonly float SOUND_ROCKET_VOLUME_DELTA_RATE = 0.1f;
+    private readonly float SOUND_ROCKET_VOLUME_DELTA_RATE = 0.2f; //0.1f;
     private readonly float SOUND_ROCKET_MAX_PITCH = 1.5f;
     private readonly float SOUND_ROCKET_PITCH_DELTA_RATE = 0.2f;
 
@@ -309,13 +314,20 @@ public class Player : MonoBehaviour
         //    UpdateUpgrades();
         //    control.ui.SetTip("Seismic charges upgrade unlocked");
         //}
-        
-        //Free money
+
+        ////Free money
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    currency += 1000;
+        //    control.ui.UpdateAllPlayerResourcesUI();
+        //    control.ui.SetTip("+1000 currency");
+        //}
+
+        //Temporarily disable engine
         if (binds.GetInputDown(binds.bindCheat1))
         {
-            currency += 1000;
-            control.ui.UpdateAllPlayerResourcesUI();
-            control.ui.SetTip("+1000 currency");
+            tempEngineDisable = 3f;
+            control.ui.SetTip("Engines damaged!");
         }
 
         //Very low fuel
@@ -342,11 +354,11 @@ public class Player : MonoBehaviour
         //    control.ui.UpdateAllPlayerResourcesUI();
         //}
 
-        //Teleport forward
-        if (binds.GetInputDown(binds.bindCheat1))
-        {
-            transform.position += transform.forward * 400f;
-        }
+        ////Teleport forward
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    transform.position += transform.forward * 400f;
+        //}
 
         //Spawn
         //Press O to spawn asteroid
@@ -393,6 +405,12 @@ public class Player : MonoBehaviour
             SlowUpdate();
         }
 
+        //Very slow update (once per second)
+        if (Time.frameCount % control.settings.targetFPS == 0)
+        {
+            VerySlowUpdate();
+        }
+
         //Have the position mount follow the player position
         positionMount.transform.position = transform.position;
 
@@ -412,6 +430,24 @@ public class Player : MonoBehaviour
             UpdatePlayerWeapons();          //Shoot stuff
 
             UpdatePlayerEngineEffect();     //Set engine glow relative to movement
+
+            //Engine temporarily disabled or flickering
+            if (tempEngineDisable > 0f)
+            {
+                tempEngineDisableCurrentDuration += Time.deltaTime;
+                tempEngineDisable = Mathf.Max(0f, tempEngineDisable - Time.deltaTime);
+
+                if (tempEngineDisableCurrentDuration > tempEngineDisablePeriodToPossiblyFlicker)
+                {
+                    tempEngineDisableButFlickering = (UnityEngine.Random.value <= tempEngineDisableFlickerChance);
+                    tempEngineDisableCurrentDuration = 0f;
+                }
+            }
+            else
+            {
+                tempEngineDisableCurrentDuration = 0f;
+                tempEngineDisableButFlickering = false;
+            }
 
             //Fuel decrement
             if (canAndIsMoving)
@@ -507,13 +543,19 @@ public class Player : MonoBehaviour
                     //vitalsHealth - (Math.Pow(1d + (((maxDist - distToCStar)/maxDist) * maxBaseDPS), 2d) * Time.deltaTime)
                     vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
                 ),
-                "overheat"
+                "overheat",
+                0f
             );
         }
         else
         {
             //Debug.Log(":) " + distToCStar);
         }
+    }
+
+    private void VerySlowUpdate()
+    {
+        
     }
 
     private void SlowFixedUpdate()
@@ -551,6 +593,7 @@ public class Player : MonoBehaviour
                 || binds.GetInput(binds.bindThrustUp)
                 || binds.GetInput(binds.bindThrustDown)
             )
+            && (tempEngineDisable == 0 || tempEngineDisableButFlickering)
         )
         {
             canAndIsMoving = true;
@@ -598,7 +641,7 @@ public class Player : MonoBehaviour
          * Can set the relative drag to only happen when not moving to allow for more realistic (but less intuitive) acceleration by surrounding this with an if (!moving) check
          */
 
-        if (vitalsFuel > 0.0d && control.settings.matchVelocity)
+        if (vitalsFuel > 0.0d && tempEngineDisable <= 0f && control.settings.matchVelocity)
         {
             if (closestMoonTransform != null && distToClosestMoon <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
@@ -627,15 +670,15 @@ public class Player : MonoBehaviour
     {
         //TODO
         //Don't overshoot: calculate if we have enough time to slow down rotation so we don't overshoot, and when we don't, torque in the opposite direction
-        //Adjust ship pitch: so it points at the same infinite-distance-away target the player is pointing at
-        //Add some pitch up to adjust for the offset between where the camera is vs where the ship is, so that they point at the same infinitely-distant point
 
         if (vitalsFuel > 0.0)
         {
-            if (control.settings.spinStabilizers)
+            float angularDragWhenEnginesOn = 40f;
+
+            if (tempEngineDisable <= 0f && control.settings.spinStabilizers)
             {
                 //Angular drag to bring rotations to rest
-                rb.angularDrag = 10f;
+                rb.angularDrag = angularDragWhenEnginesOn;
             }
             else
             {
@@ -643,17 +686,19 @@ public class Player : MonoBehaviour
                 rb.angularDrag = 0f;
             }
 
-            if (!binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
+            if (tempEngineDisable <= 0f && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
             {
                 //Angular drag to smooth out torque
-                rb.angularDrag = 10f;
+                rb.angularDrag = angularDragWhenEnginesOn;
 
                 //Thank you Tobias, Conkex, HiddenMonk, and Derakon
                 //https://answers.unity.com/questions/727254/use-rigidbodyaddtorque-with-quaternions-or-forward.html
 
                 //TORQUE DRIECTION
-                //Vector of where the camera is pointing (where the ship is relative to the camera)
-                Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
+                //Vector of where the camera is pointing
+                //Vector3 shipRelativeToCamera = transform.position - tpCamMount.transform.position;
+                //Vector3 shipRelativeToCamera = (tpCamMount.transform.position + tpCamMount.transform.forward) - tpCamMount.transform.position;
+                Vector3 shipRelativeToCamera = tpCamMount.transform.forward;
 
                 //The rotation to look at that point
                 Quaternion rotationToWhereCameraIsLooking = Quaternion.LookRotation(shipRelativeToCamera);
@@ -667,7 +712,7 @@ public class Player : MonoBehaviour
 
                 //TORQURE STRENGTH
                 //Base strength modifier
-                float torqueBaseStrength = 300f;
+                float torqueBaseStrength = 30f;
 
                 //Smoothing modifier so we don't overshoot
                 //If the rotation needed is very small but we have a ton of angular velocity, we need to slow down - not speed up
@@ -677,9 +722,11 @@ public class Player : MonoBehaviour
                 float threshold = 2f;
                 //Normalizing
                 float torqueDistanceModifier = Mathf.Min(1f, rotationDistance * threshold);
+                //Disabling this for now
+                torqueDistanceModifier = 1f;
 
                 //Adding all modifiers together
-                float torqueStrength = torqueBaseStrength * torqueDistanceModifier * Time.deltaTime;
+                float torqueStrength = torqueBaseStrength * rb.angularDrag * torqueDistanceModifier * Time.deltaTime;
 
                 //APPLY TORQUE
                 Vector3 torqueFinal = torqueVector * torqueStrength;
@@ -704,7 +751,7 @@ public class Player : MonoBehaviour
         thrustVector = Vector3.zero;
 
         //Move if fuel
-        if (vitalsFuel > 0.0)
+        if ((tempEngineDisable <= 0f || tempEngineDisableButFlickering) && vitalsFuel > 0.0)
         {
             //Faster if moving forward
             if (binds.GetInput(binds.bindThrustForward))
@@ -1183,15 +1230,21 @@ public class Player : MonoBehaviour
         }
 
         //Adjust volume and pitch with movement
+        float rocketVolumeDeltaRate = SOUND_ROCKET_VOLUME_DELTA_RATE;
+        if (tempEngineDisable > 0f)
+        {
+            rocketVolumeDeltaRate *= 1.5f;
+        }
+
         if (canAndIsMoving)
         {
-            soundSourceRocket.volume = Mathf.Min(SOUND_ROCKET_MAX_VOLUME, soundSourceRocket.volume + (Time.deltaTime * SOUND_ROCKET_VOLUME_DELTA_RATE));
+            soundSourceRocket.volume = Mathf.Min(SOUND_ROCKET_MAX_VOLUME, soundSourceRocket.volume + (Time.deltaTime * rocketVolumeDeltaRate));
 
             soundSourceRocket.pitch = Mathf.Min(SOUND_ROCKET_MAX_PITCH, soundSourceRocket.pitch + (Time.deltaTime * SOUND_ROCKET_PITCH_DELTA_RATE));
         }
         else
         {
-            soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * SOUND_ROCKET_VOLUME_DELTA_RATE) * 32f));
+            soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * rocketVolumeDeltaRate) * 32f));
 
             soundSourceRocket.pitch = Mathf.Max(1f, soundSourceRocket.pitch - ((soundSourceRocket.pitch * Time.deltaTime * SOUND_ROCKET_PITCH_DELTA_RATE) * 32f));
         }
@@ -1287,7 +1340,8 @@ public class Player : MonoBehaviour
 
             DamagePlayer(
                 newHealthAmount,
-                "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv"
+                "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv",
+                (float)damageToDeal
             );
         }
         else
@@ -1318,7 +1372,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void DamagePlayer(double newHealthAmount, string cause)
+    public void DamagePlayer(double newHealthAmount, string cause, float tempEngineDisableDuration)
     {
         if (!isDestroyed)
         {
@@ -1330,6 +1384,10 @@ public class Player : MonoBehaviour
             if (vitalsHealth <= 0f)
             {
                 DestroyPlayer();
+            }
+            else
+            {
+                tempEngineDisable = Mathf.Max(tempEngineDisable, tempEngineDisableDuration);
             }
         }
     }
