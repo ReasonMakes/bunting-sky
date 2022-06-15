@@ -80,22 +80,26 @@ public class Moon : MonoBehaviour
         byte type = Asteroid.GetRandomType();
         for (int i = 0; i < 7; i++)
         {
-            //Spawn
-            GameObject asteroid = control.generation.SpawnAsteroid(
-                transform.position,
-                rb.velocity,
-                Asteroid.GetRandomSize(),
-                type,
-                Asteroid.HEALTH_MAX
-            );
+            //Spawn asteroids
+            GameObject instanceAsteroid = control.generation.SpawnAsteroidFromPool(transform.position, Asteroid.GetRandomSize(), type);
+            //GameObject asteroid = control.generation.SpawnAsteroid(
+            //    transform.position,
+            //    rb.velocity,
+            //    Asteroid.SIZE_LARGE, //"Large", //Asteroid.GetRandomSize(),
+            //    type,
+            //    Asteroid.HEALTH_MAX
+            //);
 
             //Spread out
-            asteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);
+            instanceAsteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);
         }
 
-        //Play sound
-        GetComponent<AudioSource>().Play();
-
+        //Play explosion sound if player is close enough
+        if (Vector3.Distance(control.generation.instancePlayer.GetComponentInChildren<Player>().transform.position, transform.position) <= 750f)
+        {
+            GetComponent<AudioSource>().Play();
+        }
+        
         //Remember is disabled
         disabled = true;
     }

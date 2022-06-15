@@ -159,14 +159,14 @@ public class Menu : MonoBehaviour
     public void MenuSaveAndQuit()
     {
         //Save
-        control.generation.SaveGame();
+        //control.generation.SaveGame();
 
         //Quit
-        #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-        #endif
-
         Application.Quit();
+
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #endif
     }
     #endregion
 
@@ -469,6 +469,10 @@ public class Menu : MonoBehaviour
             {
                 inputField = control.settings.ASTEROIDS_MIN_MAX;
             }
+            else if (inputField > control.settings.asteroidsConcurrentMax) //min can't be more than max
+            {
+                inputField = control.settings.asteroidsConcurrentMax;
+            }
 
             //Update in settings and save
             control.settings.asteroidsConcurrentMin = inputField;
@@ -492,6 +496,10 @@ public class Menu : MonoBehaviour
             else if (inputField > control.settings.ASTEROIDS_MAX_MAX)
             {
                 inputField = control.settings.ASTEROIDS_MAX_MAX;
+            }
+            else if (inputField < control.settings.asteroidsConcurrentMin) //max can't be less than min
+            {
+                inputField = control.settings.asteroidsConcurrentMin;
             }
 
             //Update in settings and save

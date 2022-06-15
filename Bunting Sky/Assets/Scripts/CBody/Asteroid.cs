@@ -5,41 +5,44 @@ using UnityEngine;
 
 public class Asteroid : MonoBehaviour
 {
-    private GameObject model;
-    private GameObject activeModel;
-    public string sizeClassDisplay;
+    [System.NonSerialized] public Control control;
+    private Transform playerTran;
+    public SphereCollider targetCollider1;
+    public SphereCollider targetCollider2;
     public Rigidbody rb;
 
-    public GameObject modelClassLarge;
-    public GameObject modelClassMedium;
-    public GameObject modelClassSmall;
-
-    [System.NonSerialized] public Control control;
-
-    public GameObject ore;
-
-    public MeshRenderer meshRenderer;
-    public Material matPlatinoid;
-    public Material matPreciousMetal;
-    public Material matWater;
-    [System.NonSerialized] public byte type = 0; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
-
-    //public GameObject particlesShurikenDamageObj;
+    [System.NonSerialized] public bool destroying = false;
+    [System.NonSerialized] public bool destroyed = true;
+    private float destroyingTime = 0f;
+    [System.NonSerialized] public bool performantMode = false;
 
     [System.NonSerialized] public readonly static byte HEALTH_MAX = 4;
     [System.NonSerialized] public byte health = HEALTH_MAX;
-    [System.NonSerialized] public bool destroyed = false;
-    private float destroyedTime = 0f;
 
-    Transform playerTran;
-    public SphereCollider targetCollider1;
-    public SphereCollider targetCollider2;
-    public SphereCollider targetCollider3;
-    public SphereCollider targetCollider4;
-
-    public bool separating = true;
-    //private readonly float INTERSECTING_REPEL_FORCE = 0.03f;
+    [System.NonSerialized] public bool separating = true;
     private readonly float INTERSECTING_REPEL_TELEPORT_STEP_DIST = 0.03f;
+
+    [System.NonSerialized] public int size;
+    [System.NonSerialized] public static int SIZE_SMALL = 0;
+    [System.NonSerialized] public static int SIZE_MEDIUM = 1;
+    [System.NonSerialized] public static int SIZE_LARGE = 2;
+    private GameObject modelGroup;
+    private GameObject modelObject;
+    public GameObject modelGroupSizeSmall;
+    public GameObject modelGroupSizeMedium;
+    public GameObject modelGroupSizeLarge;
+
+    [System.NonSerialized] public byte type = 0;
+    [System.NonSerialized] public static readonly byte TYPE_PLATINOID = 0;
+    [System.NonSerialized] public static readonly byte TYPE_PRECIOUS_METAL = 1;
+    [System.NonSerialized] public static readonly byte TYPE_WATER = 2;
+    public Material matPlatinoid;
+    public Material matPreciousMetal;
+    public Material matWater;
+    
+    [System.NonSerialized] public MeshRenderer meshRenderer;
+
+    public GameObject ore;
 
     private void Start()
     {
@@ -48,39 +51,61 @@ public class Asteroid : MonoBehaviour
 
     private void Update()
     {
-        //Slow update
-        if (Time.frameCount % 30 == 0)
+        if (!performantMode)
         {
-            SlowUpdate();
-        }
-
-        //Destruction
-        if (!Menu.menuOpenAndGamePaused)
-        {
-            bool particlesFadedOut = destroyedTime >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
-            bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTran.transform.position) >= playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
-            if (destroyed && particlesFadedOut && playerBeyondArbitraryDistance)
+            //Slow update
+            if (Time.frameCount % 30 == 0)
             {
-                Destroy(gameObject, 0f);
+                SlowUpdate();
             }
-            destroyedTime += Time.deltaTime;
+
+            //Destruction
+            if (!Menu.menuOpenAndGamePaused && !destroyed)
+            {
+                //bool particlesFadedOut = destroyingTime >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
+                bool particlesFadedOut = destroyingTime >= 15f; //particles technically don't fade out for 75 seconds, but they aren't actually visible after 9 seconds so this should be fine
+                bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTran.transform.position) >= playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
+                if (destroying)
+                {
+                    //Debug.Log("Destroying. Time: " + destroyingTime + "/" + GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant);
+                    //Debug.Log("Distance: " + Vector3.Distance(transform.position, playerTran.transform.position) + "/" + playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD);
+
+                    //Increment timer
+                    destroyingTime += Time.deltaTime;
+
+                    //Disable model and trigger volumes
+                    modelObject.SetActive(false);
+                    targetCollider1.enabled = false;
+                    targetCollider2.enabled = false;
+
+                    //Wait for particles to fade out before disabling trigger volume
+                    if (particlesFadedOut && playerBeyondArbitraryDistance)
+                    {
+                        //Debug.Log("Disabled from particle fade out and player left");
+                        //Disable
+                        Disable();
+                    }
+                }
+            }
         }
     }
 
     private void SlowUpdate()
     {
         //Destroy asteroids that are out of play
-        if (Vector3.Distance(transform.position, control.generation.instanceHomePlanet.transform.position) > Mathf.Pow(control.generation.MOONS_SPACING_BASE_MAX, control.generation.MOONS_SPACING_POWER) + 250f
-            && Vector3.Distance(transform.position, playerTran.position) > 400.0f)
+        if (!destroyed)
         {
-            //Debug.Log("Asteroid that was too far from centre star and player has been destroyed.");
-            Destroy(gameObject, 0f);
+            if (Vector3.Distance(transform.position, control.generation.instanceHomePlanet.transform.position) > Mathf.Pow(control.generation.MOONS_SPACING_BASE_MAX, control.generation.MOONS_SPACING_POWER) + 250f
+            && Vector3.Distance(transform.position, playerTran.position) > 400.0f)
+            {
+                destroying = true;
+            }
         }
     }
 
     private void FixedUpdate()
     {
-        if (!Menu.menuOpenAndGamePaused && separating)
+        if (!performantMode && !Menu.menuOpenAndGamePaused && !destroyed && separating)
         {
             Separate();
         }
@@ -88,87 +113,99 @@ public class Asteroid : MonoBehaviour
 
     private void Separate()
     {
-        //Ignore all collisions until separated from siblings (problem: this will ignore collisions with player and with weapons)
+        //Debug.Log("Checking to separate");
 
-        Asteroid[] asteroids = FindObjectsOfType<Asteroid>();
-        foreach (Asteroid asteroid in asteroids)
+        //Ignore all collisions until separated from siblings (this will ignore collisions with player and with weapons, but should only last a few milliseconds)
+        int nActiveAsteroids = control.generation.asteroidsEnabled.transform.childCount;
+        if (nActiveAsteroids > 1)
         {
-            if (asteroid != this)
+            for (int nActiveAsteroidsChecked = 0; nActiveAsteroidsChecked < nActiveAsteroids; nActiveAsteroidsChecked++)
             {
-                if (activeModel.transform.GetComponent<MeshCollider>().bounds.Intersects(
-                    asteroid.GetComponent<Asteroid>().activeModel.transform.GetComponent<MeshCollider>().bounds
-                ))
+                Transform asteroidToCheck = control.generation.asteroidsEnabled.transform.GetChild(nActiveAsteroidsChecked);
+                if (asteroidToCheck.gameObject != gameObject)
                 {
-                    //Debug.Log("Intersecting");
+                    if (modelObject.transform.GetComponent<MeshCollider>().bounds.Intersects(
+                        asteroidToCheck.GetComponent<Asteroid>().modelObject.transform.GetComponent<MeshCollider>().bounds
+                    ))
+                    {
+                        //Repel from the intersected asteroid
+                        //Get repel direction
+                        Vector3 repelDir = (transform.position - asteroidToCheck.transform.position).normalized;
 
-                    Vector3 repelDir = (transform.position - asteroid.transform.position).normalized;
-                    //rb.AddForce(INTERSECTING_REPEL_FORCE * (transform.position - asteroid.transform.position).normalized * Time.deltaTime);
-                    //rb.AddForce(INTERSECTING_REPEL_FORCE * repelDir * Time.deltaTime);
-                    transform.position += INTERSECTING_REPEL_TELEPORT_STEP_DIST * repelDir;
+                        //Ensure we have a direction, even if spawning exactly inside each other by chance
+                        if (repelDir == Vector3.zero)
+                        {
+                            repelDir = new Vector3(Random.value, Random.value, Random.value);
+                        }
 
-                    //Debug.Log(Time.time + ": Moved intersecting asteroid: " + repelDir);
+                        //Debug.Log("Intersecting. Repel dir: " + repelDir);
 
-                    return;
+                        //Repel
+                        transform.position += INTERSECTING_REPEL_TELEPORT_STEP_DIST * repelDir;
+
+                        //Skip the code below
+                        return;
+                    }
                 }
             }
         }
 
-        activeModel.transform.GetComponent<MeshCollider>().enabled = true;
+        //Once we aren't intersecting anything anymore then we'll get to this point in the code
+        //Debug.Log("Separated; re-enabling collisions");
+        modelObject.transform.GetComponent<MeshCollider>().enabled = true;
         rb.detectCollisions = true;
         separating = false;
     }
 
-    public static string GetRandomSize()
+    public static int GetRandomSize()
     {
         //Randomly choose size
-        switch (Random.Range(0, 3)) //int range is exclusive, so have to add 1 to the max value
+        switch (Random.Range(0, 2 + 1)) //int range is exclusive, so have to add 1 to the max value
         {
             case 0:
-                return "Small";
+                return SIZE_SMALL;
             case 1:
-                return "Medium";
+                return SIZE_MEDIUM;
             case 2:
-                return "Large";
+                return SIZE_LARGE;
             default:
-                return "error";
+                return -1;
         }
     }
 
     //THIS MUST BE CALLED BEFORE TYPE IS SET
-    public void SetSize(string size)
+    public void SetSize(int size)
     {
         //Set the internal field for size
-        sizeClassDisplay = size;
-        
+        this.size = size;
+
         //Modify attributes based on size
-        switch (size)
+        if (this.size == SIZE_SMALL)
         {
-            case "Small":
-                model = modelClassSmall;
-                rb.mass = 0.2f;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 50;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.2f;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1f;
-                health = (byte)Random.Range(1, 3);
-                break;
-
-            case "Medium":
-                model = modelClassMedium;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
-                rb.mass = 1.0f;
-                health = (byte)Random.Range(2, 5);
-                break;
-
-            case "Large":
-                model = modelClassLarge;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
-                GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
-                rb.mass = 10.0f;
-                health = (byte)Random.Range(4, 8);
-                break;
+            modelGroup = modelGroupSizeSmall;
+            rb.mass = 0.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 50;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1f;
+            health = (byte)Random.Range(1, 3);
+        }
+        else if (this.size == SIZE_MEDIUM)
+        {
+            modelGroup = modelGroupSizeMedium;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
+            rb.mass = 1.0f;
+            health = (byte)Random.Range(2, 5);
+        }
+        else if (this.size == SIZE_LARGE)
+        {
+            modelGroup = modelGroupSizeLarge;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
+            rb.mass = 10.0f;
+            health = (byte)Random.Range(4, 8);
         }
 
         //Activate the model
@@ -176,33 +213,33 @@ public class Asteroid : MonoBehaviour
         //Randomly pick a number from 0 to that length (we don't have to subtract one to format for the index which counts from zero because Random.Range max is exclusive when working with ints)
         //Select the child of that randomly selected number
         //Set that game object to active
-        activeModel = model.transform.GetChild(Random.Range(0, model.transform.childCount)).gameObject;
-        activeModel.SetActive(true);
+        modelObject = modelGroup.transform.GetChild(Random.Range(0, modelGroup.transform.childCount)).gameObject;
+        modelObject.SetActive(true);
     }
 
     //SIZE MUST BE SET BEFORE TYPE CAN BE
     public void SetType(byte typeToSetAs)
     {
-        if (model == null) Debug.LogError("Error: must set asteroid size before setting type");
+        if (modelGroup == null) Debug.LogError("Error: must set asteroid size before setting type");
 
         //Set type
         type = typeToSetAs;
 
         //Assign material equal to type
-        switch (type)
+        if (type == TYPE_PLATINOID)
         {
-            case 0:
-                activeModel.transform.GetChild(0).GetComponent<MeshRenderer>().material = matPlatinoid;
-                break;
-            case 1:
-                activeModel.transform.GetChild(0).GetComponent<MeshRenderer>().material = matPreciousMetal;
-                break;
-            case 2:
-                activeModel.transform.GetChild(0).GetComponent<MeshRenderer>().material = matWater;
-                break;
+            modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matPlatinoid; 
+        }
+        else if (type == TYPE_PRECIOUS_METAL)
+        {
+            modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matPreciousMetal;
+        }
+        else if(type == TYPE_WATER)
+        {
+            modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matWater;
         }
 
-        GetComponent<ParticlesDamageRock>().SetParticleSystemDamageColour(activeModel.transform.GetChild(0), GetComponent<ParticlesDamageRock>().saturationDefault);
+        GetComponent<ParticlesDamageRock>().SetParticleSystemDamageColour(modelObject.transform.GetChild(0), GetComponent<ParticlesDamageRock>().saturationDefault);
     }
 
     public static byte GetRandomType()
@@ -241,43 +278,142 @@ public class Asteroid : MonoBehaviour
 
     public void BreakApart(bool oreDrop)
     {
-        if (!destroyed)
+        if (!destroying)
         {
             //Disable self
-            targetCollider1.enabled = false;
-            targetCollider2.enabled = false;
-            targetCollider3.enabled = false;
-            targetCollider4.enabled = false;
-            rb.detectCollisions = false;
-            activeModel.SetActive(false);
+            //Disable();
+            destroying = true;
 
-            switch (sizeClassDisplay)
+            //Spawn smaller asteroids
+            if (size == SIZE_LARGE)
             {
-                case "Large":
-                    if (oreDrop) { for (int i = 0; i < Random.Range(5, 10); i++) SpawnOre(); }
-                    for (int i = 0; i < Random.Range(2, 4); i++) SpawnAsteroid("Medium");
-                    for (int i = 0; i < Random.Range(3, 8); i++) SpawnAsteroid("Small");
-                    break;
-
-                case "Medium":
-                    if (oreDrop) { for (int i = 0; i < Random.Range(3, 7); i++) SpawnOre(); }
-                    for (int i = 0; i < Random.Range(2, 5); i++) SpawnAsteroid("Small");
-                    break;
-
-                case "Small":
-                    if (oreDrop) { for (int i = 0; i < Random.Range(1, 3); i++) SpawnOre(); }
-                    break;
+                if (oreDrop) { for (int i = 0; i < Random.Range(5, 9 + 1); i++) SpawnOre(); };
+                for (int i = 0; i < Random.Range(2, 3 + 1); i++) { control.generation.SpawnAsteroidFromPool(transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)), Asteroid.SIZE_MEDIUM, type); }
+                for (int i = 0; i < Random.Range(3, 6 + 1); i++) { control.generation.SpawnAsteroidFromPool(transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)), Asteroid.SIZE_SMALL, type); }
             }
+            else if (size == SIZE_MEDIUM)
+            {
+                if (oreDrop) { for (int i = 0; i < Random.Range(3, 6 + 1); i++) SpawnOre(); };
+                for (int i = 0; i < Random.Range(2, 4 + 1); i++) { control.generation.SpawnAsteroidFromPool(transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)), Asteroid.SIZE_SMALL, type); }
+            }
+            else if (size == SIZE_SMALL)
+            {
+                if (oreDrop) { for (int i = 0; i < Random.Range(1, 2 + 1); i++) SpawnOre(); };
+            }
+            //switch (sizeClassDisplay)
+            //{
+            //    case "Large":
+            //        if (oreDrop) { for (int i = 0; i < Random.Range(5, 10); i++) SpawnOre(); }
+            //        for (int i = 0; i < Random.Range(2, 4); i++) SpawnAsteroid("Medium");
+            //        for (int i = 0; i < Random.Range(3, 8); i++) SpawnAsteroid("Small");
+            //        break;
+            //
+            //    case "Medium":
+            //        if (oreDrop) { for (int i = 0; i < Random.Range(3, 7); i++) SpawnOre(); }
+            //        for (int i = 0; i < Random.Range(2, 5); i++) SpawnAsteroid("Small");
+            //        break;
+            //
+            //    case "Small":
+            //        if (oreDrop) { for (int i = 0; i < Random.Range(1, 3); i++) SpawnOre(); }
+            //        break;
+            //}
 
-            //Play sound effect
+            //Play break apart sound effect
             GetComponent<AudioSource>().Play();
-
-            //Destroy self
-            destroyed = true;
         }
     }
 
-    private void SpawnAsteroid(string size)
+    private void SetEnabled(bool enabled)
+    {
+        //This method should not be called directly except by Enable() and Disable()
+
+        //Disable target triggers
+        targetCollider1.enabled = enabled;
+        targetCollider2.enabled = enabled;
+
+        //Disable performant mode
+        SetPerformant(false);
+
+        //Disable/enable model
+        if (modelObject != null)
+        {
+            modelObject.SetActive(enabled);
+        }
+        
+        //Destroy or undestroy
+        destroying = false;
+        if (enabled == true)
+        {
+            gameObject.SetActive(true);
+            separating = true;
+            destroyed = false;
+            targetCollider1.enabled = true;
+            targetCollider2.enabled = true;
+            transform.parent = control.generation.asteroidsEnabled.transform;
+            control.generation.asteroidsEnabled.name = "Enabled (" + control.generation.asteroidsEnabled.transform.childCount + ")";
+            control.generation.asteroidsDisabled.name = "Disabled (" + control.generation.asteroidsDisabled.transform.childCount + ")";
+        }
+        else
+        {
+            destroyingTime = 0f;
+            destroyed = true;
+            targetCollider1.enabled = false;
+            targetCollider2.enabled = false;
+            transform.parent = control.generation.asteroidsDisabled.transform;
+            control.generation.asteroidsEnabled.name = "Enabled (" + control.generation.asteroidsEnabled.transform.childCount + ")";
+            control.generation.asteroidsDisabled.name = "Disabled (" + control.generation.asteroidsDisabled.transform.childCount + ")";
+            rb.detectCollisions = false;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.ResetInertiaTensor();
+            gameObject.SetActive(false);
+        }
+    }
+
+    public void Enable(Vector3 position, int size, byte type)
+    {
+        SetSize(size);
+        SetType(type);
+        transform.position = position;
+        transform.rotation = Quaternion.Euler(
+            Random.Range(0f, 360f),
+            Random.Range(0f, 360f),
+            Random.Range(0f, 360f)
+        );
+        SetEnabled(true);
+    }
+
+    public void Disable()
+    {
+        SetEnabled(false);
+    }
+
+    public void SetPerformant(bool performance)
+    {
+        //Disables Update(), rigidbody, and mesh collider (to be swapped out for sphere collider) for improved performance (makes a big difference with 100 asteroids)
+        performantMode = performance;
+        rb.isKinematic = performance;
+        if (!separating)
+        {
+            SetHitboxEnabledAndChoose(true);
+        }
+    }
+
+    private void SetHitboxEnabledAndChoose(bool enabled)
+    {
+        if (enabled)
+        {
+            modelGroup.GetComponent<SphereCollider>().enabled = performantMode;
+            modelObject.GetComponent<MeshCollider>().enabled = !performantMode;
+        }
+        else
+        {
+            modelGroup.GetComponent<SphereCollider>().enabled = false;
+            modelObject.GetComponent<MeshCollider>().enabled = false;
+        }
+    }
+
+    private void SpawnAsteroid(int size)
     {
         //Instantiate at parent position, plus some randomness
         GameObject instanceCBodyAsteroid = Instantiate(

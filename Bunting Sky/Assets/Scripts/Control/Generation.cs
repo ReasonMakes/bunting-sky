@@ -34,8 +34,8 @@ public class Generation : MonoBehaviour
     private float PLANETS_SPACING_POWER = 1f;
     private float maxPlanetDist;
 
-    private readonly int ASTEROID_CLUSTERS_RANGE_LOW = 6;
-    private readonly int ASTEROID_CLUSTERS_RANGE_HIGH = 9;
+    //private readonly int ASTEROID_CLUSTERS_RANGE_LOW = 6;
+    //private readonly int ASTEROID_CLUSTERS_RANGE_HIGH = 9;
 
     //Verse hierarchy
     public GameObject verseSpace;
@@ -54,7 +54,10 @@ public class Generation : MonoBehaviour
                     public GameObject heighliner;
 
                 public GameObject asteroids;
+                public GameObject asteroidsEnabled;
+                public GameObject asteroidsDisabled;
                     public GameObject asteroid;
+                    [System.NonSerialized]public List<GameObject> asteroidsPool = new List<GameObject>();
 
         public GameObject ores;
 
@@ -124,9 +127,11 @@ public class Generation : MonoBehaviour
         //Minimum
         if (asteroids.transform.childCount < control.settings.asteroidsConcurrentMin)
         {
-            //Debug.Log("Under-limit");
+            int asteroidsToGenerate = control.settings.asteroidsConcurrentMin - asteroids.transform.childCount;
+            int clustersToGenerate = asteroidsToGenerate / 4;
 
-            GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1));
+            //GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1));
+            //GenerateAsteroidClusters(clustersToGenerate, 4);
         }
 
         //Limit
@@ -181,9 +186,12 @@ public class Generation : MonoBehaviour
         //HOME STAR
         SpawnStar(null);
 
-        //Planets
+        //Planetary system (moons, stations, heighliners, player)
         SpawnPlanetarySystems(Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1), generationType);
 
+        //Asteroids
+        PopulateAsteroidPool();
+        
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
         SaveGame();
     }
@@ -330,7 +338,7 @@ public class Generation : MonoBehaviour
                 );
 
                 //Asteroids
-                GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1));
+                //GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1), 4);
             }
             else
             {
@@ -419,7 +427,52 @@ public class Generation : MonoBehaviour
         return instanceMoon;
     }
 
-    private void GenerateAsteroidClusters(int nAsteroidClusters)
+    private void PopulateAsteroidPool()
+    {
+        for (int nAsteroids = 0; nAsteroids < control.settings.asteroidsConcurrentMax; nAsteroids++)
+        {
+            //Instantiate
+            GameObject instanceAsteroid = Instantiate(
+                asteroid,
+                Vector3.zero,
+                Quaternion.identity
+            );
+
+            //Setup script
+            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
+            //Give control reference
+            instanceAsteroidScript.control = control;
+            //Ignore all collisions unless explicitly enabled (once asteroid is enabled and separated from siblings)
+            instanceAsteroidScript.rb.detectCollisions = false;
+
+            //Put in hierarchy
+            instanceAsteroid.transform.parent = asteroidsDisabled.transform;
+            //Add to pool
+            asteroidsPool.Add(instanceAsteroid);
+            //Set as disabled until needed
+            instanceAsteroidScript.Disable();
+        }
+    }
+
+    public GameObject SpawnAsteroidFromPool(Vector3 position, int size, byte type)
+    {
+        GameObject instanceAsteroid = null;
+
+        if (asteroidsDisabled.transform.childCount > 0)
+        {
+            Transform asteroidToEnable = asteroidsDisabled.transform.GetChild(0);
+            instanceAsteroid = asteroidToEnable.gameObject;
+            asteroidToEnable.GetComponent<Asteroid>().Enable(position, size, type);
+        }
+        else
+        {
+            Debug.Log("No free asteroids!");
+        }
+
+        return instanceAsteroid;
+    }
+
+    private void GenerateAsteroidClusters(int nAsteroidClusters, int clusterSizeRange)
     {
         //Properties
         float distanceOut = MOONS_DISTANCE_OUT;
@@ -437,7 +490,7 @@ public class Generation : MonoBehaviour
             spawnRadius = distanceOut + randSpacing;
             distanceOut = spawnRadius; //increment distanceOut for the next cBody
             spawnAngle = Random.Range(0f, 360f);
-            clusterSize = Control.LowBiasedRandomIntSquared(4); //range of 1 to 16 (4^2 = 16)
+            clusterSize = Control.LowBiasedRandomIntSquared(clusterSizeRange); //range of 1 to 16 (4^2 = 16)
 
             //We don't have to add 1 here to format for Random.Range max being exclusive for ints because the length is already 1 greater than the index (since index starts at 0)
             clusterType = (byte)Random.Range(0, Ore.typeLength);
@@ -490,7 +543,7 @@ public class Generation : MonoBehaviour
         }
     }
 
-    public GameObject SpawnAsteroid(Vector3 position, Vector3 velocity, string size, byte type, byte health) //bool randomType)
+    public GameObject SpawnAsteroid(Vector3 position, Vector3 velocity, int size, byte type, byte health) //bool randomType)
     {
         GameObject instanceAsteroid = Instantiate(
             asteroid,
@@ -580,51 +633,51 @@ public class Generation : MonoBehaviour
         float[,] planetPosition = new float[planetarySystems.Count, 3];
         string[] planetName = new string[planetarySystems.Count];
         byte[] planetarySystemMoonQuantity = new byte[planetarySystems.Count];
-
+        
         //Moons
         Moon[] moonArray = FindObjectsOfType<Moon>();
         float[,] moonPosition = new float[moonArray.Length, 3];
         string[] moonName = new string[moonArray.Length];
         bool[] moonHasStation = new bool[moonArray.Length];
-
+        
         string[] stationTitle = new string[moonArray.Length];
         float[] stationPricePlatinoid = new float[moonArray.Length];
         float[] stationPricePreciousMetal = new float[moonArray.Length];
         float[] stationPriceWater = new float[moonArray.Length];
         int[,] stationUpgradeIndex = new int[moonArray.Length, StationDocking.upgradeButtons];
-
+        
         //ASSIGN VERSE DATA TO THOSE ARRAYS
         for (int planetaryIndex = 0; planetaryIndex < planetarySystems.Count; planetaryIndex++)
         {
             //PLANETS
             GameObject instancePlanet = planetarySystems[planetaryIndex][0]; //0 is the planet, the rest of the list is moons
-
+        
             //Position
             planetPosition[planetaryIndex, 0] = instancePlanet.transform.position.x;
             planetPosition[planetaryIndex, 1] = instancePlanet.transform.position.y;
             planetPosition[planetaryIndex, 2] = instancePlanet.transform.position.z;
-
+        
             //Name
             planetName[planetaryIndex] = instancePlanet.GetComponent<NameCelestial>().title;
-
+        
             //Number of moons
             planetarySystemMoonQuantity[planetaryIndex] = (byte)planetarySystems[planetaryIndex].Count;
-
+        
             //Go until count - 1 because 0 is the planet so we offset everything by +1, and we don't want to go over
             for (int moonIndex = 0; moonIndex < planetarySystems[planetaryIndex].Count - 1; moonIndex++)
             {
                 //MOONS
                 GameObject instanceMoon = planetarySystems[planetaryIndex][moonIndex + 1]; //add 1 because 0 is the planet
                 Moon instanceMoonScript = instanceMoon.GetComponent<Moon>(); //TODO: sometimes this is null
-
+        
                 //Position
                 moonPosition[moonIndex, 0] = instanceMoon.transform.position.x;
                 moonPosition[moonIndex, 1] = instanceMoon.transform.position.y;
                 moonPosition[moonIndex, 2] = instanceMoon.transform.position.z;
-
+        
                 //Name
                 moonName[moonIndex] = instanceMoon.GetComponent<NameCelestial>().title;
-
+        
                 //Station
                 moonHasStation[moonIndex] = instanceMoon.GetComponent<Moon>().hasStation;
                 if (instanceMoonScript.hasStation && instanceMoonScript.instancedStation != null)
@@ -633,7 +686,7 @@ public class Generation : MonoBehaviour
                     stationPricePlatinoid[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePlatinoid;
                     stationPricePreciousMetal[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePreciousMetal;
                     stationPriceWater[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().priceWater;
-
+        
                     //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
                     for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
                     {
@@ -646,7 +699,7 @@ public class Generation : MonoBehaviour
                     stationPricePlatinoid[moonIndex] = 0f;
                     stationPricePreciousMetal[moonIndex] = 0f;
                     stationPriceWater[moonIndex] = 0f;
-
+        
                     //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
                     for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
                     {
@@ -655,16 +708,16 @@ public class Generation : MonoBehaviour
                 }
             }
         }
-
+        
         //Asteroids
         Asteroid[] asteroidArray = FindObjectsOfType<Asteroid>();
-
+        
         float[,] asteroidPosition = new float[asteroidArray.Length, 3];
         float[,] asteroidVelocity = new float[asteroidArray.Length, 3];
-        string[] asteroidSize = new string[asteroidArray.Length];
+        int[] asteroidSize = new int[asteroidArray.Length];
         byte[] asteroidType = new byte[asteroidArray.Length];
         byte[] asteroidHealth = new byte[asteroidArray.Length];
-
+        
         byte asteroidArrayIndex = 0;
         foreach (Asteroid asteroid in asteroidArray)
         {
@@ -672,64 +725,64 @@ public class Generation : MonoBehaviour
             asteroidPosition[asteroidArrayIndex, 0] = asteroid.transform.position.x;
             asteroidPosition[asteroidArrayIndex, 1] = asteroid.transform.position.y;
             asteroidPosition[asteroidArrayIndex, 2] = asteroid.transform.position.z;
-
+        
             //Velocity
             asteroidVelocity[asteroidArrayIndex, 0] = asteroid.GetComponent<Rigidbody>().velocity.x;
             asteroidVelocity[asteroidArrayIndex, 1] = asteroid.GetComponent<Rigidbody>().velocity.y;
             asteroidVelocity[asteroidArrayIndex, 2] = asteroid.GetComponent<Rigidbody>().velocity.z;
-
+        
             //Size
-            asteroidSize[asteroidArrayIndex] = asteroid.sizeClassDisplay;
-
+            asteroidSize[asteroidArrayIndex] = asteroid.size;
+        
             //Type
             asteroidType[asteroidArrayIndex] = asteroid.type;
-
+        
             //Health
             asteroidHealth[asteroidArrayIndex] = asteroid.health;
-
+        
             //Increment
             asteroidArrayIndex++;
         }
-
+        
         //Verse
         float[] verseSpacePosition = new float[3];
         verseSpacePosition[0] = verseSpace.transform.position.x;
         verseSpacePosition[1] = verseSpace.transform.position.y;
         verseSpacePosition[2] = verseSpace.transform.position.z;
-
+        
         //Player
         Player playerScript = instancePlayer.GetComponentInChildren<Player>();
         float[] playerPosition = new float[3];
         playerPosition[0] = playerScript.transform.position.x;
         playerPosition[1] = playerScript.transform.position.y;
         playerPosition[2] = playerScript.transform.position.z;
-
+        
         //SAVE TO DATA CLASS
         LevelData.Data data = new LevelData.Data();
-
+        
         //World properties
         //Centre star
         data.starName = instanceStar.GetComponent<NameCelestial>().title;
-
+        
         //Planets
         data.planetQuantity = (byte)planetarySystems.Count;
         data.planetPosition = planetPosition;
         data.planetName = planetName;
         data.planetarySystemMoonQuantity = planetarySystemMoonQuantity;
-
+        
         //Moons
         data.moonQuantity = (byte)moonArray.Length;
         data.moonPosition = moonPosition;
         data.moonName = moonName;
         data.moonHasStation = moonHasStation;
-
+        
         //Stations
         data.stationTitle = stationTitle;
         data.stationPricePlatinoid = stationPricePlatinoid;
         data.stationPricePreciousMetal = stationPricePreciousMetal;
         data.stationPriceWater = stationPriceWater;
         data.stationUpgradeIndex = stationUpgradeIndex;
-
+        
         //Asteroids
         data.asteroidQuantity = asteroidArray.Length;
         data.asteroidPosition = asteroidPosition;
@@ -737,20 +790,20 @@ public class Generation : MonoBehaviour
         data.asteroidSize = asteroidSize;
         data.asteroidType = asteroidType;
         data.asteroidHealth = asteroidHealth;
-
+        
         //Verse space
         data.verseSpacePosition = verseSpacePosition;
-
+        
         //Player properties
         data.playerPosition = playerPosition;
-
+        
         data.playerUpgrades = playerScript.upgradeLevels;
-
+        
         data.playerVitalsHealth = playerScript.vitalsHealth;
         data.playerDestroyed = playerScript.isDestroyed;
-
+        
         data.playerVitalsFuel = playerScript.vitalsFuel;
-
+        
         data.playerCurrency = playerScript.currency;
         data.playerOre = playerScript.ore;
         
@@ -897,9 +950,6 @@ public class Generation : MonoBehaviour
 
             playerScript.currency = data.playerCurrency;
             playerScript.ore = data.playerOre;
-
-            //Asteroids (generate)
-            GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH));
 
             //Verse position relative to origin
             verseSpace.transform.position = new Vector3(

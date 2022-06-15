@@ -42,6 +42,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1333070544999399941}
+  - component: {fileID: 4206983074291134268}
   m_Layer: 0
   m_Name: CBodyAsteroidModelSmall
   m_TagString: Untagged
@@ -66,6 +67,19 @@ Transform:
   m_Father: {fileID: 1333070544878595228}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &4206983074291134268
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333070544999399938}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 0
+  serializedVersion: 2
+  m_Radius: 0.2
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1333070545988586138
 GameObject:
   m_ObjectHideFlags: 0
@@ -75,6 +89,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1333070545988586141}
+  - component: {fileID: 1654755346561139800}
   m_Layer: 0
   m_Name: CBodyAsteroidModelMedium
   m_TagString: Untagged
@@ -99,6 +114,19 @@ Transform:
   m_Father: {fileID: 1333070544878595228}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &1654755346561139800
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333070545988586138}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 0
+  serializedVersion: 2
+  m_Radius: 0.83
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1333070546947983284
 GameObject:
   m_ObjectHideFlags: 0
@@ -110,14 +138,12 @@ GameObject:
   - component: {fileID: 1333070546947983291}
   - component: {fileID: 5520706539341832288}
   - component: {fileID: 8390337967562609920}
-  - component: {fileID: 294555307309304710}
-  - component: {fileID: 1135752881064656198}
   - component: {fileID: 1333070546947983288}
   - component: {fileID: 1333070546947983289}
   - component: {fileID: 8611109209138625066}
   - component: {fileID: 7892786763060803639}
   m_Layer: 0
-  m_Name: CBodyAsteroid
+  m_Name: Asteroid
   m_TagString: CBody
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -165,32 +191,6 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 12
   m_Center: {x: 0, y: 0, z: 0}
---- !u!135 &294555307309304710
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1333070546947983284}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Radius: 300
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!135 &1135752881064656198
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1333070546947983284}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Radius: 450
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &1333070546947983288
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -219,21 +219,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0c6ea234ef05854eb113e6de947e211, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sizeClassDisplay: 
+  targetCollider1: {fileID: 5520706539341832288}
+  targetCollider2: {fileID: 8390337967562609920}
   rb: {fileID: 1333070546947983288}
-  modelClassLarge: {fileID: 6685615498556311451}
-  modelClassMedium: {fileID: 1333070545988586138}
-  modelClassSmall: {fileID: 1333070544999399938}
-  ore: {fileID: 6046421670457136187, guid: 5f4a5adc8ea192b4fa0e54cc9c9e5cc4, type: 3}
-  meshRenderer: {fileID: 0}
+  modelGroupSizeSmall: {fileID: 1333070544999399938}
+  modelGroupSizeMedium: {fileID: 1333070545988586138}
+  modelGroupSizeLarge: {fileID: 6685615498556311451}
   matPlatinoid: {fileID: 2100000, guid: 2723ee2b7e004a64f9a865ff364754ab, type: 2}
   matPreciousMetal: {fileID: 2100000, guid: d9ffcbaf140a3ff4b9037f03a7c95403, type: 2}
   matWater: {fileID: 2100000, guid: ec94f4270075f474196b4f1ee2c17b6c, type: 2}
-  targetCollider1: {fileID: 5520706539341832288}
-  targetCollider2: {fileID: 8390337967562609920}
-  targetCollider3: {fileID: 294555307309304710}
-  targetCollider4: {fileID: 1135752881064656198}
-  separating: 1
+  ore: {fileID: 6046421670457136187, guid: 5f4a5adc8ea192b4fa0e54cc9c9e5cc4, type: 3}
 --- !u!114 &8611109209138625066
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -352,6 +347,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 856440658581308878}
+  - component: {fileID: 3092880931009797874}
   m_Layer: 0
   m_Name: CBodyAsteroidModelLarge
   m_TagString: Untagged
@@ -374,6 +370,19 @@ Transform:
   m_Father: {fileID: 1333070544878595228}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &3092880931009797874
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6685615498556311451}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 0
+  serializedVersion: 2
+  m_Radius: 2.02
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!64 &6600466219646481042
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -964,13 +973,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a8cec140420be494cbbbaa6d1dae2212, type: 3}
---- !u!1 &8847339298186167166 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 647948096263703515, guid: a8cec140420be494cbbbaa6d1dae2212, type: 3}
-  m_PrefabInstance: {fileID: 8229740540481882277}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8274806096732644824 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 64155570297482621, guid: a8cec140420be494cbbbaa6d1dae2212, type: 3}
+  m_PrefabInstance: {fileID: 8229740540481882277}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8847339298186167166 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 647948096263703515, guid: a8cec140420be494cbbbaa6d1dae2212, type: 3}
   m_PrefabInstance: {fileID: 8229740540481882277}
   m_PrefabAsset: {fileID: 0}

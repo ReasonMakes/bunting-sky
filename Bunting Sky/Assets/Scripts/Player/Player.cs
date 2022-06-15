@@ -284,6 +284,16 @@ public class Player : MonoBehaviour
 
         //I to cheat
 
+        //Enable an asteroid
+        if (binds.GetInputDown(binds.bindCheat1))
+        {
+            control.generation.SpawnAsteroidFromPool(
+                transform.position + (transform.forward * 20f),
+                UnityEngine.Random.Range(0, 2 + 1),
+                (byte)UnityEngine.Random.Range(0, 2 + 1)
+            );
+        }
+
         ////Damage to 1hp
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
@@ -323,20 +333,20 @@ public class Player : MonoBehaviour
         //    control.ui.SetTip("+1000 currency");
         //}
 
-        //Temporarily disable engine
-        if (binds.GetInputDown(binds.bindCheat1))
-        {
-            tempEngineDisable = 3f;
-            control.ui.SetTip("Engines damaged!");
-        }
+        ////Temporarily disable engine
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    tempEngineDisable = 3f;
+        //    control.ui.SetTip("Engines damaged!");
+        //}
 
-        //Very low fuel
-        if (binds.GetInputDown(binds.bindCheat2))
-        {
-            vitalsFuel = 0.05d;
-            control.ui.UpdatePlayerVitalsDisplay();
-            control.ui.SetTip("Running on fumes");
-        }
+        ////Very low fuel
+        //if (binds.GetInputDown(binds.bindCheat2))
+        //{
+        //    vitalsFuel = 0.05d;
+        //    control.ui.UpdatePlayerVitalsDisplay();
+        //    control.ui.SetTip("Running on fumes");
+        //}
 
         //Unlock In Situ Refinery
         //if (binds.GetInputDown(binds.bindCheat1))

@@ -422,6 +422,10 @@ public class UI : MonoBehaviour
             targetObj == null
             || (
                 targetObj.name == control.generation.asteroid.name + "(Clone)"
+                && targetObj.GetComponent<Asteroid>().destroying
+            )
+            || (
+                targetObj.name == control.generation.asteroid.name + "(Clone)"
                 && targetObj.GetComponent<Asteroid>().destroyed
             )
         )
@@ -621,7 +625,21 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Asteroid";
-                waypointTextTitle.text = "Class: " + hit.collider.gameObject.GetComponent<Asteroid>().sizeClassDisplay;
+                waypointTextTitle.text = "Class: ";
+                int size = hit.collider.gameObject.GetComponent<Asteroid>().size;
+                if (size == Asteroid.SIZE_SMALL)
+                {
+                    waypointTextTitle.text += "Small";
+                }
+                else if (size == Asteroid.SIZE_MEDIUM)
+                {
+                    waypointTextTitle.text += "Medium";
+                }
+                else if (size == Asteroid.SIZE_LARGE)
+                {
+                    waypointTextTitle.text += "Large";
+                }
+
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 
                 //Console waypoint
@@ -769,7 +787,7 @@ public class UI : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        resourcesTextWater.text = playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " g";
+        resourcesTextWater.text = playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " kg";
     }
 
     public void UpdateAllPlayerResourcesUI()

@@ -27,9 +27,9 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public readonly int TARGET_FPS_MIN = 1;
     [System.NonSerialized] public readonly int TARGET_FPS_MAX = 2000;
     [System.NonSerialized] public readonly int ASTEROIDS_MIN_MIN = 1;
-    [System.NonSerialized] public readonly int ASTEROIDS_MIN_MAX = 100;
+    [System.NonSerialized] public readonly int ASTEROIDS_MIN_MAX = 1000;
     [System.NonSerialized] public readonly int ASTEROIDS_MAX_MIN = 1;
-    [System.NonSerialized] public readonly int ASTEROIDS_MAX_MAX = 100;
+    [System.NonSerialized] public readonly int ASTEROIDS_MAX_MAX = 1000;
 
     //Settings initializations
     [System.NonSerialized] public float mouseSensitivity;

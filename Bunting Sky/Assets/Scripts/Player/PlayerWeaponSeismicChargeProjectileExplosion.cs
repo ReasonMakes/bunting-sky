@@ -31,7 +31,7 @@ public class PlayerWeaponSeismicChargeProjectileExplosion : MonoBehaviour
                         Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                         //Don't bother with already destroyed asteroids
-                        if (!asteroidScript.destroyed)
+                        if (!asteroidScript.destroying)
                         {
                             //Explosion push force
                             collider.GetComponent<Rigidbody>().AddExplosionForce(EXPLOSION_STRENGTH, transform.position, EXPLOSION_RADIUS);

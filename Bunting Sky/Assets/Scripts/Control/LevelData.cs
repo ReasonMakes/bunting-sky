@@ -37,7 +37,7 @@ public static class LevelData
         [SerializeField] public int asteroidQuantity;
         [SerializeField] public float[,] asteroidPosition;
         [SerializeField] public float[,] asteroidVelocity;
-        [SerializeField] public string[] asteroidSize;
+        [SerializeField] public int[] asteroidSize;
         [SerializeField] public byte[] asteroidType;
         [SerializeField] public byte[] asteroidHealth;
         
