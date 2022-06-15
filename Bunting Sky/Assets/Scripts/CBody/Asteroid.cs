@@ -60,31 +60,21 @@ public class Asteroid : MonoBehaviour
             }
 
             //Destruction
-            if (!Menu.menuOpenAndGamePaused && !destroyed)
+            if (!Menu.menuOpenAndGamePaused && !destroyed && destroying)
             {
-                //bool particlesFadedOut = destroyingTime >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
-                bool particlesFadedOut = destroyingTime >= 15f; //particles technically don't fade out for 75 seconds, but they aren't actually visible after 9 seconds so this should be fine
+                //Increment timer
+                destroyingTime += Time.deltaTime;
+
+                //Disable model and trigger volumes
+                DisableModelAndTriggerVolumes();
+
+                //Wait for particles to fade out before disabling trigger volume
+                bool particlesFadedOut = destroyingTime >= 20f; //15f; //particles technically don't fade out for 75 seconds, but they aren't actually visible after 9 seconds so this should be fine
                 bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTran.transform.position) >= playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
-                if (destroying)
+                if (particlesFadedOut && playerBeyondArbitraryDistance)
                 {
-                    //Debug.Log("Destroying. Time: " + destroyingTime + "/" + GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant);
-                    //Debug.Log("Distance: " + Vector3.Distance(transform.position, playerTran.transform.position) + "/" + playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD);
-
-                    //Increment timer
-                    destroyingTime += Time.deltaTime;
-
-                    //Disable model and trigger volumes
-                    modelObject.SetActive(false);
-                    targetCollider1.enabled = false;
-                    targetCollider2.enabled = false;
-
-                    //Wait for particles to fade out before disabling trigger volume
-                    if (particlesFadedOut && playerBeyondArbitraryDistance)
-                    {
-                        //Debug.Log("Disabled from particle fade out and player left");
-                        //Disable
-                        Disable();
-                    }
+                    //Disable
+                    Disable();
                 }
             }
         }
@@ -92,15 +82,15 @@ public class Asteroid : MonoBehaviour
 
     private void SlowUpdate()
     {
-        //Destroy asteroids that are out of play
-        if (!destroyed)
-        {
-            if (Vector3.Distance(transform.position, control.generation.instanceHomePlanet.transform.position) > Mathf.Pow(control.generation.MOONS_SPACING_BASE_MAX, control.generation.MOONS_SPACING_POWER) + 250f
-            && Vector3.Distance(transform.position, playerTran.position) > 400.0f)
-            {
-                destroying = true;
-            }
-        }
+        ////Destroy asteroids that are out of play
+        //if (!destroyed)
+        //{
+        //    if (Vector3.Distance(transform.position, control.generation.instanceHomePlanet.transform.position) > Mathf.Pow(control.generation.MOONS_SPACING_BASE_MAX, control.generation.MOONS_SPACING_POWER) + 250f
+        //    && Vector3.Distance(transform.position, playerTran.position) > 400.0f)
+        //    {
+        //        destroying = true;
+        //    }
+        //}
     }
 
     private void FixedUpdate()
@@ -151,8 +141,8 @@ public class Asteroid : MonoBehaviour
         }
 
         //Once we aren't intersecting anything anymore then we'll get to this point in the code
-        //Debug.Log("Separated; re-enabling collisions");
-        modelObject.transform.GetComponent<MeshCollider>().enabled = true;
+        //modelObject.transform.GetComponent<MeshCollider>().enabled = true;
+        SetHitboxEnabledAndChoose(true);
         rb.detectCollisions = true;
         separating = false;
     }
@@ -260,10 +250,7 @@ public class Asteroid : MonoBehaviour
 
     public void Damage(byte damageAmount, Vector3 direction, Vector3 position, bool oreDrop)
     {
-        //Debug.Log("Type " + type + " asteroid damaged. " + health + " HP remaining.");
-
         health = (byte)Mathf.Max(0f, health - damageAmount);
-        //health -= damageAmount;
         if (health > 0)
         {
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(1, direction, position, false);
@@ -281,42 +268,46 @@ public class Asteroid : MonoBehaviour
         if (!destroying)
         {
             //Disable self
-            //Disable();
             destroying = true;
+            DisableModelAndTriggerVolumes();
 
             //Spawn smaller asteroids
             if (size == SIZE_LARGE)
             {
-                if (oreDrop) { for (int i = 0; i < Random.Range(5, 9 + 1); i++) SpawnOre(); };
-                for (int i = 0; i < Random.Range(2, 3 + 1); i++) { control.generation.SpawnAsteroidFromPool(transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)), Asteroid.SIZE_MEDIUM, type); }
-                for (int i = 0; i < Random.Range(3, 6 + 1); i++) { control.generation.SpawnAsteroidFromPool(transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)), Asteroid.SIZE_SMALL, type); }
+                if (oreDrop)
+                {
+                    for (int i = 0; i < Random.Range(5, 9 + 1); i++)
+                    {
+                        SpawnOre();
+                    }
+                }
+
+                SpawnClusterFromPoolAndPassRigidbodyValues(SIZE_MEDIUM, 2, 3);
+
+                SpawnClusterFromPoolAndPassRigidbodyValues(SIZE_SMALL, 3, 6);
             }
             else if (size == SIZE_MEDIUM)
             {
-                if (oreDrop) { for (int i = 0; i < Random.Range(3, 6 + 1); i++) SpawnOre(); };
-                for (int i = 0; i < Random.Range(2, 4 + 1); i++) { control.generation.SpawnAsteroidFromPool(transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)), Asteroid.SIZE_SMALL, type); }
+                if (oreDrop)
+                {
+                    for (int i = 0; i < Random.Range(3, 6 + 1); i++)
+                    {
+                        SpawnOre();
+                    }
+                }
+
+                SpawnClusterFromPoolAndPassRigidbodyValues(SIZE_SMALL, 2, 4);
             }
             else if (size == SIZE_SMALL)
             {
-                if (oreDrop) { for (int i = 0; i < Random.Range(1, 2 + 1); i++) SpawnOre(); };
+                if (oreDrop)
+                {
+                    for (int i = 0; i < Random.Range(1, 2 + 1); i++)
+                    { 
+                        SpawnOre();
+                    }
+                }
             }
-            //switch (sizeClassDisplay)
-            //{
-            //    case "Large":
-            //        if (oreDrop) { for (int i = 0; i < Random.Range(5, 10); i++) SpawnOre(); }
-            //        for (int i = 0; i < Random.Range(2, 4); i++) SpawnAsteroid("Medium");
-            //        for (int i = 0; i < Random.Range(3, 8); i++) SpawnAsteroid("Small");
-            //        break;
-            //
-            //    case "Medium":
-            //        if (oreDrop) { for (int i = 0; i < Random.Range(3, 7); i++) SpawnOre(); }
-            //        for (int i = 0; i < Random.Range(2, 5); i++) SpawnAsteroid("Small");
-            //        break;
-            //
-            //    case "Small":
-            //        if (oreDrop) { for (int i = 0; i < Random.Range(1, 3); i++) SpawnOre(); }
-            //        break;
-            //}
 
             //Play break apart sound effect
             GetComponent<AudioSource>().Play();
@@ -388,15 +379,43 @@ public class Asteroid : MonoBehaviour
         SetEnabled(false);
     }
 
+    public void SpawnClusterFromPoolAndPassRigidbodyValues(int asteroidsSizes, int minCount, int maxCount)
+    {
+        for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
+        {
+            GameObject instanceAsteroid = control.generation.SpawnAsteroidFromPool(
+                transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)),
+                asteroidsSizes,
+                type
+            );
+
+            instanceAsteroid.GetComponent<Asteroid>().PassRigidbodyValuesAndAddRandomForce(
+                rb.velocity,
+                rb.angularVelocity,
+                rb.inertiaTensor,
+                rb.inertiaTensorRotation
+            );
+        }
+    }
+
     public void SetPerformant(bool performance)
     {
-        //Disables Update(), rigidbody, and mesh collider (to be swapped out for sphere collider) for improved performance (makes a big difference with 100 asteroids)
+        //Disables Update(), rigidbody, mesh collider (to be swapped out for sphere collider), and trigger volumes for improved performance (makes a big difference with 100 asteroids)
         performantMode = performance;
         rb.isKinematic = performance;
+        targetCollider1.enabled = !performance;
+        targetCollider2.enabled = !performance;
         if (!separating)
         {
             SetHitboxEnabledAndChoose(true);
         }
+    }
+
+    public void DisableModelAndTriggerVolumes()
+    {
+        modelObject.SetActive(false);
+        targetCollider1.enabled = false;
+        targetCollider2.enabled = false;
     }
 
     private void SetHitboxEnabledAndChoose(bool enabled)
@@ -411,6 +430,26 @@ public class Asteroid : MonoBehaviour
             modelGroup.GetComponent<SphereCollider>().enabled = false;
             modelObject.GetComponent<MeshCollider>().enabled = false;
         }
+    }
+
+    public void PassRigidbodyValuesAndAddRandomForce(Vector3 velocity, Vector3 angularVelocity, Vector3 inertiaTensor, Quaternion inertiaTensorRotation)
+    {
+        rb.velocity = velocity;
+        rb.angularVelocity = angularVelocity;
+        rb.inertiaTensor = inertiaTensor;
+        rb.inertiaTensorRotation = inertiaTensorRotation;
+
+        //Add random force
+        rb.AddForce(25f * new Vector3(
+            0.5f + (0.5f * Random.value),
+            0.5f + (0.5f * Random.value),
+            0.5f + (0.5f * Random.value)
+        ));
+        rb.AddTorque(100f * new Vector3(
+            Random.value,
+            Random.value,
+            Random.value
+        ));
     }
 
     private void SpawnAsteroid(int size)

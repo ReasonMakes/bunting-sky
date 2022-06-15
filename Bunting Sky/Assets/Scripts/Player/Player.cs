@@ -72,7 +72,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public GameObject cBodies;
     [System.NonSerialized] public readonly float ORBITAL_DRAG_MODE_THRESHOLD = 50f;
     private float distToClosestMoon = 100f; //this should be greater than the orbitalDragModeThreshold so that the player starts with drag relative to system
-    private Transform closestMoonTransform;
+    private Transform closestMoonOrStationTransform;
     private float distToClosestAsteroid = 100f;
     private Transform closestAsteroidTransform;
     private readonly float DRAG = 3f; //Drag amount for all drag modes
@@ -284,15 +284,25 @@ public class Player : MonoBehaviour
 
         //I to cheat
 
-        //Enable an asteroid
-        if (binds.GetInputDown(binds.bindCheat1))
-        {
-            control.generation.SpawnAsteroidFromPool(
-                transform.position + (transform.forward * 20f),
-                UnityEngine.Random.Range(0, 2 + 1),
-                (byte)UnityEngine.Random.Range(0, 2 + 1)
-            );
-        }
+        ////Spawn an asteroid from the object pool
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    control.generation.SpawnAsteroidFromPool(
+        //        transform.position + (transform.forward * 20f),
+        //        UnityEngine.Random.Range(0, 2 + 1),
+        //        (byte)UnityEngine.Random.Range(0, 2 + 1)
+        //    );
+        //}
+        //
+        ////Toggle all enabled asteroids' performance mode
+        //if (binds.GetInputDown(binds.bindCheat2))
+        //{
+        //    for (int i = 0; i < control.generation.asteroidsEnabled.transform.childCount; i++)
+        //    {
+        //        Asteroid iAsteroidScript = control.generation.asteroidsEnabled.transform.GetChild(i).GetComponent<Asteroid>();
+        //        iAsteroidScript.SetPerformant(!iAsteroidScript.performantMode);
+        //    }
+        //}
 
         ////Damage to 1hp
         //if (binds.GetInputDown(binds.bindCheat1))
@@ -571,15 +581,15 @@ public class Player : MonoBehaviour
     private void SlowFixedUpdate()
     {
         //If one exists, find the nearest moon or asteroid to determine whether or not to drag relative to it
-        if (cBodies.transform.Find("Moons").childCount > 0)
+        if (control.generation.moons.transform.childCount > 0)
         {
-            closestMoonTransform = GetClosestMoonTransform();
-            distToClosestMoon = (transform.position - closestMoonTransform.transform.position).magnitude;
+            closestMoonOrStationTransform = GetClosestTransformFromHierarchy(control.generation.moons.transform);
+            distToClosestMoon = (transform.position - closestMoonOrStationTransform.transform.position).magnitude;
         }
 
-        if (cBodies.transform.Find("Asteroids").childCount > 0)
+        if (control.generation.asteroidsEnabled.transform.childCount > 0)
         {
-            closestAsteroidTransform = GetClosestAsteroidTransform();
+            closestAsteroidTransform = GetClosestTransformFromHierarchy(control.generation.asteroidsEnabled.transform);
             distToClosestAsteroid = (transform.position - closestAsteroidTransform.transform.position).magnitude;
         }
     }
@@ -643,7 +653,7 @@ public class Player : MonoBehaviour
          * If no fuel, no drag
          * 
          * Which object we drag relative to is based on this hierarchy:
-         * - Planetoids
+         * - Moons
          * - Asteroids
          * - Target
          * - System/Centre Star
@@ -653,10 +663,10 @@ public class Player : MonoBehaviour
 
         if (vitalsFuel > 0.0d && tempEngineDisable <= 0f && control.settings.matchVelocity)
         {
-            if (closestMoonTransform != null && distToClosestMoon <= ORBITAL_DRAG_MODE_THRESHOLD)
+            if (closestMoonOrStationTransform != null && distToClosestMoon <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
                 //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestMoonTransform.GetComponent<Rigidbody>().velocity, DRAG);
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestMoonOrStationTransform.GetComponent<Rigidbody>().velocity, DRAG);
             }
             else if (closestAsteroidTransform != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
@@ -1270,50 +1280,71 @@ public class Player : MonoBehaviour
     #endregion
 
     #region General methods: ClosestTransforms
-    private Transform GetClosestTransform(Transform[] transforms)
+    //private Transform GetClosestTransform(Transform[] transforms)
+    //{
+    //    Transform closestTransform = null;
+    //    float closestDistanceSqr = Mathf.Infinity;
+    //
+    //    //The position to compare distances to, usually the player's position
+    //    Vector3 sourcePosition = transform.position;
+    //
+    //    foreach (Transform transformToCheck in transforms)
+    //    {
+    //        Vector3 vectorToTransformToCheck = transformToCheck.position - sourcePosition;
+    //
+    //        float distanceSqrToTransformToCheck = vectorToTransformToCheck.sqrMagnitude;
+    //        if (distanceSqrToTransformToCheck < closestDistanceSqr)
+    //        {
+    //            closestDistanceSqr = distanceSqrToTransformToCheck;
+    //            closestTransform = transformToCheck;
+    //        }
+    //    }
+    //
+    //    return closestTransform;
+    //}
+
+    //private Transform GetClosestMoonTransform()
+    //{
+    //    Transform moonsFolderTransform = cBodies.transform.Find("Moons");
+    //    Transform[] moonTransforms = new Transform[moonsFolderTransform.childCount];
+    //    for (int i = 0; i < moonsFolderTransform.childCount; i++)
+    //    {
+    //        moonTransforms[i] = moonsFolderTransform.GetChild(i);
+    //    }
+    //
+    //    return GetClosestTransform(moonTransforms);
+    //}
+
+    private Transform GetClosestTransformFromHierarchy(Transform hierarchy)
     {
+        //VARIABLE TO RETURN LATER
         Transform closestTransform = null;
-        float closestDistanceSqr = Mathf.Infinity;
 
-        //The position to compare distances to, usually the player's position
-        Vector3 sourcePosition = transform.position;
+        //CHECK DISTANCES OF ALL TRANSFORMS IN HIERARCHY
+        //Start with infinity distance away to compare to
+        float closestDistanceSoFar = Mathf.Infinity;
 
-        foreach (Transform transformToCheck in transforms)
+        //Loop through all transforms
+        int nTransforms = hierarchy.childCount;
+        for (int i = 0; i < nTransforms; i++)
         {
-            Vector3 vectorToTransformToCheck = transformToCheck.position - sourcePosition;
+            //The transform that we are currently checking
+            Transform transform = hierarchy.GetChild(i);
 
-            float distanceSqrToTransformToCheck = vectorToTransformToCheck.sqrMagnitude;
-            if (distanceSqrToTransformToCheck < closestDistanceSqr)
+            //The distance from the player to that transform
+            float distanceToTransform = Vector3.Distance(transform.position, transform.position);
+
+            //If the distance is closer than the last transform we checked
+            if (distanceToTransform < closestDistanceSoFar)
             {
-                closestDistanceSqr = distanceSqrToTransformToCheck;
-                closestTransform = transformToCheck;
+                //Set this transform as the closest (so far)
+                closestDistanceSoFar = distanceToTransform;
+                closestTransform = transform;
             }
         }
 
+        //RETURN CLOSEST TRANSFORM
         return closestTransform;
-    }
-
-    private Transform GetClosestMoonTransform()
-    {
-        Transform moonsFolderTransform = cBodies.transform.Find("Moons");
-        Transform[] moonTransforms = new Transform[moonsFolderTransform.childCount];
-        for (int i = 0; i < moonsFolderTransform.childCount; i++)
-        {
-            moonTransforms[i] = moonsFolderTransform.GetChild(i);
-        }
-
-        return GetClosestTransform(moonTransforms);
-    }
-
-    private Transform GetClosestAsteroidTransform()
-    {
-        Transform[] asteroidTransforms = new Transform[cBodies.transform.Find("Asteroids").childCount];
-        for (int i = 0; i < cBodies.transform.Find("Asteroids").childCount; i++)
-        {
-            asteroidTransforms[i] = cBodies.transform.Find("Asteroids").GetChild(i);
-        }
-
-        return GetClosestTransform(asteroidTransforms);
     }
     #endregion
 
