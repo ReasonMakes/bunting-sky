@@ -32,6 +32,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 4, y: 4, z: 4}
   m_Children:
+  - {fileID: 583792794244979011}
   - {fileID: 1871732288707873342}
   - {fileID: 5501826399411478023}
   - {fileID: 1332874779232893688}
@@ -167,7 +168,7 @@ Transform:
   - {fileID: 1332874779504352082}
   - {fileID: 3604582858224753902}
   m_Father: {fileID: 1332874778361589552}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1332874779504352085
 GameObject:
@@ -354,7 +355,7 @@ GameObject:
   - component: {fileID: 1871732288707873342}
   - component: {fileID: 3545852448902147874}
   m_Layer: 0
-  m_Name: Collision Hitbox
+  m_Name: Mesh Collider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -372,7 +373,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 10.8}
   m_Children: []
   m_Father: {fileID: 1332874778361589552}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
 --- !u!64 &3545852448902147874
 MeshCollider:
@@ -388,6 +389,50 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -5287425419667122880, guid: dc686c9db5992ef47a2e5ad9da68cde0, type: 3}
+--- !u!1 &7227673818021596005
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 583792794244979011}
+  - component: {fileID: 2128697442851033124}
+  m_Layer: 0
+  m_Name: Sphere Collider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &583792794244979011
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7227673818021596005}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1332874778361589552}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &2128697442851033124
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7227673818021596005}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 1.98
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8497481923211843708
 GameObject:
   m_ObjectHideFlags: 0
@@ -400,7 +445,7 @@ GameObject:
   - component: {fileID: 476461902040113528}
   - component: {fileID: 7079365770243505889}
   m_Layer: 0
-  m_Name: Jump Hitbox
+  m_Name: Jump Trigger Volume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -418,7 +463,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1332874778361589552}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &476461902040113528
 BoxCollider:

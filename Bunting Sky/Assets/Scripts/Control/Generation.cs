@@ -99,68 +99,37 @@ public class Generation : MonoBehaviour
 
     private void SlowUpdate()
     {
-        //Mesh Collider to Sphere collider swapper (for performance)
-        Transform moonsFolderTransform = cBodies.transform.Find("Moons");
-        for (int i = 0; i < moonsFolderTransform.childCount; i++)
-        {
-            //Check if this child is a station
-            Transform potentialStationTran = moonsFolderTransform.GetChild(i);
-            if (potentialStationTran.gameObject.name == station.name + "(Clone)")
-            {
-                //This is a station
-
-                //Check which colliders to use
-                bool useMesh = (
-                    Vector3.Distance(
-                    instancePlayer.transform.Find("Body").position,
-                    potentialStationTran.position
-                    ) < 40f
-                );
-
-                //Use proper colliders
-                potentialStationTran.Find("Mesh Collider").gameObject.SetActive(useMesh);
-                potentialStationTran.Find("Sphere Collider").gameObject.SetActive(!useMesh);
-            }
-        }
+        SwapHitboxes();
     }
 
     private void VerySlowUpdate()
     {
-        //Asteroid count manager
-        //Minimum
-        if (asteroids.transform.childCount < control.settings.asteroidsConcurrentMin)
+        //AsteroidManageCount();
+    }
+    #endregion
+
+    #region Performance swappers
+    private void SwapHitboxes()
+    {
+        //Mesh Collider to Sphere collider swapper (for performance)
+
+        //Could be a moon, station, or heighliner (all have the same children collider names)
+        for (int i = 0; i < moons.transform.childCount; i++)
         {
-            int asteroidsToGenerate = control.settings.asteroidsConcurrentMin - asteroids.transform.childCount;
-            int clustersToGenerate = asteroidsToGenerate / 4;
+            //The transform to check whether to swap
+            Transform transformToSwap = moons.transform.GetChild(i);
 
-            //GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1));
-            //GenerateAsteroidClusters(clustersToGenerate, 4);
-        }
+            //Check which collider to use
+            bool useMesh = (
+                Vector3.Distance(
+                instancePlayer.transform.Find("Body").position,
+                transformToSwap.position
+                ) < 40f
+            );
 
-        //Limit
-        if (asteroids.transform.childCount >= control.settings.asteroidsConcurrentMax)
-        {
-            //Destroy asteroids that are far from the player
-            //Limit number of attempts to prevent getting stuck
-            int ASTEROIDS_TO_DESTROY = 5;
-            int asteroidsDestroyed = 0;
-            int ATTEMPT_QUIT = asteroids.transform.childCount;
-            for (int attempt = 0; attempt < ATTEMPT_QUIT; attempt++)
-            {
-                GameObject asteroidToDestroy = asteroids.transform.GetChild(Random.Range(0, asteroids.transform.childCount)).gameObject;
-
-                if (Vector3.Distance(asteroidToDestroy.transform.position, instancePlayer.transform.Find("Body").position) > 250.0f)
-                {
-                    //Destroy this asteroid and increment counts
-                    Destroy(asteroidToDestroy, 0f);
-
-                    asteroidsDestroyed++;
-                    if (asteroidsDestroyed >= ASTEROIDS_TO_DESTROY)
-                    {
-                        attempt = ATTEMPT_QUIT;
-                    }
-                }
-            }
+            //Use proper colliders
+            transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
+            transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
         }
     }
     #endregion
@@ -496,6 +465,7 @@ public class Generation : MonoBehaviour
     {
         for (int nAsteroids = 0; nAsteroids < control.settings.asteroidsConcurrentMax; nAsteroids++)
         {
+            //OBJECT
             //Instantiate
             GameObject instanceAsteroid = Instantiate(
                 asteroid,
@@ -503,13 +473,14 @@ public class Generation : MonoBehaviour
                 Quaternion.identity
             );
 
-            //Setup script
+            //SCRIPT
             Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
             //Give control reference
             instanceAsteroidScript.control = control;
             //Ignore all collisions unless explicitly enabled (once asteroid is enabled and separated from siblings)
             instanceAsteroidScript.rb.detectCollisions = false;
 
+            //ORGANIZATION
             //Put in hierarchy
             instanceAsteroid.transform.parent = asteroidsDisabled.transform;
             //Add to pool
@@ -523,19 +494,59 @@ public class Generation : MonoBehaviour
     {
         GameObject instanceAsteroid = null;
 
+        //If we have room in the pool to draw from
         if (asteroidsDisabled.transform.childCount > 0)
         {
-            Transform asteroidToEnable = asteroidsDisabled.transform.GetChild(0);
-            instanceAsteroid = asteroidToEnable.gameObject;
-            asteroidToEnable.GetComponent<Asteroid>().Enable(position, size, type);
+            asteroidsDisabled.transform.GetChild(0).GetComponent<Asteroid>().Enable(position, size, type);
         }
         else
         {
             Debug.Log("No free asteroids!");
+            //TODO: later we could either expand the pool or reuse enabled asteroids
         }
 
         return instanceAsteroid;
     }
+
+    //private void AsteroidManageCount()
+    //{
+    //    //Asteroid count manager
+    //    //Minimum
+    //    if (asteroids.transform.childCount < control.settings.asteroidsConcurrentMin)
+    //    {
+    //        int asteroidsToGenerate = control.settings.asteroidsConcurrentMin - asteroids.transform.childCount;
+    //        int clustersToGenerate = asteroidsToGenerate / 4;
+    //
+    //        //GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1));
+    //        //GenerateAsteroidClusters(clustersToGenerate, 4);
+    //    }
+    //
+    //    //Limit
+    //    if (asteroids.transform.childCount >= control.settings.asteroidsConcurrentMax)
+    //    {
+    //        //Destroy asteroids that are far from the player
+    //        //Limit number of attempts to prevent getting stuck
+    //        int ASTEROIDS_TO_DESTROY = 5;
+    //        int asteroidsDestroyed = 0;
+    //        int ATTEMPT_QUIT = asteroids.transform.childCount;
+    //        for (int attempt = 0; attempt < ATTEMPT_QUIT; attempt++)
+    //        {
+    //            GameObject asteroidToDestroy = asteroids.transform.GetChild(Random.Range(0, asteroids.transform.childCount)).gameObject;
+    //
+    //            if (Vector3.Distance(asteroidToDestroy.transform.position, instancePlayer.transform.Find("Body").position) > 250.0f)
+    //            {
+    //                //Destroy this asteroid and increment counts
+    //                Destroy(asteroidToDestroy, 0f);
+    //
+    //                asteroidsDestroyed++;
+    //                if (asteroidsDestroyed >= ASTEROIDS_TO_DESTROY)
+    //                {
+    //                    attempt = ATTEMPT_QUIT;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
     #endregion
 
     #region: Saving and loading
