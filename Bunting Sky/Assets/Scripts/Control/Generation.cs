@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class Generation : MonoBehaviour
 {
+    #region Init
     //Control
     public Control control;
 
@@ -78,7 +79,9 @@ public class Generation : MonoBehaviour
         //Auto saving
         InvokeRepeating("SaveGame", control.AUTO_SAVE_FREQUENCY, control.AUTO_SAVE_FREQUENCY);
     }
+    #endregion
 
+    #region Update
     private void Update()
     {
         //Slow update
@@ -160,8 +163,8 @@ public class Generation : MonoBehaviour
             }
         }
     }
+    #endregion
 
-    #region Procedural generation
     public void GenerateGame(int generationType)
     {
         if (generationType == GENERATION_TYPE_RESTARTED_GAME)
@@ -184,19 +187,20 @@ public class Generation : MonoBehaviour
         }
 
         //HOME STAR
-        SpawnStar(null);
+        StarSpawn(null);
 
         //Planetary system (moons, stations, heighliners, player)
-        SpawnPlanetarySystems(Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1), generationType);
+        PlanetarySystemClusterSpawn(Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1), generationType);
 
         //Asteroids
-        PopulateAsteroidPool();
+        AsteroidPoolPopulate();
         
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
         SaveGame();
     }
 
-    private void SpawnStar(string titleOverride)
+    #region Stars
+    private void StarSpawn(string titleOverride)
     {
         //Instantiate
         instanceStar = Instantiate(
@@ -221,8 +225,10 @@ public class Generation : MonoBehaviour
         //Set light range
         instanceStar.GetComponentInChildren<Light>().range = maxPlanetDist * 2f;
     }
+    #endregion
 
-    private void SpawnPlanetarySystems(int nPlanets, int generationType)
+    #region Planets
+    private void PlanetarySystemClusterSpawn(int nPlanets, int generationType)
     {
         //Properties
         float distanceOut = maxMoonDist;
@@ -245,50 +251,41 @@ public class Generation : MonoBehaviour
             );
 
             //Spawn planet
-            SpawnPlanet(generationType, planetaryIndex, position, null);
+            PlanetarySystemSpawnAndPlayerSpawn(generationType, planetaryIndex, position, null);
         }
     }
 
-    private GameObject GenerateMoonsAndGetPlayerCoords(int nMoons, int planetIndex, Vector3 planetPosition)
+    public GameObject PlanetarySystemSpawnAndPlayerSpawn(int generationType, int planetarySystemIndex, Vector3 position, string titleOverride)
     {
-        GameObject instanceMoon = null;
+        //PLANET
+        GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride);
 
-        //Properties
-        float distanceOut = MOONS_DISTANCE_OUT;
-        float randSpacing;
-        float spawnRadius;
-        float spawnAngle;
-
-        //Spawn all
-        for (int moonIndex = 0; moonIndex < nMoons; moonIndex++)
+        //PLANETARY SYSTEM BODIES
+        if (generationType != GENERATION_TYPE_LOADED_GAME)
         {
-            //Generate the position coords
-            randSpacing = Mathf.Pow(Random.Range(0f, MOONS_SPACING_BASE_MAX), Random.Range(1f, MOONS_SPACING_POWER));
-            spawnRadius = distanceOut + randSpacing;
-            distanceOut = spawnRadius; //incremenet distanceOut for the next moon
-            spawnAngle = Random.Range(0f, 360f);
-            Vector3 position = new Vector3(
-                Mathf.Cos(spawnAngle) * spawnRadius,
-                0f,
-                Mathf.Sin(spawnAngle) * spawnRadius
-            );
-            //Offset to "orbit" planet
-            position += planetPosition;
+            //If home planetary system
+            if (planetarySystemIndex == 0)
+            {
+                //Moons
+                playerSpawnMoon = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
 
-            //Spawn the moon
-            instanceMoon = SpawnMoon(
-                false,
-                planetIndex, moonIndex,
-                position,
-                null, false,
-                null, false, 0f, 0f, 0f, null
-            );
+                //Player
+                PlayerSpawn(
+                    generationType,
+                    playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
+                );
+            }
+            else
+            {
+                //Moons
+                MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
+            }
         }
 
-        return instanceMoon;
+        return instancePlanet;
     }
 
-    public GameObject SpawnPlanet(int generationType, int planetarySystemIndex, Vector3 position, string titleOverride)
+    private GameObject PlanetSpawn(Vector3 position, int planetarySystemIndex, string titleOverride)
     {
         //Instantiate
         GameObject instancePlanet = Instantiate(
@@ -324,34 +321,51 @@ public class Generation : MonoBehaviour
             instanceHomePlanet = instancePlanet;
         }
 
-        //GENERATE PLANETARY SYSTEM BODIES
-        if (generationType != GENERATION_TYPE_LOADED_GAME)
-        {
-            if (planetarySystemIndex == 0)
-            {
-                //Moons
-                playerSpawnMoon = GenerateMoonsAndGetPlayerCoords(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
-
-                //Player
-                SpawnPlayer(
-                    generationType,
-                    playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
-                );
-
-                //Asteroids
-                //GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1), 4);
-            }
-            else
-            {
-                //Moons
-                GenerateMoonsAndGetPlayerCoords(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
-            }
-        }
-
         return instancePlanet;
     }
+    #endregion
 
-    public GameObject SpawnMoon(bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position, string titleOverride, bool ifLoadingIsStation, string stationTitleOverride, bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
+    #region Moons
+    private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition)
+    {
+        GameObject instanceMoon = null;
+
+        //Properties
+        float distanceOut = MOONS_DISTANCE_OUT;
+        float randSpacing;
+        float spawnRadius;
+        float spawnAngle;
+
+        //Spawn all
+        for (int moonIndex = 0; moonIndex < nMoons; moonIndex++)
+        {
+            //Generate the position coords
+            randSpacing = Mathf.Pow(Random.Range(0f, MOONS_SPACING_BASE_MAX), Random.Range(1f, MOONS_SPACING_POWER));
+            spawnRadius = distanceOut + randSpacing;
+            distanceOut = spawnRadius; //incremenet distanceOut for the next moon
+            spawnAngle = Random.Range(0f, 360f);
+            Vector3 position = new Vector3(
+                Mathf.Cos(spawnAngle) * spawnRadius,
+                0f,
+                Mathf.Sin(spawnAngle) * spawnRadius
+            );
+            //Offset to "orbit" planet
+            position += planetPosition;
+
+            //Spawn the moon
+            instanceMoon = MoonSpawn(
+                false,
+                planetIndex, moonIndex,
+                position,
+                null, false,
+                null, false, 0f, 0f, 0f, null
+            );
+        }
+
+        return instanceMoon;
+    }
+
+    public GameObject MoonSpawn(bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position, string titleOverride, bool ifLoadingIsStation, string stationTitleOverride, bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
     {
         //Generate a moon within a planetary system and return its station's coordinates for possible use in spawning the player
 
@@ -368,6 +382,7 @@ public class Generation : MonoBehaviour
 
         //Add to planetary system list
         planetarySystems[planetarySystemIndex].Add(instanceMoon);
+        instanceMoon.GetComponent<PlanetarySystemBody>().planetarySystemIndex = planetarySystemIndex;
 
         //Put in CBodies tree
         instanceMoon.transform.parent = moons.transform;
@@ -427,160 +442,10 @@ public class Generation : MonoBehaviour
 
         return instanceMoon;
     }
+    #endregion
 
-    private void PopulateAsteroidPool()
-    {
-        for (int nAsteroids = 0; nAsteroids < control.settings.asteroidsConcurrentMax; nAsteroids++)
-        {
-            //Instantiate
-            GameObject instanceAsteroid = Instantiate(
-                asteroid,
-                Vector3.zero,
-                Quaternion.identity
-            );
-
-            //Setup script
-            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
-            //Give control reference
-            instanceAsteroidScript.control = control;
-            //Ignore all collisions unless explicitly enabled (once asteroid is enabled and separated from siblings)
-            instanceAsteroidScript.rb.detectCollisions = false;
-
-            //Put in hierarchy
-            instanceAsteroid.transform.parent = asteroidsDisabled.transform;
-            //Add to pool
-            asteroidsPool.Add(instanceAsteroid);
-            //Set as disabled until needed
-            instanceAsteroidScript.Disable();
-        }
-    }
-
-    public GameObject SpawnAsteroidFromPool(Vector3 position, int size, byte type)
-    {
-        GameObject instanceAsteroid = null;
-
-        if (asteroidsDisabled.transform.childCount > 0)
-        {
-            Transform asteroidToEnable = asteroidsDisabled.transform.GetChild(0);
-            instanceAsteroid = asteroidToEnable.gameObject;
-            asteroidToEnable.GetComponent<Asteroid>().Enable(position, size, type);
-        }
-        else
-        {
-            Debug.Log("No free asteroids!");
-        }
-
-        return instanceAsteroid;
-    }
-
-    private void GenerateAsteroidClusters(int nAsteroidClusters, int clusterSizeRange)
-    {
-        //Properties
-        float distanceOut = MOONS_DISTANCE_OUT;
-        float randSpacing;
-        float spawnRadius;
-        float spawnAngle;
-        int clusterSize;
-        byte clusterType;
-
-        //Spawn all
-        for (int i = 0; i < nAsteroidClusters; i++)
-        {
-            //Instance cBody
-            randSpacing = Mathf.Pow(Random.Range(0f, MOONS_SPACING_BASE_MAX), Random.Range(1f, MOONS_SPACING_POWER));
-            spawnRadius = distanceOut + randSpacing;
-            distanceOut = spawnRadius; //increment distanceOut for the next cBody
-            spawnAngle = Random.Range(0f, 360f);
-            clusterSize = Control.LowBiasedRandomIntSquared(clusterSizeRange); //range of 1 to 16 (4^2 = 16)
-
-            //We don't have to add 1 here to format for Random.Range max being exclusive for ints because the length is already 1 greater than the index (since index starts at 0)
-            clusterType = (byte)Random.Range(0, Ore.typeLength);
-
-            for (int clusterI = 0; clusterI < clusterSize; clusterI++)
-            {
-                GameObject instanceAsteroid = Instantiate(
-                    asteroid,
-                    new Vector3(
-                        Mathf.Cos(spawnAngle) * spawnRadius,
-                        0f,
-                        Mathf.Sin(spawnAngle) * spawnRadius
-                    ),
-                    Quaternion.Euler(
-                        Random.Range(0f, 360f),
-                        Random.Range(0f, 360f),
-                        Random.Range(0f, 360f)
-                    )
-                );
-
-                //Put in CBodies tree
-                instanceAsteroid.transform.parent = asteroids.transform;
-
-                //Spread out within cluster
-                instanceAsteroid.transform.position += 2f * new Vector3(Random.value, Random.value, Random.value);
-
-                Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
-                //Randomize size and type
-                instanceAsteroidScript.SetSize(Asteroid.GetRandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
-                instanceAsteroidScript.SetType(clusterType);
-                //Ignore all collisions unless explicitly enabled (once asteroid is separated from siblings)
-                instanceAsteroidScript.rb.detectCollisions = false;
-                instanceAsteroidScript.rb.AddForce(
-                    new Vector3(
-                        Random.Range(0f, 1f),
-                        Random.Range(0f, 1f),
-                        Random.Range(0f, 1f)
-                    ) * Random.Range(0f, 20f)
-                );
-                instanceAsteroidScript.rb.AddTorque(
-                    new Vector3(
-                        Random.Range(0f, 1f),
-                        Random.Range(0f, 1f),
-                        Random.Range(0f, 1f)
-                    ) * (Random.Range(0f, 100f) + (float)Control.LowBiasedRandomIntSquared(400))
-                );
-                //Give control reference
-                instanceAsteroidScript.control = control;
-            }
-        }
-    }
-
-    public GameObject SpawnAsteroid(Vector3 position, Vector3 velocity, int size, byte type, byte health) //bool randomType)
-    {
-        GameObject instanceAsteroid = Instantiate(
-            asteroid,
-            position,
-            Quaternion.Euler(
-                Random.Range(0f, 360f),
-                Random.Range(0f, 360f),
-                Random.Range(0f, 360f)
-            )
-        );
-
-        Asteroid instanceCBodyAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
-
-        //Put in CBodies tree
-        instanceAsteroid.transform.parent = asteroids.transform;
-
-        //Give control reference
-        instanceCBodyAsteroidScript.control = control;
-
-        //Set velocity
-        instanceAsteroid.GetComponent<Rigidbody>().velocity = velocity;
-
-        //Randomize size and type
-        instanceCBodyAsteroidScript.SetSize(size);
-        //instanceCBodyAsteroidScript.SetSize(instanceCBodyAsteroidScript.RandomSize()); //MUST SET SIZE FIRST SO THAT MODEL IS SELECTED
-
-        //Type
-        instanceCBodyAsteroidScript.SetType(type);
-
-        //Health
-        instanceCBodyAsteroidScript.health = health;
-
-        return instanceAsteroid;
-    }
-
-    private void SpawnPlayer(int generationType, Vector3 position)
+    #region Player
+    private void PlayerSpawn(int generationType, Vector3 position)
     {
         //Instantiate at position, rotation, velocity
         instancePlayer = Instantiate(
@@ -623,6 +488,53 @@ public class Generation : MonoBehaviour
 
         //Remember
         playerSpawned = true;
+    }
+#endregion
+
+    #region Asteroids
+    private void AsteroidPoolPopulate()
+    {
+        for (int nAsteroids = 0; nAsteroids < control.settings.asteroidsConcurrentMax; nAsteroids++)
+        {
+            //Instantiate
+            GameObject instanceAsteroid = Instantiate(
+                asteroid,
+                Vector3.zero,
+                Quaternion.identity
+            );
+
+            //Setup script
+            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
+            //Give control reference
+            instanceAsteroidScript.control = control;
+            //Ignore all collisions unless explicitly enabled (once asteroid is enabled and separated from siblings)
+            instanceAsteroidScript.rb.detectCollisions = false;
+
+            //Put in hierarchy
+            instanceAsteroid.transform.parent = asteroidsDisabled.transform;
+            //Add to pool
+            asteroidsPool.Add(instanceAsteroid);
+            //Set as disabled until needed
+            instanceAsteroidScript.Disable();
+        }
+    }
+
+    public GameObject AsteroidPoolSpawn(Vector3 position, int size, byte type)
+    {
+        GameObject instanceAsteroid = null;
+
+        if (asteroidsDisabled.transform.childCount > 0)
+        {
+            Transform asteroidToEnable = asteroidsDisabled.transform.GetChild(0);
+            instanceAsteroid = asteroidToEnable.gameObject;
+            asteroidToEnable.GetComponent<Asteroid>().Enable(position, size, type);
+        }
+        else
+        {
+            Debug.Log("No free asteroids!");
+        }
+
+        return instanceAsteroid;
     }
     #endregion
 
@@ -828,12 +740,12 @@ public class Generation : MonoBehaviour
             //Debug.Log("Save exists; loading game");
 
             //Star
-            SpawnStar(data.starName);
+            StarSpawn(data.starName);
 
             //Planets
             for (int planetIndex = 0; planetIndex < data.planetQuantity; planetIndex++)
             {
-                GameObject instancePlanet = SpawnPlanet(
+                GameObject instancePlanet = PlanetarySystemSpawnAndPlayerSpawn(
                     GENERATION_TYPE_LOADED_GAME,
                     planetIndex,
                     new Vector3(
@@ -863,7 +775,7 @@ public class Generation : MonoBehaviour
                             controlScriptPlanetoidStationUpgradeIndex[upgrade] = data.stationUpgradeIndex[moonIndex, upgrade];
                         }
 
-                        instanceMoon = SpawnMoon(
+                        instanceMoon = MoonSpawn(
                             true,
                             planetIndex,
                             moonIndex,
@@ -884,7 +796,7 @@ public class Generation : MonoBehaviour
                     }
                     else
                     {
-                        instanceMoon = SpawnMoon(
+                        instanceMoon = MoonSpawn(
                             true,
                             planetIndex,
                             moonIndex,
@@ -912,25 +824,25 @@ public class Generation : MonoBehaviour
             //Asteroids
             for (byte i = 0; i < data.asteroidQuantity; i++)
             {
-                SpawnAsteroid(
-                    new Vector3(
-                        data.asteroidPosition[i, 0],
-                        data.asteroidPosition[i, 1],
-                        data.asteroidPosition[i, 2]
-                    ),
-                    new Vector3(
-                        data.asteroidVelocity[i, 0],
-                        data.asteroidVelocity[i, 1],
-                        data.asteroidVelocity[i, 2]
-                    ),
-                    data.asteroidSize[i],
-                    data.asteroidType[i],
-                    data.asteroidHealth[i]
-                );
+                //SpawnAsteroid(
+                //    new Vector3(
+                //        data.asteroidPosition[i, 0],
+                //        data.asteroidPosition[i, 1],
+                //        data.asteroidPosition[i, 2]
+                //    ),
+                //    new Vector3(
+                //        data.asteroidVelocity[i, 0],
+                //        data.asteroidVelocity[i, 1],
+                //        data.asteroidVelocity[i, 2]
+                //    ),
+                //    data.asteroidSize[i],
+                //    data.asteroidType[i],
+                //    data.asteroidHealth[i]
+                //);
             }
 
             //PLAYER
-            SpawnPlayer(
+            PlayerSpawn(
                 GENERATION_TYPE_LOADED_GAME,
                 new Vector3(
                     data.playerPosition[0],

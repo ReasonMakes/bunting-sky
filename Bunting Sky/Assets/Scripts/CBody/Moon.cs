@@ -81,7 +81,7 @@ public class Moon : MonoBehaviour
         for (int i = 0; i < 7; i++)
         {
             //Spawn asteroids
-            GameObject instanceAsteroid = control.generation.SpawnAsteroidFromPool(transform.position, Asteroid.GetRandomSize(), type);
+            GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(transform.position, Asteroid.GetRandomSize(), type);
             //GameObject asteroid = control.generation.SpawnAsteroid(
             //    transform.position,
             //    rb.velocity,

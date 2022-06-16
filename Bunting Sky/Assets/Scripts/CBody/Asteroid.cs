@@ -383,7 +383,7 @@ public class Asteroid : MonoBehaviour
     {
         for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
         {
-            GameObject instanceAsteroid = control.generation.SpawnAsteroidFromPool(
+            GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
                 transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)),
                 asteroidsSizes,
                 type
