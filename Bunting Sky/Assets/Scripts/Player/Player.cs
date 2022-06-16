@@ -45,7 +45,7 @@ public class Player : MonoBehaviour
     //Movement
     public Rigidbody rb;
     private Vector3 thrustVector;
-    private readonly float THRUST = 4E3f; //3E3f; //8416.65825f;
+    private readonly float THRUST = 4e5f; //4E3f; //3E3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
     private float matchVelOffThrustModifier = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
@@ -284,6 +284,21 @@ public class Player : MonoBehaviour
 
         //I to cheat
 
+        //Toggle active nearest planet
+        if (binds.GetInputDown(binds.bindCheat1))
+        {
+            GameObject instancePlanet = GetClosestTransformFromHierarchy(control.generation.planets.transform).gameObject;
+            //instancePlanet.SetActive(!instancePlanet.activeSelf);
+            int index = instancePlanet.GetComponent<PlanetarySystemBody>().planetarySystemIndex;
+            int count = control.generation.planetarySystems[index].Count;
+            control.ui.SetTip("Index: " + index + "; Count: " + count);
+            for (int i = 0; i < count; i++)
+            {
+                GameObject instancePlanetarySystemBody = control.generation.planetarySystems[index][i];
+                instancePlanetarySystemBody.SetActive(!instancePlanetarySystemBody.activeSelf);
+            }
+        }
+
         ////Spawn an asteroid from the object pool
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
@@ -293,7 +308,7 @@ public class Player : MonoBehaviour
         //        (byte)UnityEngine.Random.Range(0, 2 + 1)
         //    );
         //}
-        //
+
         ////Toggle all enabled asteroids' performance mode
         //if (binds.GetInputDown(binds.bindCheat2))
         //{
@@ -1325,21 +1340,21 @@ public class Player : MonoBehaviour
         float closestDistanceSoFar = Mathf.Infinity;
 
         //Loop through all transforms
-        int nTransforms = hierarchy.childCount;
-        for (int i = 0; i < nTransforms; i++)
+        int nTransformsToCheck = hierarchy.childCount;
+        for (int i = 0; i < nTransformsToCheck; i++)
         {
             //The transform that we are currently checking
-            Transform transform = hierarchy.GetChild(i);
+            Transform transformToCheck = hierarchy.GetChild(i);
 
             //The distance from the player to that transform
-            float distanceToTransform = Vector3.Distance(transform.position, transform.position);
+            float distanceToTransformToCheck = Vector3.Distance(transform.position, transformToCheck.position);
 
             //If the distance is closer than the last transform we checked
-            if (distanceToTransform < closestDistanceSoFar)
+            if (distanceToTransformToCheck < closestDistanceSoFar)
             {
                 //Set this transform as the closest (so far)
-                closestDistanceSoFar = distanceToTransform;
-                closestTransform = transform;
+                closestDistanceSoFar = distanceToTransformToCheck;
+                closestTransform = transformToCheck;
             }
         }
 

@@ -44,7 +44,7 @@ public class Generation : MonoBehaviour
             [System.NonSerialized] public GameObject instanceStar;
             
             public GameObject planets;
-            private List<List<GameObject>> planetarySystems = new List<List<GameObject>>(); //For every planet there is a list of its children, and there is a list of each planet
+            [System.NonSerialized] public List<List<GameObject>> planetarySystems = new List<List<GameObject>>(); //For every planet there is a list of its children, and there is a list of each planet
                 public GameObject planet;
                 [System.NonSerialized] public GameObject instanceHomePlanet;
 
@@ -297,14 +297,15 @@ public class Generation : MonoBehaviour
             Quaternion.Euler(0f, 0f, 0f)
         );
 
-        //Put in CBodies tree
-        instancePlanet.transform.parent = cBodies.transform;
+        //Put in hierarchy
+        instancePlanet.transform.parent = planets.transform;
 
         //Expand planetary systems list
         planetarySystems.Add(new List<GameObject>());
 
         //Add to planetary systems list
         planetarySystems[planetarySystemIndex].Add(instancePlanet);
+        instancePlanet.GetComponent<PlanetarySystemBody>().planetarySystemIndex = planetarySystemIndex;
 
         //Set name
         if (titleOverride == null)
