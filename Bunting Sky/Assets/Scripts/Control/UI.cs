@@ -144,7 +144,7 @@ public class UI : MonoBehaviour
         {
             if (Time.frameCount % FPS_PRINT_PERIOD == 0) control.fps = (int)(1f / Time.unscaledDeltaTime);
             systemInfo.text = control.fps.ToString() + "FPS"
-                + "\n Asteroids: " + control.generation.asteroids.transform.childCount;
+                + "\n Asteroids: " + control.generation.asteroidsEnabled.transform.childCount + " (" + control.generation.asteroidsDetailed + " detailed)";
             /*
                 + "\nPosition: " + instancePlayer.transform.Find("Body").position
                 + "\nPos relative verse: " + (instancePlayer.transform.Find("Body").position - verseSpace.transform.position);
@@ -720,7 +720,7 @@ public class UI : MonoBehaviour
         }
         else if (distance >= 1.057e16f)
         {
-            distanceDisplay = (distance * 1.057e-16f).ToString("F2") + " c"; //" lightyear";
+            distanceDisplay = (distance * 1.057e-16f).ToString("F2") + " l"; //" lightyear";
         }
 
         //DeltaV

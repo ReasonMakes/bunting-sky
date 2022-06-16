@@ -23,9 +23,10 @@ public class Asteroid : MonoBehaviour
     private readonly float INTERSECTING_REPEL_TELEPORT_STEP_DIST = 0.03f;
 
     [System.NonSerialized] public int size;
-    [System.NonSerialized] public static int SIZE_SMALL = 0;
-    [System.NonSerialized] public static int SIZE_MEDIUM = 1;
-    [System.NonSerialized] public static int SIZE_LARGE = 2;
+    [System.NonSerialized] public readonly static int SIZE_SMALL = 0;
+    [System.NonSerialized] public readonly static int SIZE_MEDIUM = 1;
+    [System.NonSerialized] public readonly static int SIZE_LARGE = 2;
+    [System.NonSerialized] public readonly static int SIZE_LENGTH = 3;
     private GameObject modelGroup;
     private GameObject modelObject;
     public GameObject modelGroupSizeSmall;
@@ -36,6 +37,7 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public static readonly byte TYPE_PLATINOID = 0;
     [System.NonSerialized] public static readonly byte TYPE_PRECIOUS_METAL = 1;
     [System.NonSerialized] public static readonly byte TYPE_WATER = 2;
+    [System.NonSerialized] public static readonly byte TYPE_LENGTH = 3; //how many types there are
     public Material matPlatinoid;
     public Material matPreciousMetal;
     public Material matWater;
@@ -43,6 +45,9 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public MeshRenderer meshRenderer;
 
     public GameObject ore;
+
+    private Vector3 rbMemoryVelocity;
+    private Quaternion rbMemoryRotation;
 
     private void Start()
     {
@@ -95,9 +100,16 @@ public class Asteroid : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!performantMode && !Menu.menuOpenAndGamePaused && !destroyed && separating)
+        if (!Menu.menuOpenAndGamePaused)
         {
-            Separate();
+            if (performantMode)
+            {
+                transform.position += rbMemoryVelocity;
+            }
+            else if (!performantMode && !destroyed && separating)
+            {
+                Separate();
+            }
         }
     }
 
@@ -197,6 +209,10 @@ public class Asteroid : MonoBehaviour
             rb.mass = 10.0f;
             health = (byte)Random.Range(4, 8);
         }
+        else
+        {
+            Debug.Log("Unrecognized size code: " + this.size);
+        }
 
         //Activate the model
         //Get how many child objects are in the model group for the selected size class
@@ -234,7 +250,22 @@ public class Asteroid : MonoBehaviour
 
     public static byte GetRandomType()
     {
-        return (byte)Random.Range(0, Ore.typeLength);
+        return (byte)Random.Range(0, TYPE_LENGTH);
+    }
+
+    public static byte GetRandomTypeExcluding(byte typeToExclude)
+    {
+        //Start with the excluded type otherwise the loop will not run
+        byte type = typeToExclude;
+
+        //Loop until the type we generate is different from the type to exclude
+        while (type == typeToExclude)
+        {
+            type = GetRandomType();
+        }
+
+        //Return the type
+        return type;
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -401,8 +432,21 @@ public class Asteroid : MonoBehaviour
     public void SetPerformant(bool performance)
     {
         //Disables Update(), rigidbody, mesh collider (to be swapped out for sphere collider), and trigger volumes for improved performance (makes a big difference with 100 asteroids)
+        if (performance)
+        {
+            rbMemoryVelocity = rb.velocity;
+            rbMemoryRotation = rb.rotation;
+
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            rb.isKinematic = true;
+        }
+        else
+        {
+            rb.isKinematic = false;
+            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        }
+
         performantMode = performance;
-        rb.isKinematic = performance;
         targetCollider1.enabled = !performance;
         targetCollider2.enabled = !performance;
         if (!separating)

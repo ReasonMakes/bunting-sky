@@ -169,7 +169,7 @@ public class Control : MonoBehaviour
         return angle;
     }
 
-    public static int LowBiasedRandomIntSquared(int valueMax)
+    public static int LowBiasedRandomIntSquared(int valueRootOfMax)
     {
         /*
          * Randomly generates an int with a bias toward low numbers
@@ -178,14 +178,14 @@ public class Control : MonoBehaviour
          * This is useful for generating asteroids with the rare chance of large clusters
          */
 
-        //Randomize size (nneds to be shifted one to the right so that multiplication has grows the low-end number too)
-        float value = Random.Range(1f, (float)valueMax);
+        //Randomize size (needs to be shifted one to the right so that multiplication has grows the low-end number too)
+        float value = Random.Range(1f, (float)valueRootOfMax);
 
         //Power (making distribution uneven, and unintentionally making smaller sizes rarer)
         value *= value;
 
         //Making larger sizes rarer by multiplying the inverse of the value by maximum value squared
-        value = (1f / value) * valueMax * valueMax;
+        value = (1f / value) * valueRootOfMax * valueRootOfMax;
 
         //Round (to properly parse to int)
         value = Mathf.Round(value);
@@ -246,6 +246,38 @@ public class Control : MonoBehaviour
         }
 
         return newText.ToString();
+    }
+
+    public static Transform GetClosestTransformFromHierarchy(Transform hierarchy, Vector3 positionRelativeTo)
+    {
+        //VARIABLE TO RETURN LATER
+        Transform closestTransform = null;
+
+        //CHECK DISTANCES OF ALL TRANSFORMS IN HIERARCHY
+        //Start with infinity distance away to compare to
+        float closestDistanceSoFar = Mathf.Infinity;
+
+        //Loop through all transforms
+        int nTransformsToCheck = hierarchy.childCount;
+        for (int i = 0; i < nTransformsToCheck; i++)
+        {
+            //The transform that we are currently checking
+            Transform transformToCheck = hierarchy.GetChild(i);
+
+            //The distance from the player to that transform
+            float distanceToTransformToCheck = Vector3.Distance(positionRelativeTo, transformToCheck.position);
+
+            //If the distance is closer than the last transform we checked
+            if (distanceToTransformToCheck < closestDistanceSoFar)
+            {
+                //Set this transform as the closest (so far)
+                closestDistanceSoFar = distanceToTransformToCheck;
+                closestTransform = transformToCheck;
+            }
+        }
+
+        //RETURN CLOSEST TRANSFORM
+        return closestTransform;
     }
     #endregion
 }

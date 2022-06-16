@@ -54,6 +54,7 @@ public class Player : MonoBehaviour
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f;
+    private float thrustCheat = 1f;
     private float engineBrightness = 0f;
     public Material engineGlowMat;
     private Color engineEmissionColorRunning = new Color(191, 102, 43);
@@ -284,28 +285,42 @@ public class Player : MonoBehaviour
 
         //I to cheat
 
-        //Toggle active nearest planet
         if (binds.GetInputDown(binds.bindCheat1))
         {
-            GameObject instancePlanet = GetClosestTransformFromHierarchy(control.generation.planets.transform).gameObject;
-            //instancePlanet.SetActive(!instancePlanet.activeSelf);
-            int index = instancePlanet.GetComponent<PlanetarySystemBody>().planetarySystemIndex;
-            int count = control.generation.planetarySystems[index].Count;
-            control.ui.SetTip("Index: " + index + "; Count: " + count);
-            for (int i = 0; i < count; i++)
-            {
-                GameObject instancePlanetarySystemBody = control.generation.planetarySystems[index][i];
-                instancePlanetarySystemBody.SetActive(!instancePlanetarySystemBody.activeSelf);
-            }
+            thrustCheat += 0.25f;
+
+            control.ui.SetTip(thrustCheat + "x");
         }
+
+        if (binds.GetInputDown(binds.bindCheat2))
+        {
+            thrustCheat -= 0.25f;
+
+            control.ui.SetTip(thrustCheat + "x");
+        }
+
+        ////Toggle active nearest planet
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    GameObject instancePlanet = Control.GetClosestTransformFromHierarchy(control.generation.planets.transform, transform.position).gameObject;
+        //    //instancePlanet.SetActive(!instancePlanet.activeSelf);
+        //    int index = instancePlanet.GetComponent<PlanetarySystemBody>().planetarySystemIndex;
+        //    int count = control.generation.planetarySystems[index].Count;
+        //    control.ui.SetTip("Index: " + index + "; Count: " + count);
+        //    for (int i = 0; i < count; i++)
+        //    {
+        //        GameObject instancePlanetarySystemBody = control.generation.planetarySystems[index][i];
+        //        instancePlanetarySystemBody.SetActive(!instancePlanetarySystemBody.activeSelf);
+        //    }
+        //}
 
         ////Spawn an asteroid from the object pool
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
-        //    control.generation.SpawnAsteroidFromPool(
+        //    control.generation.AsteroidPoolSpawn(
         //        transform.position + (transform.forward * 20f),
-        //        UnityEngine.Random.Range(0, 2 + 1),
-        //        (byte)UnityEngine.Random.Range(0, 2 + 1)
+        //        UnityEngine.Random.Range(0, Asteroid.SIZE_LENGTH),
+        //        (byte)UnityEngine.Random.Range(0, Asteroid.TYPE_LENGTH)
         //    );
         //}
 
@@ -566,7 +581,7 @@ public class Player : MonoBehaviour
         UpdateWarningText();
 
         //Too close to the sun?
-        float distToCStar = Vector3.Distance(transform.position, control.generation.instanceStar.transform.position);
+        float distToCStar = Vector3.Distance(transform.position, control.generation.instanceStarHome.transform.position);
         float maxDist = 150f;
         float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
         if (distToCStar < maxDist)
@@ -598,13 +613,13 @@ public class Player : MonoBehaviour
         //If one exists, find the nearest moon or asteroid to determine whether or not to drag relative to it
         if (control.generation.moons.transform.childCount > 0)
         {
-            closestMoonOrStationTransform = GetClosestTransformFromHierarchy(control.generation.moons.transform);
+            closestMoonOrStationTransform = Control.GetClosestTransformFromHierarchy(control.generation.moons.transform, transform.position);
             distToClosestMoon = (transform.position - closestMoonOrStationTransform.transform.position).magnitude;
         }
 
         if (control.generation.asteroidsEnabled.transform.childCount > 0)
         {
-            closestAsteroidTransform = GetClosestTransformFromHierarchy(control.generation.asteroidsEnabled.transform);
+            closestAsteroidTransform = Control.GetClosestTransformFromHierarchy(control.generation.asteroidsEnabled.transform, transform.position);
             distToClosestAsteroid = (transform.position - closestAsteroidTransform.transform.position).magnitude;
         }
     }
@@ -629,6 +644,7 @@ public class Player : MonoBehaviour
                 || binds.GetInput(binds.bindThrustDown)
             )
             && (tempEngineDisable == 0 || tempEngineDisableButFlickering)
+            && vitalsFuel > 0.0d
         )
         {
             canAndIsMoving = true;
@@ -815,7 +831,9 @@ public class Player : MonoBehaviour
             {
                 thrustMultiplier *= matchVelOffThrustModifier;
             }
-            
+
+            thrustMultiplier *= thrustCheat;
+
             //We don't want the player to be able to move if the moving check fails
             //(it's not just a shotcut to detect any input, it also detects if the player CAN move)
             //We exclude the above from this check as some parts like the engine warmup must be able to decrement even when unable to move
@@ -1329,38 +1347,6 @@ public class Player : MonoBehaviour
     //
     //    return GetClosestTransform(moonTransforms);
     //}
-
-    private Transform GetClosestTransformFromHierarchy(Transform hierarchy)
-    {
-        //VARIABLE TO RETURN LATER
-        Transform closestTransform = null;
-
-        //CHECK DISTANCES OF ALL TRANSFORMS IN HIERARCHY
-        //Start with infinity distance away to compare to
-        float closestDistanceSoFar = Mathf.Infinity;
-
-        //Loop through all transforms
-        int nTransformsToCheck = hierarchy.childCount;
-        for (int i = 0; i < nTransformsToCheck; i++)
-        {
-            //The transform that we are currently checking
-            Transform transformToCheck = hierarchy.GetChild(i);
-
-            //The distance from the player to that transform
-            float distanceToTransformToCheck = Vector3.Distance(transform.position, transformToCheck.position);
-
-            //If the distance is closer than the last transform we checked
-            if (distanceToTransformToCheck < closestDistanceSoFar)
-            {
-                //Set this transform as the closest (so far)
-                closestDistanceSoFar = distanceToTransformToCheck;
-                closestTransform = transformToCheck;
-            }
-        }
-
-        //RETURN CLOSEST TRANSFORM
-        return closestTransform;
-    }
     #endregion
 
     #region General methods: Damage

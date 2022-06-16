@@ -8,7 +8,6 @@ public class Ore : MonoBehaviour
     public Material matGlowPlatinoid;
     public Material matGlowPreciousMetal;
     public Material matGlowWater;
-    public static byte typeLength = 3;
     public byte type; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
 
     public Control control; //this is set by its instantiator

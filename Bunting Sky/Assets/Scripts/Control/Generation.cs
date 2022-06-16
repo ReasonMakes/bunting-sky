@@ -35,19 +35,27 @@ public class Generation : MonoBehaviour
     private float PLANETS_SPACING_POWER = 1f;
     private float maxPlanetDist;
 
-    //private readonly int ASTEROID_CLUSTERS_RANGE_LOW = 6;
-    //private readonly int ASTEROID_CLUSTERS_RANGE_HIGH = 9;
+    private readonly int ASTEROID_CLUSTER_TYPE_VOID_CLUMP       = 0;
+    private readonly int ASTEROID_CLUSTER_TYPE_PLANET_RINGS     = 1;
+    private readonly int ASTEROID_CLUSTER_TYPE_PLANET_CLUMP     = 2;
+    private readonly int ASTEROID_CLUSTER_TYPE_MOON_RINGS       = 3;
+    private readonly int ASTEROID_CLUSTER_TYPE_MOON_CLUMP       = 4;
+    public int asteroidsDetailed = 0;
+
+    private int hitboxSwapMoonsChild = 0;
+    private int hitboxSwapPlanetsChild = 0;
+    private int performanceModeSwapAsteroidsChild = 0;
 
     //Verse hierarchy
     public GameObject verseSpace;
         public GameObject cBodies;
             public GameObject star;
-            [System.NonSerialized] public GameObject instanceStar;
+            [System.NonSerialized] public GameObject instanceStarHome;
             
             public GameObject planets;
             [System.NonSerialized] public List<List<GameObject>> planetarySystems = new List<List<GameObject>>(); //For every planet there is a list of its children, and there is a list of each planet
                 public GameObject planet;
-                [System.NonSerialized] public GameObject instanceHomePlanet;
+                [System.NonSerialized] public GameObject instancePlanetHome;
 
                 public GameObject moons;
                     public GameObject moon;
@@ -84,6 +92,9 @@ public class Generation : MonoBehaviour
     #region Update
     private void Update()
     {
+        //Checks one object per type per frame to avoid lag spikes
+        SwapHitboxes();
+
         //Slow update
         if (Time.frameCount % 10 == 0)
         {
@@ -99,7 +110,7 @@ public class Generation : MonoBehaviour
 
     private void SlowUpdate()
     {
-        SwapHitboxes();
+        SwapAsteroidPerformanceMode();
     }
 
     private void VerySlowUpdate()
@@ -113,24 +124,115 @@ public class Generation : MonoBehaviour
     {
         //Mesh Collider to Sphere collider swapper (for performance)
 
+
+        //MOONS CHILDREN
         //Could be a moon, station, or heighliner (all have the same children collider names)
-        for (int i = 0; i < moons.transform.childCount; i++)
+        //The transform to check whether to swap
+        Transform transformToSwap = moons.transform.GetChild(hitboxSwapMoonsChild);
+
+        //Check which collider to use
+        bool useMesh = (
+            Vector3.Distance(
+            instancePlayer.transform.Find("Body").position,
+            transformToSwap.position
+            ) < 40f
+        );
+
+        //Use proper colliders
+        transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
+        transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
+
+        //Increment, unless at max
+        hitboxSwapMoonsChild = (hitboxSwapMoonsChild + 1) % moons.transform.childCount;
+
+
+        //PLANETS CHILDREN
+        //The transform to check whether to swap
+        Transform planetsChildTransformToSwap = planets.transform.GetChild(hitboxSwapPlanetsChild);
+
+        //Check which collider to use
+        bool planetsChildUseMesh = (
+            Vector3.Distance(
+            instancePlayer.transform.Find("Body").position,
+            planetsChildTransformToSwap.position
+            ) < 170f
+        );
+
+        //Use proper colliders
+        planetsChildTransformToSwap.Find("Mesh Collider").gameObject.SetActive(planetsChildUseMesh);
+        planetsChildTransformToSwap.Find("Sphere Collider").gameObject.SetActive(!planetsChildUseMesh);
+
+        //Increment, unless at max
+        hitboxSwapPlanetsChild = (hitboxSwapPlanetsChild + 1) % planets.transform.childCount;
+
+
+        ////Could be a moon, station, or heighliner (all have the same children collider names)
+        //for (int i = 0; i < moons.transform.childCount; i++)
+        //{
+        //    //The transform to check whether to swap
+        //    Transform transformToSwap = moons.transform.GetChild(i);
+        //
+        //    //Check which collider to use
+        //    bool useMesh = (
+        //        Vector3.Distance(
+        //        instancePlayer.transform.Find("Body").position,
+        //        transformToSwap.position
+        //        ) < 40f
+        //    );
+        //
+        //    //Use proper colliders
+        //    transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
+        //    transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
+        //}
+        //
+        ////Planets
+        //for (int i = 0; i < planets.transform.childCount; i++)
+        //{
+        //    //The transform to check whether to swap
+        //    Transform transformToSwap = planets.transform.GetChild(i);
+        //
+        //    //Check which collider to use
+        //    bool useMesh = (
+        //        Vector3.Distance(
+        //        instancePlayer.transform.Find("Body").position,
+        //        transformToSwap.position
+        //        ) < 170f
+        //    );
+        //
+        //    //Use proper colliders
+        //    transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
+        //    transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
+        //}
+    }
+
+    private void SwapAsteroidPerformanceMode()
+    {
+        int detailed = 0;
+
+        for (int i = 0; i < asteroidsEnabled.transform.childCount; i++)
         {
             //The transform to check whether to swap
-            Transform transformToSwap = moons.transform.GetChild(i);
+            Transform transformToSwap = asteroidsEnabled.transform.GetChild(i);
 
-            //Check which collider to use
-            bool useMesh = (
+            //Check which performance mode to use
+            bool performant = (
                 Vector3.Distance(
                 instancePlayer.transform.Find("Body").position,
                 transformToSwap.position
-                ) < 40f
+                ) >= 80f
             );
 
-            //Use proper colliders
-            transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
-            transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
+            //Use proper performance mode
+            transformToSwap.GetComponent<Asteroid>().SetPerformant(performant);
+
+            //Keep track of how many asteroids of each type we have
+            if (!performant)
+            {
+                detailed++;
+            }
         }
+
+        asteroidsDetailed = detailed;
     }
     #endregion
 
@@ -139,7 +241,7 @@ public class Generation : MonoBehaviour
         if (generationType == GENERATION_TYPE_RESTARTED_GAME)
         {
             //Destroy verse
-            Destroy(instanceStar, 0f);
+            Destroy(instanceStarHome, 0f);
             Control.DestroyAllChildren(planets, 0f);
             Control.DestroyAllChildren(moons, 0f);
             Control.DestroyAllChildren(asteroids, 0f);
@@ -155,15 +257,15 @@ public class Generation : MonoBehaviour
             Destroy(instancePlayer, 0f);
         }
 
-        //HOME STAR
+        //Asteroids
+        AsteroidPoolPopulate();
+
+        //Home star
         StarSpawn(null);
 
         //Planetary system (moons, stations, heighliners, player)
         PlanetarySystemClusterSpawn(Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1), generationType);
 
-        //Asteroids
-        AsteroidPoolPopulate();
-        
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
         SaveGame();
     }
@@ -172,27 +274,27 @@ public class Generation : MonoBehaviour
     private void StarSpawn(string titleOverride)
     {
         //Instantiate
-        instanceStar = Instantiate(
+        instanceStarHome = Instantiate(
             star,
             Vector3.zero,
             Quaternion.Euler(0f, 0f, 0f)
         );
 
         //Put in CBodies tree
-        instanceStar.transform.parent = cBodies.transform;
+        instanceStarHome.transform.parent = cBodies.transform;
 
         //Set name
         if (titleOverride == null)
         {
-            instanceStar.GetComponent<NameCelestial>().GenerateName();
+            instanceStarHome.GetComponent<NameCelestial>().GenerateName();
         }
         else
         {
-            instanceStar.GetComponent<NameCelestial>().title = titleOverride;
+            instanceStarHome.GetComponent<NameCelestial>().title = titleOverride;
         }
 
         //Set light range
-        instanceStar.GetComponentInChildren<Light>().range = maxPlanetDist * 2f;
+        instanceStarHome.GetComponentInChildren<Light>().range = maxPlanetDist * 2f;
     }
     #endregion
 
@@ -224,7 +326,7 @@ public class Generation : MonoBehaviour
         }
     }
 
-    public GameObject PlanetarySystemSpawnAndPlayerSpawn(int generationType, int planetarySystemIndex, Vector3 position, string titleOverride)
+    private GameObject PlanetarySystemSpawnAndPlayerSpawn(int generationType, int planetarySystemIndex, Vector3 position, string titleOverride)
     {
         //PLANET
         GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride);
@@ -232,22 +334,23 @@ public class Generation : MonoBehaviour
         //PLANETARY SYSTEM BODIES
         if (generationType != GENERATION_TYPE_LOADED_GAME)
         {
+            //Moons
+            GameObject instanceMoonCluster = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
+
             //If home planetary system
             if (planetarySystemIndex == 0)
             {
-                //Moons
-                playerSpawnMoon = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
+                //Set home moon
+                playerSpawnMoon = instanceMoonCluster;
 
                 //Player
                 PlayerSpawn(
                     generationType,
                     playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
                 );
-            }
-            else
-            {
-                //Moons
-                MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
+
+                //Asteroids
+                AsteroidPoolClusterSpawn(ASTEROID_CLUSTER_TYPE_PLANET_RINGS, Asteroid.TYPE_WATER, position);
             }
         }
 
@@ -284,10 +387,21 @@ public class Generation : MonoBehaviour
         }
 
         //Set home planet
+        Planet planetScript = instancePlanet.GetComponent<Planet>();
         if (planetarySystemIndex == 0)
         {
             //This is the player's home planetary system
-            instanceHomePlanet = instancePlanet;
+            instancePlanetHome = instancePlanet;
+
+            //Set asteroids types
+            planetScript.asteroidType1 = Asteroid.TYPE_PLATINOID;
+            planetScript.asteroidType2 = Asteroid.TYPE_WATER;
+        }
+        else
+        {
+            //Set asteroids types
+            planetScript.asteroidType1 = Asteroid.GetRandomType();
+            planetScript.asteroidType2 = Asteroid.GetRandomTypeExcluding(planetScript.asteroidType1);
         }
 
         return instancePlanet;
@@ -497,7 +611,11 @@ public class Generation : MonoBehaviour
         //If we have room in the pool to draw from
         if (asteroidsDisabled.transform.childCount > 0)
         {
-            asteroidsDisabled.transform.GetChild(0).GetComponent<Asteroid>().Enable(position, size, type);
+            //Remember which asteroid we're working with so we can return it later
+            instanceAsteroid = asteroidsDisabled.transform.GetChild(0).gameObject;
+
+            //Enable that asteroid
+            instanceAsteroid.GetComponent<Asteroid>().Enable(position, size, type);
         }
         else
         {
@@ -506,6 +624,51 @@ public class Generation : MonoBehaviour
         }
 
         return instanceAsteroid;
+    }
+
+    private void AsteroidPoolClusterSpawn(int clusterType, byte oreType, Vector3 position)
+    {
+        if (clusterType == ASTEROID_CLUSTER_TYPE_PLANET_RINGS)
+        {
+            float radius = 170f;
+            float angle = 0f;
+            int nAsteroids = 10;
+
+            for (int i = 0; i < nAsteroids; i++)
+            {
+                //Spawn the asteroid
+                GameObject instanceAsteroid = AsteroidPoolSpawn(
+                    position + new Vector3(
+                        Mathf.Cos(Mathf.Deg2Rad * angle) * radius,
+                        0f,
+                        Mathf.Sin(Mathf.Deg2Rad * angle) * radius
+                    ),
+                    Random.Range(0, Asteroid.SIZE_LENGTH),
+                    oreType
+                );
+
+                //Add torque
+                instanceAsteroid.GetComponent<Rigidbody>().AddTorque(25f * new Vector3(
+                    Random.value,
+                    Random.value,
+                    Random.value
+                ));
+
+                //Increment angle
+                angle += 360f / (float)nAsteroids;
+            }
+        }
+
+        //GameObject instancePlanet = Control.GetClosestTransformFromHierarchy(control.generation.planets.transform, transform.position).gameObject;
+        ////instancePlanet.SetActive(!instancePlanet.activeSelf);
+        //int index = instancePlanet.GetComponent<PlanetarySystemBody>().planetarySystemIndex;
+        //int count = control.generation.planetarySystems[index].Count;
+        //control.ui.SetTip("Index: " + index + "; Count: " + count);
+        //for (int i = 0; i < count; i++)
+        //{
+        //    GameObject instancePlanetarySystemBody = control.generation.planetarySystems[index][i];
+        //    instancePlanetarySystemBody.SetActive(!instancePlanetarySystemBody.activeSelf);
+        //}
     }
 
     //private void AsteroidManageCount()
@@ -686,7 +849,7 @@ public class Generation : MonoBehaviour
         
         //World properties
         //Centre star
-        data.starName = instanceStar.GetComponent<NameCelestial>().title;
+        data.starName = instanceStarHome.GetComponent<NameCelestial>().title;
         
         //Planets
         data.planetQuantity = (byte)planetarySystems.Count;
@@ -735,7 +898,7 @@ public class Generation : MonoBehaviour
         LevelData.SaveGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile, data);
     }
 
-    public void TryLoadGameElseNewGame()
+    private void TryLoadGameElseNewGame()
     {
         LevelData.Data data = LevelData.LoadGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile);
 
