@@ -194,6 +194,16 @@ public class Control : MonoBehaviour
         return (int)value;
     }
 
+    public static bool GetTrueForPercentOfIndices(int index, int length, float percentage)
+    {
+        if (index % Mathf.RoundToInt((float)length / ((percentage / 100f) * (float)length)) == 0)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     /*
     private void TestLowBiasedRandomIntSquared()
     {

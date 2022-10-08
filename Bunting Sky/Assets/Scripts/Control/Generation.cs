@@ -165,7 +165,6 @@ public class Generation : MonoBehaviour
         //Increment, unless at max
         hitboxSwapPlanetsChild = (hitboxSwapPlanetsChild + 1) % planets.transform.childCount;
 
-
         ////Could be a moon, station, or heighliner (all have the same children collider names)
         //for (int i = 0; i < moons.transform.childCount; i++)
         //{
@@ -243,8 +242,11 @@ public class Generation : MonoBehaviour
             //Destroy verse
             Destroy(instanceStarHome, 0f);
             Control.DestroyAllChildren(planets, 0f);
+            hitboxSwapPlanetsChild = 0;
             Control.DestroyAllChildren(moons, 0f);
-            Control.DestroyAllChildren(asteroids, 0f);
+            hitboxSwapMoonsChild = 0;
+            Control.DestroyAllChildren(asteroidsEnabled, 0f);
+            Control.DestroyAllChildren(asteroidsDisabled, 0f);
             Control.DestroyAllChildren(ores, 0f);
             planetarySystems.Clear();
 
@@ -263,7 +265,7 @@ public class Generation : MonoBehaviour
         //Home star
         StarSpawn(null);
 
-        //Planetary system (moons, stations, heighliners, player)
+        //Planetary system (planets > moons > heighliners, stations > player)
         PlanetarySystemClusterSpawn(Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1), generationType);
 
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
@@ -322,11 +324,11 @@ public class Generation : MonoBehaviour
             );
 
             //Spawn planet
-            PlanetarySystemSpawnAndPlayerSpawn(generationType, planetaryIndex, position, null);
+            PlanetarySystemSpawnAndPlayerSpawn(generationType, planetaryIndex, nPlanets, position, null);
         }
     }
 
-    private GameObject PlanetarySystemSpawnAndPlayerSpawn(int generationType, int planetarySystemIndex, Vector3 position, string titleOverride)
+    private GameObject PlanetarySystemSpawnAndPlayerSpawn(int generationType, int planetarySystemIndex, int nPlanets, Vector3 position, string titleOverride)
     {
         //PLANET
         GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride);
@@ -337,6 +339,13 @@ public class Generation : MonoBehaviour
             //Moons
             GameObject instanceMoonCluster = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
 
+            //Asteroid belt (some percent of all planets have one)
+            float nPercentAsteroidBelts = 50f;
+            if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
+            {
+                AsteroidPoolSpawnCluster(ASTEROID_CLUSTER_TYPE_PLANET_RINGS, Asteroid.GetRandomType(), position);
+            }
+            
             //If home planetary system
             if (planetarySystemIndex == 0)
             {
@@ -348,9 +357,6 @@ public class Generation : MonoBehaviour
                     generationType,
                     playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
                 );
-
-                //Asteroids
-                AsteroidPoolClusterSpawn(ASTEROID_CLUSTER_TYPE_PLANET_RINGS, Asteroid.TYPE_PRECIOUS_METAL, position);
             }
         }
 
@@ -443,6 +449,13 @@ public class Generation : MonoBehaviour
                 null, false,
                 null, false, 0f, 0f, 0f, null
             );
+
+            //Spawn asteroid belt (some percentage of moons have them)
+            float nPercentAsteroidBelts = 50f;
+            if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+            {
+                AsteroidPoolSpawnCluster(ASTEROID_CLUSTER_TYPE_MOON_RINGS, Asteroid.GetRandomType(), position);
+            }
         }
 
         return instanceMoon;
@@ -616,6 +629,18 @@ public class Generation : MonoBehaviour
 
             //Enable that asteroid
             instanceAsteroid.GetComponent<Asteroid>().Enable(position, size, type);
+
+            //Add torque
+            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(25f * new Vector3(
+                Random.value,
+                Random.value,
+                Random.value
+            ));
+
+            //Remember movement
+            Asteroid instAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
+            instAsteroidScript.rbMemVel = instAsteroidScript.rb.velocity;
+            instAsteroidScript.rbMemAngularVel = instAsteroidScript.rb.angularVelocity;
         }
         else
         {
@@ -626,17 +651,31 @@ public class Generation : MonoBehaviour
         return instanceAsteroid;
     }
 
-    private void AsteroidPoolClusterSpawn(int clusterType, byte oreType, Vector3 position)
+    private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position)
     {
-        if (clusterType == ASTEROID_CLUSTER_TYPE_PLANET_RINGS)
+        if (clusterType == ASTEROID_CLUSTER_TYPE_PLANET_RINGS || clusterType == ASTEROID_CLUSTER_TYPE_MOON_RINGS)
         {
+            int nAsteroids = 70;
+            float chancePercentOfValuableType = 10f;
             float radius = 170f;
-            float radiusRandomness = 20f;
+            
+            if (clusterType == ASTEROID_CLUSTER_TYPE_PLANET_RINGS)
+            {
+                nAsteroids = 70;
+                chancePercentOfValuableType = 10f;
+                radius = 170f;
+            }
+            else if (clusterType == ASTEROID_CLUSTER_TYPE_MOON_RINGS)
+            {
+                nAsteroids = 30;
+                chancePercentOfValuableType = 20f;
+                radius = 60f;
+            }
+
+            float radiusRandomness = 0.12f * radius;
+            float heightRandomness = 0.12f * radius;
             float angle = 0f;
             float angleRandomness = 6f;
-            float heightRandomness = 20f;
-            int nAsteroids = 130;
-            int chanceOfValuableType = 10;
 
             for (int i = 0; i < nAsteroids; i++)
             {
@@ -645,7 +684,8 @@ public class Generation : MonoBehaviour
 
                 //Pick whether clay-silicate or valuable
                 byte oreToSpawnAs = Asteroid.TYPE_CLAY_SILICATE;
-                if (i % chanceOfValuableType == 0)
+                //if (i % ((chancePercentOfValuableType / 100f) * nAsteroids) == 0)
+                if (Control.GetTrueForPercentOfIndices(i, nAsteroids, chancePercentOfValuableType))
                 {
                     oreToSpawnAs = oreType;
                 }
@@ -667,18 +707,6 @@ public class Generation : MonoBehaviour
                     Random.Range(0f, 2f * heightRandomness) - heightRandomness,
                     instanceAsteroid.transform.position.z
                 );
-
-                //Add torque
-                instanceAsteroid.GetComponent<Rigidbody>().AddTorque(25f * new Vector3(
-                    Random.value,
-                    Random.value,
-                    Random.value
-                ));
-
-                //Remember movement
-                Asteroid instAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
-                instAsteroidScript.rbMemVel = instAsteroidScript.rb.velocity;
-                instAsteroidScript.rbMemAngularVel = instAsteroidScript.rb.angularVelocity;
 
                 //Increment angle
                 angle += (360f / (float)nAsteroids) + (Random.Range(0f, 2f * angleRandomness) - angleRandomness);
@@ -945,16 +973,27 @@ public class Generation : MonoBehaviour
             //Planets
             for (int planetIndex = 0; planetIndex < data.planetQuantity; planetIndex++)
             {
-                GameObject instancePlanet = PlanetarySystemSpawnAndPlayerSpawn(
-                    GENERATION_TYPE_LOADED_GAME,
-                    planetIndex,
+                GameObject instancePlanet = PlanetSpawn(
                     new Vector3(
                         data.planetPosition[planetIndex, 0],
                         data.planetPosition[planetIndex, 1],
                         data.planetPosition[planetIndex, 2]
                     ),
+                    planetIndex,
                     data.planetName[planetIndex]
                 );
+
+                //GameObject instancePlanet = PlanetarySystemSpawnAndPlayerSpawn(
+                //    GENERATION_TYPE_LOADED_GAME,
+                //    planetIndex,
+                //    0,
+                //    new Vector3(
+                //        data.planetPosition[planetIndex, 0],
+                //        data.planetPosition[planetIndex, 1],
+                //        data.planetPosition[planetIndex, 2]
+                //    ),
+                //    data.planetName[planetIndex]
+                //);
 
                 //Expand the list
                 planetarySystems.Add(new List<GameObject>());

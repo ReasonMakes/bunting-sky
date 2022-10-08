@@ -258,7 +258,7 @@ public class Asteroid : MonoBehaviour
 
     public static byte GetRandomType()
     {
-        return (byte)Random.Range(0, TYPE_LENGTH);
+        return (byte)Random.Range(1, TYPE_LENGTH);
     }
 
     public static byte GetRandomTypeExcluding(byte typeToExclude)
