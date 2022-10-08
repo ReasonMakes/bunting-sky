@@ -170,6 +170,20 @@ public class UI : MonoBehaviour
             float tipTextAlphaAdjustment = tipText.color.a - (tipTextAlphaDecrement * ((1f - tipText.color.a) + tipTextAlphaDecrement));
             tipText.color = new Color(1f, 1f, 1f, Mathf.Max(0f, tipTextAlphaAdjustment));
         }
+
+        ////DEBUG TARGET OBJECT DATA
+        //GameObject targetObj = control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject;
+        //if (targetObj != null)
+        //{
+        //    if (targetObj.name == control.generation.asteroid.name + "(Clone)")
+        //    {
+        //        Debug.Log(
+        //            "angVel: " + targetObj.GetComponent<Asteroid>().rb.angularVelocity
+        //            + "\nmemAngVel: " + targetObj.GetComponent<Asteroid>().rbMemAngularVel
+        //            + "\n\n"
+        //        );
+        //    }
+        //}
     }
 
     private void LateUpdate()
@@ -795,10 +809,10 @@ public class UI : MonoBehaviour
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
         //Update values and start animations on a resource if its value changed
-        UpdatePlayerResourceUI(ref resourcesTextCurrency, ref resourcesImageCurrency, playerScript.currency.ToString("F2") + " ICC", playerScript.soundSourceCoins);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid, ref resourcesImagePlatinoid, playerScript.ore[playerScript.ORE_PLATINOID].ToString("F2") + " kg", playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal, ref resourcesImagePreciousMetal, playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F2") + " kg", playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater, ref resourcesImageWater, playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " kg", playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F2") + " ICC",                              playerScript.soundSourceCoins);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[playerScript.ORE_PLATINOID].ToString("F2") + " kg",        playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F2") + " kg",   playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " kg",            playerScript.soundSourceOreCollected);
 
         //Update console
         UpdatePlayerConsole();

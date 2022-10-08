@@ -66,7 +66,7 @@ public class Generation : MonoBehaviour
                 public GameObject asteroidsEnabled;
                 public GameObject asteroidsDisabled;
                     public GameObject asteroid;
-                    [System.NonSerialized]public List<GameObject> asteroidsPool = new List<GameObject>();
+                    [System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
 
         public GameObject ores;
 
@@ -350,7 +350,7 @@ public class Generation : MonoBehaviour
                 );
 
                 //Asteroids
-                AsteroidPoolClusterSpawn(ASTEROID_CLUSTER_TYPE_PLANET_RINGS, Asteroid.TYPE_WATER, position);
+                AsteroidPoolClusterSpawn(ASTEROID_CLUSTER_TYPE_PLANET_RINGS, Asteroid.TYPE_PRECIOUS_METAL, position);
             }
         }
 
@@ -631,20 +631,41 @@ public class Generation : MonoBehaviour
         if (clusterType == ASTEROID_CLUSTER_TYPE_PLANET_RINGS)
         {
             float radius = 170f;
+            float radiusRandomness = 20f;
             float angle = 0f;
-            int nAsteroids = 10;
+            float angleRandomness = 6f;
+            float heightRandomness = 20f;
+            int nAsteroids = 130;
+            int chanceOfValuableType = 10;
 
             for (int i = 0; i < nAsteroids; i++)
             {
+                //Pick radius to spawn at
+                float instanceAsteroidRadius = radius + (Random.Range(0f, 2f * radiusRandomness) - radiusRandomness);
+
+                //Pick whether clay-silicate or valuable
+                byte oreToSpawnAs = Asteroid.TYPE_CLAY_SILICATE;
+                if (i % chanceOfValuableType == 0)
+                {
+                    oreToSpawnAs = oreType;
+                }
+
                 //Spawn the asteroid
                 GameObject instanceAsteroid = AsteroidPoolSpawn(
                     position + new Vector3(
-                        Mathf.Cos(Mathf.Deg2Rad * angle) * radius,
+                        Mathf.Cos(Mathf.Deg2Rad * angle) * instanceAsteroidRadius,
                         0f,
-                        Mathf.Sin(Mathf.Deg2Rad * angle) * radius
+                        Mathf.Sin(Mathf.Deg2Rad * angle) * instanceAsteroidRadius
                     ),
                     Random.Range(0, Asteroid.SIZE_LENGTH),
-                    oreType
+                    oreToSpawnAs
+                );
+
+                //Randomly move up/down relative the stellar plane
+                instanceAsteroid.transform.position = new Vector3(
+                    instanceAsteroid.transform.position.x,
+                    Random.Range(0f, 2f * heightRandomness) - heightRandomness,
+                    instanceAsteroid.transform.position.z
                 );
 
                 //Add torque
@@ -654,8 +675,13 @@ public class Generation : MonoBehaviour
                     Random.value
                 ));
 
+                //Remember movement
+                Asteroid instAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
+                instAsteroidScript.rbMemVel = instAsteroidScript.rb.velocity;
+                instAsteroidScript.rbMemAngularVel = instAsteroidScript.rb.angularVelocity;
+
                 //Increment angle
-                angle += 360f / (float)nAsteroids;
+                angle += (360f / (float)nAsteroids) + (Random.Range(0f, 2f * angleRandomness) - angleRandomness);
             }
         }
 

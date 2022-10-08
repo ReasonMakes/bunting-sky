@@ -34,10 +34,12 @@ public class Asteroid : MonoBehaviour
     public GameObject modelGroupSizeLarge;
 
     [System.NonSerialized] public byte type = 0;
-    [System.NonSerialized] public static readonly byte TYPE_PLATINOID = 0;
-    [System.NonSerialized] public static readonly byte TYPE_PRECIOUS_METAL = 1;
-    [System.NonSerialized] public static readonly byte TYPE_WATER = 2;
-    [System.NonSerialized] public static readonly byte TYPE_LENGTH = 3; //how many types there are
+    [System.NonSerialized] public static readonly byte TYPE_CLAY_SILICATE = 0;
+    [System.NonSerialized] public static readonly byte TYPE_PLATINOID = 1;
+    [System.NonSerialized] public static readonly byte TYPE_PRECIOUS_METAL = 2;
+    [System.NonSerialized] public static readonly byte TYPE_WATER = 3;
+    [System.NonSerialized] public static readonly byte TYPE_LENGTH = 4; //how many types there are
+    public Material matClaySilicate;
     public Material matPlatinoid;
     public Material matPreciousMetal;
     public Material matWater;
@@ -46,8 +48,8 @@ public class Asteroid : MonoBehaviour
 
     public GameObject ore;
 
-    private Vector3 rbMemoryVelocity;
-    private Quaternion rbMemoryRotation;
+    [System.NonSerialized] public Vector3 rbMemVel;
+    [System.NonSerialized] public Vector3 rbMemAngularVel;
 
     private void Start()
     {
@@ -87,6 +89,12 @@ public class Asteroid : MonoBehaviour
 
     private void SlowUpdate()
     {
+        ////Slowly move and spin
+        //if (performantMode)
+        //{
+        //    transform.position += rbMemoryVelocity;
+        //}
+
         ////Destroy asteroids that are out of play
         //if (!destroyed)
         //{
@@ -102,11 +110,7 @@ public class Asteroid : MonoBehaviour
     {
         if (!Menu.menuOpenAndGamePaused)
         {
-            if (performantMode)
-            {
-                transform.position += rbMemoryVelocity;
-            }
-            else if (!performantMode && !destroyed && separating)
+            if (!performantMode && !destroyed && separating)
             {
                 Separate();
             }
@@ -232,7 +236,11 @@ public class Asteroid : MonoBehaviour
         type = typeToSetAs;
 
         //Assign material equal to type
-        if (type == TYPE_PLATINOID)
+        if (type == TYPE_CLAY_SILICATE)
+        {
+            modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matClaySilicate;
+        }
+        else if (type == TYPE_PLATINOID)
         {
             modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matPlatinoid; 
         }
@@ -305,7 +313,7 @@ public class Asteroid : MonoBehaviour
             //Spawn smaller asteroids
             if (size == SIZE_LARGE)
             {
-                if (oreDrop)
+                if (oreDrop && type != TYPE_CLAY_SILICATE)
                 {
                     for (int i = 0; i < Random.Range(5, 9 + 1); i++)
                     {
@@ -319,7 +327,7 @@ public class Asteroid : MonoBehaviour
             }
             else if (size == SIZE_MEDIUM)
             {
-                if (oreDrop)
+                if (oreDrop && type != TYPE_CLAY_SILICATE)
                 {
                     for (int i = 0; i < Random.Range(3, 6 + 1); i++)
                     {
@@ -331,7 +339,7 @@ public class Asteroid : MonoBehaviour
             }
             else if (size == SIZE_SMALL)
             {
-                if (oreDrop)
+                if (oreDrop && type != TYPE_CLAY_SILICATE)
                 {
                     for (int i = 0; i < Random.Range(1, 2 + 1); i++)
                     { 
@@ -364,7 +372,7 @@ public class Asteroid : MonoBehaviour
         
         //Destroy or undestroy
         destroying = false;
-        if (enabled == true)
+        if (enabled)
         {
             gameObject.SetActive(true);
             separating = true;
@@ -431,17 +439,26 @@ public class Asteroid : MonoBehaviour
 
     public void SetPerformant(bool performance)
     {
+        //Don't bother with setting to the same value we already are at
+        if (performance == performantMode)
+        {
+            return;
+        }
+
         //Disables Update(), rigidbody, mesh collider (to be swapped out for sphere collider), and trigger volumes for improved performance (makes a big difference with 100 asteroids)
         if (performance)
         {
-            rbMemoryVelocity = rb.velocity;
-            rbMemoryRotation = rb.rotation;
+            rbMemVel = rb.velocity;
+            rbMemAngularVel = rb.angularVelocity;
 
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             rb.isKinematic = true;
         }
         else
         {
+            rb.velocity = rbMemVel;
+            rb.angularVelocity = rbMemAngularVel;
+
             rb.isKinematic = false;
             rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         }

@@ -8,7 +8,7 @@ public class Ore : MonoBehaviour
     public Material matGlowPlatinoid;
     public Material matGlowPreciousMetal;
     public Material matGlowWater;
-    public byte type; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
+    public byte type; //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
 
     public Control control; //this is set by its instantiator
     private float deathTime;
@@ -32,17 +32,17 @@ public class Ore : MonoBehaviour
         //playerVAtInit = playerTransform.GetComponent<Rigidbody>().velocity;
 
         //Assign material equal to type
-        switch (type) //0 = Platinoids, 1 = PreciousMetal, 2 = Water
+        switch (type) //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
         {
-            case 0:
+            case 1:
                 GetComponent<MeshRenderer>().material = matGlowPlatinoid;
                 break;
 
-            case 1:
+            case 2:
                 GetComponent<MeshRenderer>().material = matGlowPreciousMetal;
                 break;
 
-            case 2:
+            case 3:
                 GetComponent<MeshRenderer>().material = matGlowWater;
                 break;
         }

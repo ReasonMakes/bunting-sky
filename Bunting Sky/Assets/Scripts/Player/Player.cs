@@ -144,10 +144,10 @@ public class Player : MonoBehaviour
     #region Init fields: Cargo
     //Cargo
     [System.NonSerialized] public double currency = 0.0; //100.0; //ICC stands for interstellar crypto currency
-    [System.NonSerialized] public double[] ore;
-    [System.NonSerialized] public readonly int ORE_PLATINOID = 0;
-    [System.NonSerialized] public readonly int ORE_PRECIOUS_METAL = 1;
-    [System.NonSerialized] public readonly int ORE_WATER = 2;
+    [System.NonSerialized] public double[] ore; //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
+    [System.NonSerialized] public readonly int ORE_PLATINOID = 1;
+    [System.NonSerialized] public readonly int ORE_PRECIOUS_METAL = 2;
+    [System.NonSerialized] public readonly int ORE_WATER = 3;
 
     /* 
      * Water ice doesn't sell for much BUT can be used in situ for fuel & oxygen if upgrade acquired
@@ -239,7 +239,7 @@ public class Player : MonoBehaviour
         warningUIFlashTotalDuration *= (1f / WARNING_UI_FLASH_RATE);
 
         //ORE
-        ore = new double[3]; //0 = Platinoids, 1 = PreciousMetal, 2 = Water
+        ore = new double[4]; //1 = Platinoids, 2 = PreciousMetal, 3 = Water
 
         //Update resources UI
         control.ui.UpdateAllPlayerResourcesUI();

@@ -225,6 +225,7 @@ MonoBehaviour:
   modelGroupSizeSmall: {fileID: 1333070544999399938}
   modelGroupSizeMedium: {fileID: 1333070545988586138}
   modelGroupSizeLarge: {fileID: 6685615498556311451}
+  matClaySilicate: {fileID: 2100000, guid: 88dddc8422648ba4ca03f76879d718f1, type: 2}
   matPlatinoid: {fileID: 2100000, guid: 2723ee2b7e004a64f9a865ff364754ab, type: 2}
   matPreciousMetal: {fileID: 2100000, guid: d9ffcbaf140a3ff4b9037f03a7c95403, type: 2}
   matWater: {fileID: 2100000, guid: ec94f4270075f474196b4f1ee2c17b6c, type: 2}

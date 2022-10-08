@@ -440,8 +440,8 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        playerScript.currency += playerScript.ore[0] * pricePlatinoid;
-        playerScript.ore[0] = 0.0;
+        playerScript.currency += playerScript.ore[playerScript.ORE_PLATINOID] * pricePlatinoid;
+        playerScript.ore[playerScript.ORE_PLATINOID] = 0.0;
 
         UpdatePlayerResourcesAndCommerceMenuUI();
     }
@@ -450,8 +450,8 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        playerScript.currency += playerScript.ore[1] * pricePreciousMetal;
-        playerScript.ore[1] = 0.0;
+        playerScript.currency += playerScript.ore[playerScript.ORE_PRECIOUS_METAL] * pricePreciousMetal;
+        playerScript.ore[playerScript.ORE_PRECIOUS_METAL] = 0.0;
 
         UpdatePlayerResourcesAndCommerceMenuUI();
     }
@@ -460,8 +460,8 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        playerScript.currency += playerScript.ore[2] * priceWater;
-        playerScript.ore[2] = 0.0;
+        playerScript.currency += playerScript.ore[playerScript.ORE_WATER] * priceWater;
+        playerScript.ore[playerScript.ORE_WATER] = 0.0;
 
         UpdatePlayerResourcesAndCommerceMenuUI();
     }
