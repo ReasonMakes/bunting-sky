@@ -40,6 +40,7 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool displayHUD;
     [System.NonSerialized] public int targetFPS;
     [System.NonSerialized] public bool spotlight;
+    [System.NonSerialized] public bool outline;
     [System.NonSerialized] public bool refine;
     [System.NonSerialized] public bool music;
     [System.NonSerialized] public bool tips;
@@ -74,6 +75,7 @@ public class Settings : MonoBehaviour
         ioBuffer.displayHUD = true;
         ioBuffer.targetFPS = 300;
         ioBuffer.spotlightOn = true;
+        ioBuffer.outlineOn = true;
         ioBuffer.refine = true;
         ioBuffer.music = true;
         ioBuffer.tips = true;
@@ -120,6 +122,7 @@ public class Settings : MonoBehaviour
         ioBuffer.displayHUD = displayHUD;
         ioBuffer.targetFPS = targetFPS;
         ioBuffer.spotlightOn = spotlight;
+        ioBuffer.outlineOn = outline;
         ioBuffer.refine = refine;
         ioBuffer.music = music;
         ioBuffer.tips = tips;
@@ -141,6 +144,7 @@ public class Settings : MonoBehaviour
         displayHUD = ioBuffer.displayHUD;
         targetFPS = ioBuffer.targetFPS;
         spotlight = ioBuffer.spotlightOn;
+        outline = ioBuffer.outlineOn;
         refine = ioBuffer.refine;
         music = ioBuffer.music;
         tips = ioBuffer.tips;
@@ -163,6 +167,7 @@ public class Settings : MonoBehaviour
         public bool displayHUD;
         public int targetFPS;
         public bool spotlightOn;
+        public bool outlineOn;
         public bool refine;
         public bool music;
         public bool tips;

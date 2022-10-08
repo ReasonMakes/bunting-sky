@@ -43,6 +43,7 @@ public class KeyBinds : MonoBehaviour
     [System.NonSerialized] public short bindPrimaryReload;
 
     [System.NonSerialized] public short bindToggleSpotlight;
+    [System.NonSerialized] public short bindToggleOutline;
     [System.NonSerialized] public short bindToggleMap;
     [System.NonSerialized] public short bindToggleRefine;
     [System.NonSerialized] public short bindSelectWeapon1;
@@ -94,6 +95,7 @@ public class KeyBinds : MonoBehaviour
             bindPrimaryReload = (short)KeyCode.R,
 
             bindToggleSpotlight = (short)KeyCode.F,
+            bindToggleOutline = (short)KeyCode.C,
             bindToggleMap = (short)KeyCode.M,
             bindToggleRefine = (short)KeyCode.T,
             bindSelectWeapon1 = (short)KeyCode.Z,
@@ -131,6 +133,7 @@ public class KeyBinds : MonoBehaviour
         ioBuffer.bindPrimaryReload = bindPrimaryReload;
 
         ioBuffer.bindToggleSpotlight = bindToggleSpotlight;
+        ioBuffer.bindToggleOutline = bindToggleOutline;
         ioBuffer.bindToggleMap = bindToggleMap;
         ioBuffer.bindToggleRefine = bindToggleRefine;
         ioBuffer.bindSelectWeapon1 = bindSelectWeapon1;
@@ -167,6 +170,7 @@ public class KeyBinds : MonoBehaviour
         bindPrimaryReload = ioBuffer.bindPrimaryReload;
 
         bindToggleSpotlight = ioBuffer.bindToggleSpotlight;
+        bindToggleOutline = ioBuffer.bindToggleOutline;
         bindToggleMap = ioBuffer.bindToggleMap;
         bindToggleRefine = ioBuffer.bindToggleRefine;
         bindSelectWeapon1 = ioBuffer.bindSelectWeapon1;
@@ -207,6 +211,7 @@ public class KeyBinds : MonoBehaviour
         public short bindPrimaryReload;
 
         public short bindToggleSpotlight;
+        public short bindToggleOutline;
         public short bindToggleMap;
         public short bindToggleRefine;
         public short bindSelectWeapon1;

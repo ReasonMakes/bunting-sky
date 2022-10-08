@@ -24,6 +24,7 @@ public class Menu : MonoBehaviour
     public Toggle menuSettingsToggleDisplayHUD;
     public Toggle menuSettingsToggleDisplayFPS;
     public Toggle menuSettingsToggleSpotlight;
+    public Toggle menuSettingsToggleOutline;
     public Toggle menuSettingsToggleRefine;
     public Toggle menuSettingsToggleMusic;
     public Toggle menuSettingsToggleTips;
@@ -52,14 +53,15 @@ public class Menu : MonoBehaviour
     private short BIND_ID_FIRE = 14;
     private short BIND_ID_RELOAD = 15;
     private short BIND_ID_SPOTLIGHT = 16;
-    private short BIND_ID_MAP = 17;
-    private short BIND_ID_REFINE = 18;
-    private short BIND_ID_WEAPON1 = 19;
-    private short BIND_ID_WEAPON2 = 20;
-    private short BIND_ID_HUD = 21;
-    private short BIND_ID_FPS = 22;
-    private short BIND_ID_SCREENSHOT = 23;
-    private short BIND_ID_MENU = 24;
+    private short BIND_ID_OUTLINE = 17;
+    private short BIND_ID_MAP = 18;
+    private short BIND_ID_REFINE = 19;
+    private short BIND_ID_WEAPON1 = 20;
+    private short BIND_ID_WEAPON2 = 21;
+    private short BIND_ID_HUD = 22;
+    private short BIND_ID_FPS = 23;
+    private short BIND_ID_SCREENSHOT = 24;
+    private short BIND_ID_MENU = 25;
 
     public TMP_Text menuBindsThrustForward;
     public TMP_Text menuBindsThrustLeft;
@@ -78,6 +80,7 @@ public class Menu : MonoBehaviour
     public TMP_Text menuBindsPrimaryFire;
     public TMP_Text menuBindsPrimaryReload;
     public TMP_Text menuBindsToggleSpotlight;
+    public TMP_Text menuBindsToggleOutline;
     public TMP_Text menuBindsToggleMap;
     public TMP_Text menuBindsToggleRefine;
     public TMP_Text menuBindsSelectWeapon1;
@@ -210,6 +213,7 @@ public class Menu : MonoBehaviour
         if (menuSettingsToggleMatchVelocity.isOn    != control.settings.matchVelocity)      { menuSettingsToggleMatchVelocity.isOn      = control.settings.matchVelocity;   MenuSettingsMatchVelocityToggle();      }
         if (menuSettingsToggleSpinStabilizers.isOn  != control.settings.spinStabilizers)    { menuSettingsToggleSpinStabilizers.isOn    = control.settings.spinStabilizers; MenuSettingsSpinStabilizersToggle();    }
         if (menuSettingsToggleSpotlight.isOn        != control.settings.spotlight)          { menuSettingsToggleSpotlight.isOn          = control.settings.spotlight;       MenuSettingsSpotlightToggle();          }
+        if (menuSettingsToggleOutline.isOn          != control.settings.outline)            { menuSettingsToggleOutline.isOn            = control.settings.outline;         MenuSettingsOutlineToggle();            }
         if (menuSettingsToggleRefine.isOn           != control.settings.refine)             { menuSettingsToggleRefine.isOn             = control.settings.refine;          MenuSettingsRefineToggle();             }
         if (menuSettingsToggleMusic.isOn            != control.settings.music)              { menuSettingsToggleMusic.isOn              = control.settings.music;           MenuSettingsMusicToggle();              }
         if (menuSettingsToggleTips.isOn             != control.settings.tips)               { menuSettingsToggleTips.isOn               = control.settings.tips;            MenuSettingsTipsToggle();               }
@@ -403,6 +407,26 @@ public class Menu : MonoBehaviour
         control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
     }
 
+    public void MenuSettingsOutlineToggle()
+    {
+        //Rectify toggle button being out-of-phase with actual setting boolean
+        //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
+        if (menuSettingsToggleOutline.isOn == control.settings.outline)
+        {
+            //Rectifying this also calls the method again, causing the spotlight to still be updated from just one button toggle
+            menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
+        }
+        else
+        {
+            //Toggle spotlight setting
+            control.settings.outline = !control.settings.outline;
+            control.settings.Save();
+        }
+
+        //Update spotlight gameObject
+        control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
+    }
+
     public void MenuSettingsRefineToggle()
     {
         control.settings.refine = !control.settings.refine;
@@ -572,6 +596,7 @@ public class Menu : MonoBehaviour
                     if (menuKeybindsBindID == BIND_ID_FIRE) { control.binds.bindPrimaryFire = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_RELOAD) { control.binds.bindPrimaryReload = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_SPOTLIGHT) { control.binds.bindToggleSpotlight = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_OUTLINE) { control.binds.bindToggleOutline = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_MAP) { control.binds.bindToggleMap = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_REFINE) { control.binds.bindToggleRefine = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_WEAPON1) { control.binds.bindSelectWeapon1 = inputCode; }
@@ -633,6 +658,17 @@ public class Menu : MonoBehaviour
                 control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
             }
 
+            //Outline toggle
+            if (control.binds.GetInputDown(control.binds.bindToggleOutline))
+            {
+                //Update the settings menu and toggle the actual outline
+                //(Changing isOn also calls the method attached to that toggle button.)
+                menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
+
+                //Update outline in code
+                control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
+            }
+
             //Refine toggle
             if (control.binds.GetInputDown(control.binds.bindToggleRefine))
             {
@@ -667,6 +703,7 @@ public class Menu : MonoBehaviour
         menuBindsPrimaryFire.text           = MenuKeybindsGetBindString(control.binds.bindPrimaryFire);
         menuBindsPrimaryReload.text         = MenuKeybindsGetBindString(control.binds.bindPrimaryReload);
         menuBindsToggleSpotlight.text       = MenuKeybindsGetBindString(control.binds.bindToggleSpotlight);
+        menuBindsToggleOutline.text         = MenuKeybindsGetBindString(control.binds.bindToggleOutline);
         menuBindsToggleMap.text             = MenuKeybindsGetBindString(control.binds.bindToggleMap);
         menuBindsToggleRefine.text          = MenuKeybindsGetBindString(control.binds.bindToggleRefine);
         menuBindsSelectWeapon1.text         = MenuKeybindsGetBindString(control.binds.bindSelectWeapon1);
@@ -838,6 +875,13 @@ public class Menu : MonoBehaviour
         menuKeybindsIsSettingBind = true;
         menuBindsToggleSpotlight.text = "";
         menuKeybindsBindID = BIND_ID_SPOTLIGHT;
+    }
+
+    public void MenuKeybindsToggleOutlineSet()
+    {
+        menuKeybindsIsSettingBind = true;
+        menuBindsToggleOutline.text = "";
+        menuKeybindsBindID = BIND_ID_OUTLINE;
     }
 
     public void MenuKeybindsToggleMapSet()

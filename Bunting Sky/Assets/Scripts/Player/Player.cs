@@ -38,8 +38,12 @@ public class Player : MonoBehaviour
     private Vector3 mapOffset = Vector3.zero;
     #endregion
 
-    //Spotlight
+    //Visuals
     public GameObject spotlight;
+    [System.NonSerialized] public static bool outline = false;
+    [System.NonSerialized] public static int CBODY_TYPE_PLANET = 0;
+    [System.NonSerialized] public static int CBODY_TYPE_MOON = 1;
+    [System.NonSerialized] public static int CBODY_TYPE_ASTEROID = 2;
 
     #region Init fields: Movement
     //Movement
@@ -273,26 +277,6 @@ public class Player : MonoBehaviour
     #endregion
 
     #region Update/fixed update & their slow versions
-    private void SetOutline(float outlineStrength)
-    {
-        //Planets
-        int nPlanetarySystems = control.generation.planets.transform.childCount;
-        for (int systemIndex = 0; systemIndex < nPlanetarySystems; systemIndex++)
-        {
-            //The first dimensions refers to which planetary system, the second dimensions are the bodies in that system - 0 is the planet itself, the rest are moons
-            //
-            //            Planetary system    Planet, moons
-            //                     \/          \/
-            //planetarySystems[systemIndex][bodyIndex]
-
-            int nBodiesInSystem = control.generation.planetarySystems[systemIndex].Count;
-            for (int bodyIndex = 0; bodyIndex < nBodiesInSystem; bodyIndex++)
-            {
-                control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material.SetFloat("_Outline", outlineStrength);
-            }
-        }
-    }
-
     private void Update()
     {
         //DEBUG
@@ -304,18 +288,6 @@ public class Player : MonoBehaviour
         //);
 
         //I or O to cheat
-
-        if (binds.GetInputDown(binds.bindCheat1))
-        {
-            SetOutline(1f);
-            control.ui.SetTip("Outline enabled");
-        }
-
-        if (binds.GetInputDown(binds.bindCheat2))
-        {
-            SetOutline(0f);
-            control.ui.SetTip("Outline disabled");
-        }
 
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
@@ -567,6 +539,12 @@ public class Player : MonoBehaviour
             {
                 warningUIFlashTime = 0f;
                 warningUIFlashPosition = 1f;
+            }
+
+            //Night vision outline
+            if (binds.GetInputDown(binds.bindToggleOutline))
+            {
+                ToggleOutline();
             }
         }
     }
@@ -1341,6 +1319,78 @@ public class Player : MonoBehaviour
     {
         warningUIText.text = warningText;
         warningUIFlashTime = warningUIFlashTotalDuration;
+    }
+
+    private void UpdateOutlines()
+    {
+        //Planetary systems and their celestial bodies
+        int nPlanetarySystems = control.generation.planets.transform.childCount;
+        for (int systemIndex = 0; systemIndex < nPlanetarySystems; systemIndex++)
+        {
+            //The first dimensions refers to which planetary system, the second dimensions are the bodies in that system - 0 is the planet itself, the rest are moons
+            //
+            //            Planetary system    Planet, moons
+            //                     \/          \/
+            //planetarySystems[systemIndex][bodyIndex]
+
+            int nBodiesInSystem = control.generation.planetarySystems[systemIndex].Count;
+            for (int bodyIndex = 0; bodyIndex < nBodiesInSystem; bodyIndex++)
+            {
+                if (bodyIndex == 0)
+                {
+                    //Planet
+                    Player.UpdateOutlineMaterial(CBODY_TYPE_PLANET, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
+                }
+                else
+                {
+                    //Moons
+                    Player.UpdateOutlineMaterial(CBODY_TYPE_MOON, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
+                }
+            }
+        }
+
+        //Asteroids (we set for disabled asteroids too so that the setting doesn't turn on and off strangely)
+        int nAsteroidsEnabled = control.generation.asteroidsEnabled.transform.childCount;
+        for (int asteroidIndex = 0; asteroidIndex < nAsteroidsEnabled; asteroidIndex++)
+        {
+            Player.UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, control.generation.asteroidsEnabled.transform.GetChild(asteroidIndex).GetComponentInChildren<MeshRenderer>().material);
+        }
+
+        //int nAsteroidsDisabled = control.generation.asteroidsDisabled.transform.childCount;
+        //for (int asteroidIndex = 0; asteroidIndex < nAsteroidsDisabled; asteroidIndex++)
+        //{
+        //    Player.UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, control.generation.asteroidsDisabled.transform.GetChild(asteroidIndex).GetComponentInChildren<MeshRenderer>().material);
+        //}
+    }
+
+    public static void UpdateOutlineMaterial(int cBodyType, Material material)
+    {
+        if (Player.outline)
+        {
+            if (cBodyType == CBODY_TYPE_PLANET)
+            {
+                material.SetFloat("_NightVisionOutline", 0.3f);
+            }
+            else if (cBodyType == CBODY_TYPE_MOON)
+            {
+                material.SetFloat("_NightVisionOutline", 0.7f);
+            }
+            else if (cBodyType == CBODY_TYPE_ASTEROID)
+            {
+                material.SetFloat("_NightVisionOutline", 5f);
+            }
+        }
+        else
+        {
+            material.SetFloat("_NightVisionOutline", 0f);
+        }
+    }
+
+    public void ToggleOutline()
+    {
+        Player.outline = !Player.outline;
+        UpdateOutlines();
+        //control.ui.SetTip("Outline toggled to " + Player.outline);
     }
     #endregion
 

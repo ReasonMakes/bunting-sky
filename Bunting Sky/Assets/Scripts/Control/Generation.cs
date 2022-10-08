@@ -372,6 +372,9 @@ public class Generation : MonoBehaviour
             Quaternion.Euler(0f, 0f, 0f)
         );
 
+        //Update outline
+        Player.UpdateOutlineMaterial(Player.CBODY_TYPE_PLANET, instancePlanet.GetComponentInChildren<MeshRenderer>().material);
+
         //Put in hierarchy
         instancePlanet.transform.parent = planets.transform;
 
@@ -488,6 +491,9 @@ public class Generation : MonoBehaviour
 
         //Spin
         instanceMoon.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
+
+        //Update outline
+        Player.UpdateOutlineMaterial(Player.CBODY_TYPE_MOON, instanceMoon.GetComponentInChildren<MeshRenderer>().material);
 
         //Generate (or load) name
         if (titleOverride == null)
@@ -606,7 +612,7 @@ public class Generation : MonoBehaviour
             instanceAsteroidScript.control = control;
             //Ignore all collisions unless explicitly enabled (once asteroid is enabled and separated from siblings)
             instanceAsteroidScript.rb.detectCollisions = false;
-
+            
             //ORGANIZATION
             //Put in hierarchy
             instanceAsteroid.transform.parent = asteroidsDisabled.transform;
@@ -638,9 +644,12 @@ public class Generation : MonoBehaviour
             ));
 
             //Remember movement
-            Asteroid instAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
-            instAsteroidScript.rbMemVel = instAsteroidScript.rb.velocity;
-            instAsteroidScript.rbMemAngularVel = instAsteroidScript.rb.angularVelocity;
+            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
+            instanceAsteroidScript.rbMemVel = instanceAsteroidScript.rb.velocity;
+            instanceAsteroidScript.rbMemAngularVel = instanceAsteroidScript.rb.angularVelocity;
+
+            //Update outline
+            Player.UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, instanceAsteroidScript.modelObject.GetComponentInChildren<MeshRenderer>().material);
         }
         else
         {

@@ -28,7 +28,7 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public readonly static int SIZE_LARGE = 2;
     [System.NonSerialized] public readonly static int SIZE_LENGTH = 3;
     private GameObject modelGroup;
-    private GameObject modelObject;
+    [System.NonSerialized] public GameObject modelObject;
     public GameObject modelGroupSizeSmall;
     public GameObject modelGroupSizeMedium;
     public GameObject modelGroupSizeLarge;
@@ -375,6 +375,7 @@ public class Asteroid : MonoBehaviour
         if (enabled)
         {
             gameObject.SetActive(true);
+            Player.UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, modelObject.GetComponentInChildren<MeshRenderer>().material);
             separating = true;
             destroyed = false;
             targetCollider1.enabled = true;
@@ -396,6 +397,10 @@ public class Asteroid : MonoBehaviour
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.ResetInertiaTensor();
+            if (modelObject != null)
+            {
+                modelObject.GetComponentInChildren<MeshRenderer>().material.SetFloat("_NightVisionOutline", 0f);
+            }
             gameObject.SetActive(false);
         }
     }
