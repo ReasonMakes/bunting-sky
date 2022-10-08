@@ -273,6 +273,26 @@ public class Player : MonoBehaviour
     #endregion
 
     #region Update/fixed update & their slow versions
+    private void SetOutline(float outlineStrength)
+    {
+        //Planets
+        int nPlanetarySystems = control.generation.planets.transform.childCount;
+        for (int systemIndex = 0; systemIndex < nPlanetarySystems; systemIndex++)
+        {
+            //The first dimensions refers to which planetary system, the second dimensions are the bodies in that system - 0 is the planet itself, the rest are moons
+            //
+            //            Planetary system    Planet, moons
+            //                     \/          \/
+            //planetarySystems[systemIndex][bodyIndex]
+
+            int nBodiesInSystem = control.generation.planetarySystems[systemIndex].Count;
+            for (int bodyIndex = 0; bodyIndex < nBodiesInSystem; bodyIndex++)
+            {
+                control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material.SetFloat("_Outline", outlineStrength);
+            }
+        }
+    }
+
     private void Update()
     {
         //DEBUG
@@ -283,21 +303,33 @@ public class Player : MonoBehaviour
         //    + " - menuSettingsToggleSpotlight.isOn: " + control.menu.menuSettingsToggleSpotlight.isOn.ToString()
         //);
 
-        //I to cheat
+        //I or O to cheat
 
         if (binds.GetInputDown(binds.bindCheat1))
         {
-            thrustCheat += 0.25f;
-
-            control.ui.SetTip(thrustCheat + "x");
+            SetOutline(1f);
+            control.ui.SetTip("Outline enabled");
         }
 
         if (binds.GetInputDown(binds.bindCheat2))
         {
-            thrustCheat -= 0.25f;
-
-            control.ui.SetTip(thrustCheat + "x");
+            SetOutline(0f);
+            control.ui.SetTip("Outline disabled");
         }
+
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    thrustCheat += 0.25f;
+        //
+        //    control.ui.SetTip(thrustCheat + "x");
+        //}
+        //
+        //if (binds.GetInputDown(binds.bindCheat2))
+        //{
+        //    thrustCheat -= 0.25f;
+        //
+        //    control.ui.SetTip(thrustCheat + "x");
+        //}
 
         ////Toggle active nearest planet
         //if (binds.GetInputDown(binds.bindCheat1))
