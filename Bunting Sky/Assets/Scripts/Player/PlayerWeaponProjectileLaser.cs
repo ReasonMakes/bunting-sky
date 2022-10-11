@@ -12,7 +12,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
-    private readonly float MIN_GLOW_DISTANCE = 1.0f;
+    private readonly float MIN_GLOW_DISTANCE = 0.5f; //1.0f;
     //private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
 
     [System.NonSerialized] public bool canDamage = true;
@@ -25,7 +25,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         //Ignore collisions with player
         Physics.IgnoreCollision(
             transform.Find("Non-Emissive Model").GetComponent<MeshCollider>(),
-            playerBody.GetComponent<MeshCollider>()
+            playerBody.Find("Collider").GetComponent<MeshCollider>()
         );
 
         //General collision detection

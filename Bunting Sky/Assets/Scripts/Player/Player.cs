@@ -48,6 +48,7 @@ public class Player : MonoBehaviour
     #region Init fields: Movement
     //Movement
     public Rigidbody rb;
+    //Thrust
     private Vector3 thrustVector;
     private readonly float THRUST = 4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
@@ -59,12 +60,17 @@ public class Player : MonoBehaviour
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f;
     private float thrustCheat = 1f;
+    //Torque
+    private float torqueBaseStrength = 500f; //30f;
+    private float angularDragWhenEnginesOn = 40f; //40f;
+    //Engine glow
     private float engineBrightness = 0f;
     public Material engineGlowMat;
     private Color engineEmissionColorRunning = new Color(191, 102, 43);
     public Color engineEmissionColorDead = new Color(49, 195, 255);
     private float engineEmissionIntensity = 1.3f * 0.00748f; //1.4f * 0.00748f; //1.631096f;
     public Light engineLight;
+    //Ability to move at all
     private bool canAndIsMoving = false;
     private float tempEngineDisable = 0f;
     private bool tempEngineDisableButFlickering = false;
@@ -81,8 +87,12 @@ public class Player : MonoBehaviour
     private float distToClosestAsteroid = 100f;
     private Transform closestAsteroidTransform;
     private readonly float DRAG = 3f; //Drag amount for all drag modes
+
+    //Movement: heighliner teleports
+    [System.NonSerialized] public bool recentTeleport = false;
+    [System.NonSerialized] public float collisionImmunity = 0f;
     #endregion
-    
+
     #region Init fields: Audio
     //Audio: Music
     public AudioSource music;
@@ -288,6 +298,20 @@ public class Player : MonoBehaviour
         //);
 
         //I or O to cheat
+
+        if (binds.GetInputDown(binds.bindCheat1))
+        {
+            Time.timeScale += 0.25f;
+        
+            control.ui.SetTip(Time.timeScale + "x");
+        }
+
+        if (binds.GetInputDown(binds.bindCheat2))
+        {
+            Time.timeScale -= 0.25f;
+        
+            control.ui.SetTip(Time.timeScale + "x");
+        }
 
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
@@ -541,11 +565,16 @@ public class Player : MonoBehaviour
                 warningUIFlashPosition = 1f;
             }
 
-            //Night vision outline
-            if (binds.GetInputDown(binds.bindToggleOutline))
-            {
-                ToggleOutline();
-            }
+            ////Night vision outline
+            //if (binds.GetInputDown(binds.bindToggleOutline))
+            //{
+            //    ToggleOutline();
+            //}
+
+            //Collision immunity wears off
+            float collisionImmunityPeriod = 0.25f; //Time in seconds the player will be immune for
+            float collisionImmunityDecrementRate = Time.deltaTime / collisionImmunityPeriod;
+            collisionImmunity = Mathf.Max(0f, collisionImmunity - collisionImmunityDecrementRate);
         }
     }
 
@@ -734,8 +763,6 @@ public class Player : MonoBehaviour
 
         if (vitalsFuel > 0.0)
         {
-            float angularDragWhenEnginesOn = 40f;
-
             if (tempEngineDisable <= 0f && control.settings.spinStabilizers)
             {
                 //Angular drag to bring rotations to rest
@@ -773,7 +800,7 @@ public class Player : MonoBehaviour
 
                 //TORQURE STRENGTH
                 //Base strength modifier
-                float torqueBaseStrength = 30f;
+                //float torqueBaseStrength = 30f;
 
                 //Smoothing modifier so we don't overshoot
                 //If the rotation needed is very small but we have a ton of angular velocity, we need to slow down - not speed up
@@ -1021,12 +1048,13 @@ public class Player : MonoBehaviour
     private void SetCameraFollowDistance()
     {
         //Camera follow distance
-        //Zoom in
+        //Zoom in/out
+        float zoomRate = 0.2f;
         control.settings.cameraDistance = Math.Min(
             control.settings.CAMERA_DISTANCE_MAX,
             Math.Max(
                 control.settings.CAMERA_DISTANCE_MIN,
-                control.settings.cameraDistance - (((Convert.ToSingle(binds.GetInput(binds.bindCameraZoomIn)) - 0.5f) * 2f) / 40f)
+                control.settings.cameraDistance - (((Convert.ToSingle(binds.GetInput(binds.bindCameraZoomIn)) - 0.5f) * 2f) * zoomRate)
             )
         );
 
@@ -1070,8 +1098,8 @@ public class Player : MonoBehaviour
         }
 
         //Jet glow
-        transform.Find("Blackness Behind Jet").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
-        transform.Find("Jet Glow").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
+        transform.Find("TP Model").Find("Blackness Behind Jet").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
+        transform.Find("TP Model").Find("Jet Glow").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
 
         //Ship direction reticles
         control.ui.playerShipDirectionReticleTree.SetActive(!isDestroyed);
@@ -1349,18 +1377,17 @@ public class Player : MonoBehaviour
             }
         }
 
-        //Asteroids (we set for disabled asteroids too so that the setting doesn't turn on and off strangely)
+        //Asteroids
         int nAsteroidsEnabled = control.generation.asteroidsEnabled.transform.childCount;
         for (int asteroidIndex = 0; asteroidIndex < nAsteroidsEnabled; asteroidIndex++)
         {
-            Player.UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, control.generation.asteroidsEnabled.transform.GetChild(asteroidIndex).GetComponentInChildren<MeshRenderer>().material);
+            Transform asteroidTransform = control.generation.asteroidsEnabled.transform.GetChild(asteroidIndex);
+            if (!asteroidTransform.GetComponentInChildren<Asteroid>().destroying)
+            {
+                Material material = asteroidTransform.GetComponentInChildren<MeshRenderer>().material;
+                Player.UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, material);
+            }
         }
-
-        //int nAsteroidsDisabled = control.generation.asteroidsDisabled.transform.childCount;
-        //for (int asteroidIndex = 0; asteroidIndex < nAsteroidsDisabled; asteroidIndex++)
-        //{
-        //    Player.UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, control.generation.asteroidsDisabled.transform.GetChild(asteroidIndex).GetComponentInChildren<MeshRenderer>().material);
-        //}
     }
 
     public static void UpdateOutlineMaterial(int cBodyType, Material material)
@@ -1444,7 +1471,7 @@ public class Player : MonoBehaviour
 
         //SELF
         double damageToDeal = 0.0d;
-        if (impactDeltaV.magnitude >= impactIntoleranceThreshold)
+        if (impactDeltaV.magnitude >= impactIntoleranceThreshold && collisionImmunity <= 0f)
         {
             //Play sound effect
             soundSourceCollision.volume = 0.05f;

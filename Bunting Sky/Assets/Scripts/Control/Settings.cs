@@ -20,8 +20,8 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public readonly float MOUSE_SENSITIVITY_MAX = 1000f;
     [System.NonSerialized] public readonly float H_FIELD_OF_VIEW_MIN = 0.1f;
     [System.NonSerialized] public readonly float H_FIELD_OF_VIEW_MAX = 360f;
-    [System.NonSerialized] public readonly float CAMERA_DISTANCE_MIN = 0.18f;
-    [System.NonSerialized] public readonly float CAMERA_DISTANCE_MAX = 2.4f;
+    [System.NonSerialized] public readonly float CAMERA_DISTANCE_MIN = 0.605f;
+    [System.NonSerialized] public readonly float CAMERA_DISTANCE_MAX = 4f;
     [System.NonSerialized] public readonly float CAMERA_HEIGHT_MIN = 0f;
     [System.NonSerialized] public readonly float CAMERA_HEIGHT_MAX = 1f;
     [System.NonSerialized] public readonly int TARGET_FPS_MIN = 1;

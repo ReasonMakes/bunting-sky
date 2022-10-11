@@ -90,6 +90,8 @@ public class Menu : MonoBehaviour
     public TMP_Text menuBindsSaveScreenshot;
     public TMP_Text menuBindsToggleMenu;
 
+    public TMP_Text menuSubIsPaused;
+
     [SerializeField] private Control control;
 
     private void Start()
@@ -99,6 +101,11 @@ public class Menu : MonoBehaviour
         menuSettings.SetActive(false);
         menuKeybinds.SetActive(false);
         menuRestartConfirm.SetActive(false);
+
+        if (control.IS_EDITOR)
+        {
+            menuSubIsPaused.text = "(Developer Mode)";
+        }
     }
 
     private void Update()
@@ -217,23 +224,6 @@ public class Menu : MonoBehaviour
         if (menuSettingsToggleRefine.isOn           != control.settings.refine)             { menuSettingsToggleRefine.isOn             = control.settings.refine;          MenuSettingsRefineToggle();             }
         if (menuSettingsToggleMusic.isOn            != control.settings.music)              { menuSettingsToggleMusic.isOn              = control.settings.music;           MenuSettingsMusicToggle();              }
         if (menuSettingsToggleTips.isOn             != control.settings.tips)               { menuSettingsToggleTips.isOn               = control.settings.tips;            MenuSettingsTipsToggle();               }
-
-        //menuSettingsToggleDisplayHUD.isOn = control.settings.displayHUD;
-        //menuSettingsToggleDisplayFPS.isOn = control.settings.displayFPS;
-        //menuSettingsToggleFullscreen.isOn = control.settings.fullscreen;
-        //menuSettingsToggleMatchVelocity.isOn = control.settings.matchVelocity;
-        //menuSettingsToggleSpinStabilizers.isOn = control.settings.spinStabilizers;
-        //
-        ////Changing isOn activates the method, so we need to run it twice to cancel-out running it once
-        //if (menuSettingsToggleSpotlight.isOn != control.settings.spotlight)
-        //{
-        //    menuSettingsToggleSpotlight.isOn = control.settings.spotlight;
-        //    MenuSettingsSpotlightToggle();
-        //}
-        //
-        //menuSettingsToggleRefine.isOn = control.settings.refine;
-        //menuSettingsToggleMusic.isOn = control.settings.music;
-        //menuSettingsToggleTips.isOn = control.settings.tips;
     }
 
     public void MenuSettingsMouseSensitivitySet()
@@ -413,17 +403,17 @@ public class Menu : MonoBehaviour
         //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
         if (menuSettingsToggleOutline.isOn == control.settings.outline)
         {
-            //Rectifying this also calls the method again, causing the spotlight to still be updated from just one button toggle
+            //Rectifying this also calls the method again, causing the outline to still be updated from just one button toggle
             menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
         }
         else
         {
-            //Toggle spotlight setting
+            //Toggle outline setting
             control.settings.outline = !control.settings.outline;
             control.settings.Save();
         }
 
-        //Update spotlight gameObject
+        //Update outlines
         control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
     }
 
@@ -666,7 +656,7 @@ public class Menu : MonoBehaviour
                 menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
 
                 //Update outline in code
-                control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
+                //control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
             }
 
             //Refine toggle

@@ -53,6 +53,7 @@ public class Generation : MonoBehaviour
             [System.NonSerialized] public GameObject instanceStarHome;
             
             public GameObject planets;
+            [System.NonSerialized] public int nPlanetsPlanned;
             [System.NonSerialized] public List<List<GameObject>> planetarySystems = new List<List<GameObject>>(); //For every planet there is a list of its children, and there is a list of each planet
                 public GameObject planet;
                 [System.NonSerialized] public GameObject instancePlanetHome;
@@ -61,6 +62,9 @@ public class Generation : MonoBehaviour
                     public GameObject moon;
                     public GameObject station;
                     public GameObject heighliner;
+                        [System.NonSerialized] public int heighlinerCount = 0;
+                        [System.NonSerialized] public GameObject heighlinerInitial = null;
+                        [System.NonSerialized] public GameObject heighlinerOpenLinker = null;
 
                 public GameObject asteroids;
                 public GameObject asteroidsEnabled;
@@ -266,7 +270,8 @@ public class Generation : MonoBehaviour
         StarSpawn(null);
 
         //Planetary system (planets > moons > heighliners, stations > player)
-        PlanetarySystemClusterSpawn(Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1), generationType);
+        nPlanetsPlanned = Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1);
+        PlanetarySystemClusterSpawn(nPlanetsPlanned, generationType);
 
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
         SaveGame();
@@ -529,7 +534,7 @@ public class Generation : MonoBehaviour
                 //Force a station to spawn and return those coords to spawn the player there (mainly for player station, but also to ensure each planetary system has at least one station)
                 instanceMoon.GetComponent<Moon>().SpawnStation(true, null, true, 0f, 0f, 0f, null);
             }
-            else if (moonIndex == 1)
+            else if (moonIndex == 1 || moonIndex == 2)
             {
                 //Heighliner
                 //Force a heighliner to spawn
@@ -538,7 +543,10 @@ public class Generation : MonoBehaviour
             else
             {
                 //Other stations (random chance)
-                instanceMoon.GetComponent<Moon>().SpawnStation(false, null, true, 0f, 0f, 0f, null);
+                if (Random.value <= 0.75)
+                {
+                    instanceMoon.GetComponent<Moon>().SpawnStation(false, null, true, 0f, 0f, 0f, null);
+                }
             }
         }
 
@@ -967,7 +975,7 @@ public class Generation : MonoBehaviour
 
         //Only load if a save file exists. If a save file doesn't exist, generate a new game
         //ALWAYS generate a new game if in editor
-        if (data == null || control.IS_EDITOR)
+        if (data == null || control.IS_EDITOR || true) //loading temporarily disabled
         {
             //Debug.Log("No save exists; generating new game");
             GenerateGame(GENERATION_TYPE_NEW_GAME);

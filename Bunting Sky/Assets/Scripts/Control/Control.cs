@@ -86,6 +86,16 @@ public class Control : MonoBehaviour
         //);
     }
 
+    public Transform GetPlayerTransform()
+    {
+        return generation.instancePlayer.transform.Find("Body");
+    }
+
+    public Player GetPlayerScript()
+    {
+        return generation.instancePlayer.transform.Find("Body").GetComponent<Player>();
+    }
+
     private void LoopWorldOrigin()
     {
         /*

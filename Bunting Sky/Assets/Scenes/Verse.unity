@@ -10256,7 +10256,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  m_IsOn: 1
+  m_IsOn: 0
 --- !u!1 &556649758
 GameObject:
   m_ObjectHideFlags: 0
@@ -32706,6 +32706,7 @@ MonoBehaviour:
   menuBindsToggleFPS: {fileID: 388242811}
   menuBindsSaveScreenshot: {fileID: 765079224}
   menuBindsToggleMenu: {fileID: 431854468}
+  menuSubIsPaused: {fileID: 1142509889}
   control: {fileID: 2000740122}
 --- !u!114 &2000740127
 MonoBehaviour:
