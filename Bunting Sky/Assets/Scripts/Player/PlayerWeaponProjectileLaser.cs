@@ -8,11 +8,9 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
     private Transform playerBody;
     public Rigidbody rb;
 
-    public GameObject asteroid;
-
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
-    private readonly float MIN_GLOW_DISTANCE = 0.5f; //1.0f;
+    private readonly float MIN_GLOW_DISTANCE = 0.8f; //1.0f;
     //private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
 
     [System.NonSerialized] public bool canDamage = true;
@@ -25,7 +23,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         //Ignore collisions with player
         Physics.IgnoreCollision(
             transform.Find("Non-Emissive Model").GetComponent<MeshCollider>(),
-            playerBody.Find("Collider").GetComponent<MeshCollider>()
+            playerBody.Find("Player Collider").GetComponent<MeshCollider>()
         );
 
         //General collision detection
@@ -88,7 +86,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         {
             //Debug.Log("Laser hit object: " + hit.transform.name);
 
-            if (hit.transform.name == asteroid.name + "(Clone)")
+            if (hit.transform.name == control.generation.asteroid.name + "(Clone)")
             {
                 Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
@@ -111,6 +109,22 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                     //Reset tooltip certainty
                     control.ui.tipAimCertainty = 0f;
                 }
+            }
+            else if (hit.transform.name == control.generation.enemy.name + "(Clone)")
+            {
+                if (canDamage)
+                {
+                    //Calculate the direction from the laser to the asteroid hit point
+                    Vector3 direction = (transform.position - hit.point).normalized;
+
+                    //Damage the enemy
+                    Enemy enemyScript = hit.transform.GetComponent<Enemy>();
+                    enemyScript.Damage(1, direction, hit.point, true);
+                }
+
+                //Reset tooltip certainty
+                control.ui.tipAimCertainty = 0f;
+                
             }
 
             //Can no longer deal damage

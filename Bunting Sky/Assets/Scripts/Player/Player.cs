@@ -50,7 +50,7 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 4e3f; //3e3f; //8416.65825f;
+    private readonly float THRUST = 4e4f; //4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
     private float matchVelOffThrustModifier = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
@@ -58,11 +58,11 @@ public class Player : MonoBehaviour
     private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.5f; //3f;
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
-    private float thrustMultiplier = 1f;
+    private float thrustMultiplier = 1f; //internally used multiplier to keep track of total multiplier
     private float thrustCheat = 1f;
     //Torque
     private float torqueBaseStrength = 500f; //30f;
-    private float angularDragWhenEnginesOn = 40f; //40f;
+    private float angularDragWhenEnginesOn = 40f; //40f; //for smoothing
     //Engine glow
     private float engineBrightness = 0f;
     public Material engineGlowMat;

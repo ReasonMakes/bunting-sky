@@ -142,13 +142,20 @@ public class UI : MonoBehaviour
         //FPS display
         if (control.settings.displayFPS)
         {
-            if (Time.frameCount % FPS_PRINT_PERIOD == 0) control.fps = (int)(1f / Time.unscaledDeltaTime);
-            systemInfo.text = control.fps.ToString() + "FPS"
+            if (Time.frameCount % FPS_PRINT_PERIOD == 0)
+            {
+                control.fps = (int)(1f / Time.unscaledDeltaTime);
+            }
+
+            if (control.IS_EDITOR)
+            {
+                systemInfo.text = control.fps.ToString() + "FPS"
                 + "\n Asteroids: " + control.generation.asteroidsEnabled.transform.childCount + " (" + control.generation.asteroidsDetailed + " detailed)";
-            /*
-                + "\nPosition: " + instancePlayer.transform.Find("Body").position
-                + "\nPos relative verse: " + (instancePlayer.transform.Find("Body").position - verseSpace.transform.position);
-            */
+            }
+            else
+            {
+                systemInfo.text = control.fps.ToString() + "FPS";
+            }
         }
 
         //Resources animations
@@ -170,20 +177,6 @@ public class UI : MonoBehaviour
             float tipTextAlphaAdjustment = tipText.color.a - (tipTextAlphaDecrement * ((1f - tipText.color.a) + tipTextAlphaDecrement));
             tipText.color = new Color(1f, 1f, 1f, Mathf.Max(0f, tipTextAlphaAdjustment));
         }
-
-        ////DEBUG TARGET OBJECT DATA
-        //GameObject targetObj = control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject;
-        //if (targetObj != null)
-        //{
-        //    if (targetObj.name == control.generation.asteroid.name + "(Clone)")
-        //    {
-        //        Debug.Log(
-        //            "angVel: " + targetObj.GetComponent<Asteroid>().rb.angularVelocity
-        //            + "\nmemAngVel: " + targetObj.GetComponent<Asteroid>().rbMemAngularVel
-        //            + "\n\n"
-        //        );
-        //    }
-        //}
     }
 
     private void LateUpdate()
@@ -442,6 +435,14 @@ public class UI : MonoBehaviour
                 targetObj.name == control.generation.asteroid.name + "(Clone)"
                 && targetObj.GetComponent<Asteroid>().destroyed
             )
+            || (
+                targetObj.name == control.generation.enemy.name + "(Clone)"
+                && targetObj.GetComponent<Enemy>().destroying
+            )
+            || (
+                targetObj.name == control.generation.enemy.name + "(Clone)"
+                && targetObj.GetComponent<Enemy>().destroyed
+            )
         )
         {
             targetImage.gameObject.SetActive(false);
@@ -639,23 +640,48 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Asteroid";
-                waypointTextTitle.text = "Class: ";
                 int size = hit.collider.gameObject.GetComponent<Asteroid>().size;
                 if (size == Asteroid.SIZE_SMALL)
                 {
-                    waypointTextTitle.text += "Small";
+                    waypointTextTitle.text = "Small";
                 }
                 else if (size == Asteroid.SIZE_MEDIUM)
                 {
-                    waypointTextTitle.text += "Medium";
+                    waypointTextTitle.text = "Medium";
                 }
                 else if (size == Asteroid.SIZE_LARGE)
                 {
-                    waypointTextTitle.text += "Large";
+                    waypointTextTitle.text = "Large";
                 }
 
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 
+                //Console waypoint
+                consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
+
+                //Update UI
+                SetWaypointUI(hit);
+            }
+            else if (!displayMap && hit.collider.gameObject.name == control.generation.enemy.name + "(Clone)")
+            {
+                //Waypoint
+                waypointTextType.text = "Bandit";
+                int strength = hit.collider.gameObject.GetComponent<Enemy>().strength;
+                if (strength == Enemy.STRENGTH_SMALL)
+                {
+                    waypointTextTitle.text = "Minor";
+                }
+                else if (strength == Enemy.STRENGTH_MEDIUM)
+                {
+                    waypointTextTitle.text = "Major";
+                }
+                else if (strength == Enemy.STRENGTH_LARGE)
+                {
+                    waypointTextTitle.text = "Elite";
+                }
+
+                waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
+
                 //Console waypoint
                 consoleTargetTypeAndTitleText.text = waypointTextType.text + "\n" + waypointTextTitle.text;
 

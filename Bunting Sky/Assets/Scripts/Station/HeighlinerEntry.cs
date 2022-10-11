@@ -12,7 +12,7 @@ public class HeighlinerEntry : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         //Collision is with player
-        if (other.gameObject.name == "Body")
+        if (other.gameObject.name == "Player Collider")
         {
             //Debug.Log("Entered heighliner " + GetParentMoonName());
 

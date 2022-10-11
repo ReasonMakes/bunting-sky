@@ -13,16 +13,16 @@ public class PlayerWeaponLaser : MonoBehaviour
     private readonly short POOL_LENGTH = 16;
     private short poolIndex = 0;
 
-    private readonly float PROJECTILE_SPEED = 1f; //120f;
+    private readonly float PROJECTILE_SPEED = 80f; //120f;
     private float projectileLifetimeDuration = 4.5f; //THIS GETS CHANGED DYNAMICALLY
 
     [System.NonSerialized] public short clipSize;
     [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 16;
     [System.NonSerialized] public short clipRemaining = 16;
-    [System.NonSerialized] public readonly float CLIP_COOLDOWN_DURATION = 1.5f; //reload period
+    [System.NonSerialized] public readonly float CLIP_COOLDOWN_DURATION = 1.2f; //1.5f; //reload period
     [System.NonSerialized] public float clipCooldownCurrent = 0f;
 
-    [System.NonSerialized] public readonly float SINGLE_COOLDOWN_DURATION = 0.2f;
+    [System.NonSerialized] public readonly float SINGLE_COOLDOWN_DURATION = 0.185f; //0.2f;
     [System.NonSerialized] public float singleCooldownCurrent = 0f;
 
     private void Start()

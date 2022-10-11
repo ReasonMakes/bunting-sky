@@ -6,7 +6,6 @@ using UnityEngine;
 public class Asteroid : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    private Transform playerTran;
     public SphereCollider targetCollider1;
     public SphereCollider targetCollider2;
     public Rigidbody rb;
@@ -51,11 +50,6 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public Vector3 rbMemVel;
     [System.NonSerialized] public Vector3 rbMemAngularVel;
 
-    private void Start()
-    {
-        playerTran = control.generation.instancePlayer.transform.Find("Body");
-    }
-
     private void Update()
     {
         if (!performantMode)
@@ -77,7 +71,7 @@ public class Asteroid : MonoBehaviour
 
                 //Wait for particles to fade out before disabling trigger volume
                 bool particlesFadedOut = destroyingTime >= 20f; //15f; //particles technically don't fade out for 75 seconds, but they aren't actually visible after 9 seconds so this should be fine
-                bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTran.transform.position) >= playerTran.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
+                bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, control.GetPlayerTransform().position) >= control.GetPlayerScript().ORBITAL_DRAG_MODE_THRESHOLD;
                 if (particlesFadedOut && playerBeyondArbitraryDistance)
                 {
                     //Disable

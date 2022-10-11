@@ -68,13 +68,13 @@ public class StationDocking : MonoBehaviour
         {
             //Debug.Log("Enter: " + other.gameObject.name);
 
-            if (!Commerce.menuOpen && other.gameObject.name == "Body")
+            if (!Commerce.menuOpen && other.gameObject.name == "Player Collider")
             {
                 //Is host
                 host = true;
 
                 //Send name to commerce script
-                control.commerce.stationName.text = humanName.title + "'s Drydock";
+                control.commerce.stationName.text = "Drydock\n" + humanName.title + " of " + GetParentMoonName(); //humanName.title + "'s Drydock";
                 control.commerce.pricePlatinoid = pricePlatinoid;
                 control.commerce.pricePreciousMetal = pricePreciousMetal;
                 control.commerce.priceWater = priceWater;
@@ -158,5 +158,14 @@ public class StationDocking : MonoBehaviour
             commercePrice = float.Parse(control.commerce.upgradeDictionary[upgradeIndexAtButton[buttonIndex], 1]);
         }
         */
+    }
+
+    public string GetParentMoonName()
+    {
+        //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
+        int siblingIndex = transform.parent.GetSiblingIndex();
+
+        //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
+        return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<NameCelestial>().title;
     }
 }

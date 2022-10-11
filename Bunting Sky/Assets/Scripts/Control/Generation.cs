@@ -35,11 +35,11 @@ public class Generation : MonoBehaviour
     private float PLANETS_SPACING_POWER = 1f;
     private float maxPlanetDist;
 
-    private readonly int ASTEROID_CLUSTER_TYPE_VOID_CLUMP       = 0;
-    private readonly int ASTEROID_CLUSTER_TYPE_PLANET_RINGS     = 1;
-    private readonly int ASTEROID_CLUSTER_TYPE_PLANET_CLUMP     = 2;
-    private readonly int ASTEROID_CLUSTER_TYPE_MOON_RINGS       = 3;
-    private readonly int ASTEROID_CLUSTER_TYPE_MOON_CLUMP       = 4;
+    private readonly int CLUSTER_TYPE_VOID_CLUMP       = 0;
+    private readonly int CLUSTER_TYPE_PLANET_RINGS     = 1;
+    private readonly int CLUSTER_TYPE_PLANET_CLUMP     = 2;
+    private readonly int CLUSTER_TYPE_MOON_RINGS       = 3;
+    private readonly int CLUSTER_TYPE_MOON_CLUMP       = 4;
     public int asteroidsDetailed = 0;
 
     private int hitboxSwapMoonsChild = 0;
@@ -73,6 +73,8 @@ public class Generation : MonoBehaviour
                     [System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
 
         public GameObject ores;
+        public GameObject enemies;
+            public GameObject enemy;
 
     private void Start()
     {
@@ -115,6 +117,7 @@ public class Generation : MonoBehaviour
     private void SlowUpdate()
     {
         SwapAsteroidPerformanceMode();
+        SwapEnemyPerformanceMode();
     }
 
     private void VerySlowUpdate()
@@ -220,7 +223,7 @@ public class Generation : MonoBehaviour
             //Check which performance mode to use
             bool performant = (
                 Vector3.Distance(
-                instancePlayer.transform.Find("Body").position,
+                control.GetPlayerTransform().position,
                 transformToSwap.position
                 ) >= 80f
             );
@@ -236,6 +239,26 @@ public class Generation : MonoBehaviour
         }
 
         asteroidsDetailed = detailed;
+    }
+
+    private void SwapEnemyPerformanceMode()
+    {
+        for (int i = 0; i < enemies.transform.childCount; i++)
+        {
+            //The transform to check whether to swap
+            Transform transformToSwap = enemies.transform.GetChild(i);
+
+            //Check which performance mode to use
+            bool performant = (
+                Vector3.Distance(
+                control.GetPlayerTransform().position,
+                transformToSwap.position
+                ) >= 80f
+            );
+
+            //Use proper performance mode
+            transformToSwap.GetComponent<Enemy>().SetPerformant(performant);
+        }
     }
     #endregion
 
@@ -348,9 +371,16 @@ public class Generation : MonoBehaviour
             float nPercentAsteroidBelts = 50f;
             if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
             {
-                AsteroidPoolSpawnCluster(ASTEROID_CLUSTER_TYPE_PLANET_RINGS, Asteroid.GetRandomType(), position);
+                AsteroidPoolSpawnCluster(CLUSTER_TYPE_PLANET_RINGS, Asteroid.GetRandomType(), position);
             }
-            
+
+            ////Enemy (some percent of all planets have them)
+            //float nPercentEnemies = 50f;
+            //if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
+            //{
+            //    EnemySpawnCluster(CLUSTER_TYPE_PLANET_CLUMP, position);
+            //}
+
             //If home planetary system
             if (planetarySystemIndex == 0)
             {
@@ -362,6 +392,9 @@ public class Generation : MonoBehaviour
                     generationType,
                     playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
                 );
+
+                //Spawn test enemy
+                EnemySpawnCluster(CLUSTER_TYPE_PLANET_CLUMP, position);
             }
         }
 
@@ -462,7 +495,7 @@ public class Generation : MonoBehaviour
             float nPercentAsteroidBelts = 50f;
             if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
             {
-                AsteroidPoolSpawnCluster(ASTEROID_CLUSTER_TYPE_MOON_RINGS, Asteroid.GetRandomType(), position);
+                AsteroidPoolSpawnCluster(CLUSTER_TYPE_MOON_RINGS, Asteroid.GetRandomType(), position);
             }
         }
 
@@ -645,10 +678,10 @@ public class Generation : MonoBehaviour
             instanceAsteroid.GetComponent<Asteroid>().Enable(position, size, type);
 
             //Add torque
-            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(25f * new Vector3(
-                Random.value,
-                Random.value,
-                Random.value
+            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(50f * new Vector3(
+                Mathf.Sqrt(Random.value),
+                Mathf.Sqrt(Random.value),
+                Mathf.Sqrt(Random.value)
             ));
 
             //Remember movement
@@ -670,19 +703,19 @@ public class Generation : MonoBehaviour
 
     private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position)
     {
-        if (clusterType == ASTEROID_CLUSTER_TYPE_PLANET_RINGS || clusterType == ASTEROID_CLUSTER_TYPE_MOON_RINGS)
+        if (clusterType == CLUSTER_TYPE_PLANET_RINGS || clusterType == CLUSTER_TYPE_MOON_RINGS)
         {
             int nAsteroids = 70;
             float chancePercentOfValuableType = 10f;
             float radius = 170f;
             
-            if (clusterType == ASTEROID_CLUSTER_TYPE_PLANET_RINGS)
+            if (clusterType == CLUSTER_TYPE_PLANET_RINGS)
             {
                 nAsteroids = 70;
                 chancePercentOfValuableType = 10f;
                 radius = 170f;
             }
-            else if (clusterType == ASTEROID_CLUSTER_TYPE_MOON_RINGS)
+            else if (clusterType == CLUSTER_TYPE_MOON_RINGS)
             {
                 nAsteroids = 30;
                 chancePercentOfValuableType = 20f;
@@ -781,6 +814,51 @@ public class Generation : MonoBehaviour
     //        }
     //    }
     //}
+
+    private void EnemySpawnCluster(int clusterType, Vector3 position)
+    {
+        if (clusterType == CLUSTER_TYPE_PLANET_CLUMP)
+        {
+            int nEnemies = 1;
+            float radius = 150f;
+            float angle = Random.value * 360f;
+
+            for (int i = 0; i < nEnemies; i++)
+            {
+                //Position to spawn at
+                position += new Vector3(
+                    Mathf.Cos(Mathf.Deg2Rad * angle) * radius,
+                    0f,
+                    Mathf.Sin(Mathf.Deg2Rad * angle) * radius
+                );
+
+                //Temporary debug position override
+                position = playerSpawnMoon.transform.position + new Vector3(6f, 22f, 2f);
+
+                //Spawn the enemy
+                GameObject instanceEnemy = EnemySpawn(position);
+            }
+        }
+    }
+
+    public GameObject EnemySpawn(Vector3 position)
+    {
+        GameObject instanceEnemy = Instantiate(
+            enemy,
+            position,
+            Quaternion.identity
+        );
+
+        //Put in folder
+        instanceEnemy.transform.parent = enemies.transform;
+
+        //Update script
+        instanceEnemy.GetComponent<Enemy>().control = control;
+        instanceEnemy.GetComponent<Enemy>().SetStrength(Enemy.STRENGTH_SMALL);
+        instanceEnemy.GetComponent<Enemy>().Enable(position, Enemy.STRENGTH_SMALL);
+
+        return instanceEnemy;
+    }
     #endregion
 
     #region: Saving and loading
