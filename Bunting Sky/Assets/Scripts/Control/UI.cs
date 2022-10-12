@@ -75,7 +75,7 @@ public class UI : MonoBehaviour
 
     //Tips
     [System.NonSerialized] public TextMeshProUGUI tipText;
-    [System.NonSerialized] public float tipAimCertainty = 0f;
+    [System.NonSerialized] public float tipAimNeedsHelpCertainty = 0f;
     private readonly float TIP_CERTAINTY_DECAY = 0.003f;
     private readonly float TIP_AIM_THRESHOLD_CERTAINTY = 4f;
     [System.NonSerialized] public readonly float TIP_AIM_THRESHOLD_ACCURACY = 0.995f;
@@ -196,19 +196,19 @@ public class UI : MonoBehaviour
     private void UpdateTipCertainty()
     {
         //AUTO TORQUING
-        if (tipAimCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
+        if (tipAimNeedsHelpCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
         {
-            SetTip(tipAimText, ref tipAimCertainty);
+            SetTip(tipAimText, ref tipAimNeedsHelpCertainty);
         }
 
         //Don't recommend auto torquing if firing when fuel is empty
         if (playerScript.vitalsFuel <= 0d)
         {
-            tipAimCertainty = 0f;
+            tipAimNeedsHelpCertainty = 0f;
         }
 
         //Decay
-        tipAimCertainty = Mathf.Max(0f, tipAimCertainty - TIP_CERTAINTY_DECAY);
+        tipAimNeedsHelpCertainty = Mathf.Max(0f, tipAimNeedsHelpCertainty - TIP_CERTAINTY_DECAY);
     }
 
     public void SetTip(string text)
@@ -614,7 +614,11 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Station";
-                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameHuman>().title;
+                Transform stationTransform = hit.collider.transform;
+                string stationTitle = stationTransform.GetComponent<NameHuman>().title;
+                Transform moonTransform = stationTransform.parent.GetChild(stationTransform.GetSiblingIndex() - 1);
+                string moonName = moonTransform.GetComponent<NameCelestial>().title;
+                waypointTextTitle.text = stationTitle + " of " + moonName;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, true);
                 
                 //Console waypoint
@@ -627,7 +631,12 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Heighliner";
-                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameHuman>().title;
+                Transform heighlinerTransform = hit.collider.transform;
+                string heighlinerTitle = heighlinerTransform.GetComponent<NameHuman>().title;
+                Transform moonTransform = heighlinerTransform.parent.GetChild(heighlinerTransform.GetSiblingIndex() - 1);
+                string moonName = moonTransform.GetComponent<NameCelestial>().title;
+                waypointTextTitle.text = heighlinerTitle + " of " + moonName;
+                //waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameHuman>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
 
                 //Console waypoint

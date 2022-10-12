@@ -136,6 +136,7 @@ GameObject:
   - component: {fileID: 8390337967562609920}
   - component: {fileID: 1333070546947983288}
   - component: {fileID: 1774694060278186357}
+  - component: {fileID: 7274521092117852910}
   - component: {fileID: 8611109209138625066}
   - component: {fileID: 7892786763060803639}
   m_Layer: 0
@@ -223,6 +224,19 @@ MonoBehaviour:
   modelGroupStrengthLarge: {fileID: 6685615498556311451}
   matEnemy: {fileID: 2100000, guid: 975c8070bf3ad6346af14d315d88a7fb, type: 2}
   ore: {fileID: 6046421670457136187, guid: 5f4a5adc8ea192b4fa0e54cc9c9e5cc4, type: 3}
+--- !u!114 &7274521092117852910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333070546947983284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 560d40ec9150b38459e907cae38bcb35, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemyWeaponProjectileLaserPrefab: {fileID: 6553045504266895388, guid: c3834f203c1bfaf46b1d538643041c41, type: 3}
 --- !u!114 &8611109209138625066
 MonoBehaviour:
   m_ObjectHideFlags: 0

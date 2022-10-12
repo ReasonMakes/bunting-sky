@@ -73,6 +73,14 @@ public class Generation : MonoBehaviour
                     [System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
 
         public GameObject ores;
+
+        public GameObject projectiles;
+            public GameObject playerProjectiles;
+                public GameObject playerProjectilesLasers;
+                public GameObject playerProjectilesSeismicCharges;
+            public GameObject enemyProjectiles;
+                public GameObject enemyProjectilesLasers;
+
         public GameObject enemies;
             public GameObject enemy;
 
@@ -225,7 +233,7 @@ public class Generation : MonoBehaviour
                 Vector3.Distance(
                 control.GetPlayerTransform().position,
                 transformToSwap.position
-                ) >= 80f
+                ) >= Asteroid.distanceThresholdGreaterThanPerformantMode
             );
 
             //Use proper performance mode
@@ -253,7 +261,7 @@ public class Generation : MonoBehaviour
                 Vector3.Distance(
                 control.GetPlayerTransform().position,
                 transformToSwap.position
-                ) >= 80f
+                ) >= Enemy.DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE
             );
 
             //Use proper performance mode
@@ -280,7 +288,6 @@ public class Generation : MonoBehaviour
             //Destroy player
             Destroy(control.ui.playerShipDirectionReticleTree, 0f);
             control.ui.playerShipDirectionReticleList.Clear();
-            instancePlayer.GetComponentInChildren<Player>().WeaponsDestroyTrees();
             playerSpawned = false;
             instancePlayer.GetComponentInChildren<Player>().warningUIText.color = new Color(1f, 0f, 0f, 0f);
             Destroy(instancePlayer, 0f);
@@ -854,6 +861,7 @@ public class Generation : MonoBehaviour
 
         //Update script
         instanceEnemy.GetComponent<Enemy>().control = control;
+        instanceEnemy.GetComponent<Enemy>().spawnPointRaw = position;
         instanceEnemy.GetComponent<Enemy>().SetStrength(Enemy.STRENGTH_SMALL);
         instanceEnemy.GetComponent<Enemy>().Enable(position, Enemy.STRENGTH_SMALL);
 

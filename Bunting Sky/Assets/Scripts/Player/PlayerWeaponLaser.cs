@@ -13,7 +13,7 @@ public class PlayerWeaponLaser : MonoBehaviour
     private readonly short POOL_LENGTH = 16;
     private short poolIndex = 0;
 
-    private readonly float PROJECTILE_SPEED = 80f; //120f;
+    private readonly float PROJECTILE_SPEED = 50f; //80f; //120f;
     private float projectileLifetimeDuration = 4.5f; //THIS GETS CHANGED DYNAMICALLY
 
     [System.NonSerialized] public short clipSize;
@@ -39,7 +39,7 @@ public class PlayerWeaponLaser : MonoBehaviour
             instancePlayerWeaponProjectileLaser.SetActive(false);
 
             //Put in weapons tree
-            instancePlayerWeaponProjectileLaser.transform.parent = player.playerWeaponsTreeLaser.transform;
+            instancePlayerWeaponProjectileLaser.transform.parent = control.generation.playerProjectilesLasers.transform;
 
             //Pass control reference
             instancePlayerWeaponProjectileLaser.GetComponent<PlayerWeaponProjectileLaser>().control = control;
@@ -100,7 +100,9 @@ public class PlayerWeaponLaser : MonoBehaviour
         POOL[poolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         POOL[poolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         POOL[poolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-        POOL[poolIndex].GetComponent<Rigidbody>().velocity = player.rb.velocity + (PROJECTILE_SPEED * transform.forward);
+        //copying the player's horizontal velocity turned out to be very hard to intuit
+        //POOL[poolIndex].GetComponent<Rigidbody>().velocity = player.rb.velocity + (PROJECTILE_SPEED * transform.forward);
+        POOL[poolIndex].GetComponent<Rigidbody>().velocity = player.velocityOfObjectDraggingRelativeTo + PROJECTILE_SPEED * transform.forward;
         POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().timeAtWhichThisSelfDestructs = projectileLifetimeDuration;
         POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().timeSpentAlive = 0f;
         POOL[poolIndex].GetComponent<PlayerWeaponProjectileLaser>().canDamage = true;
@@ -120,7 +122,7 @@ public class PlayerWeaponLaser : MonoBehaviour
         clipRemaining--;
 
         //Play sound effect
-        switch (player.soundSourceLaserArrayIndex)
+        switch (player.soundSourceLaserArrayIndex) //we use multiple sounds to avoid the sound engine overloading and clipping
         {
             case 0:
                 player.soundSourceLaser0.Play();

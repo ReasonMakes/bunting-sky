@@ -12,12 +12,29 @@ public class Enemy : MonoBehaviour
 
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 3e3f;
-    private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
-    private float thrustMultiplier = 1f; //internally used multiplier to keep track of total multiplier
+    private readonly float THRUST = 4000f;
     //Torque
-    private float torqueBaseStrength = 500f;
+    private float torqueBaseStrength = 600f;
     private float angularDragWhenEnginesOn = 40f; //for smoothing
+    //Drag
+    private readonly float DRAG = 3f;
+
+    //Weapons
+    private float weaponCooldown = 0f;
+    private float weaponCooldownMax = 2f; //Time in seconds between shots
+
+    //Behaviour settings
+    [System.NonSerialized] public Vector3 spawnPointRaw = Vector3.zero;
+    private Vector3 destination = Vector3.zero;
+    private bool aggro = false;
+    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO = 70f;
+    private readonly float DISTANCE_THRESHOLD_GREATER_THAN_TO_MOVE_FORWARD = 9f;
+    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE = 20f;
+    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE = 40f;
+    [System.NonSerialized] public static readonly float DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE = 180f;
+    private bool strafeRight = true;
+    private float strafeDirectionChangeTimer = 2f;
+    private readonly float STRAFE_PERIOD_MAX = 2f;
 
     [System.NonSerialized] public bool destroying = false;
     [System.NonSerialized] public bool destroyed = true;
@@ -49,6 +66,7 @@ public class Enemy : MonoBehaviour
     {
         SetHitboxEnabledAndChoose(true);
         rb.detectCollisions = true;
+        GetComponent<EnemyWeaponLaser>().control = control;
     }
 
     private void Update()
@@ -57,12 +75,9 @@ public class Enemy : MonoBehaviour
         {
             if (!Menu.menuOpenAndGamePaused && !destroyed)
             {
-                //ATTACK PLAYER
-                UpdateEnemyMovementTorque();
-
-                //DESTRUCTION
                 if (destroying)
                 {
+                    //DESTRUCTION
                     //Increment timer
                     destroyingTime += Time.deltaTime;
 
@@ -78,8 +93,35 @@ public class Enemy : MonoBehaviour
                         Disable();
                     }
                 }
+                else
+                {
+                    //BEHAVIOUR (moving and shooting)
+                    aggro = (Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO);
+                    if (aggro)
+                    {
+                        //destination = control.GetPlayerTransform().position;
+
+                        //Lead, so that weapons fire is more likely to connect
+                        destination = control.GetPlayerTransform().position; //raw target
+                        float timeToTarget = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) / EnemyWeaponLaser.PROJECTILE_SPEED; //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
+                        destination += (control.GetPlayerScript().rb.velocity * timeToTarget); //target with added lead
+                    }
+                    else
+                    {
+                        destination = GetSpawnPoint();
+                    }
+                    UpdateEnemyMovementTorque();
+                    UpdateEnemyMovementThrust();
+                    UpdateEnemyMovementDrag();
+                    UpdateEnemyWeaponsUse(); 
+                }
             }
         }
+    }
+
+    private Vector3 GetSpawnPoint()
+    {
+        return spawnPointRaw + control.generation.verseSpace.transform.position;
     }
 
     private void UpdateEnemyMovementTorque()
@@ -91,15 +133,15 @@ public class Enemy : MonoBehaviour
         //https://answers.unity.com/questions/727254/use-rigidbodyaddtorque-with-quaternions-or-forward.html
 
         //TORQUE DRIECTION
-        //Vector from the enemy to the player
-        Vector3 playerRelativeToEnemy = Vector3.Normalize(control.GetPlayerTransform().position - transform.position);
+        //Vector to look toward
+        Vector3 directionToDestinationToLookAt = Vector3.Normalize(destination - transform.position);
 
         //The rotation to look at that point
-        Quaternion rotationToFacePlayer = Quaternion.LookRotation(playerRelativeToEnemy);
+        Quaternion rotationToLookAtDestination = Quaternion.LookRotation(directionToDestinationToLookAt);
 
         //The rotation from how the ship is currently rotated to looking at the player
         //Multiplying by inverse is equivalent to subtracting
-        Quaternion rotation = rotationToFacePlayer * Quaternion.Inverse(rb.rotation);
+        Quaternion rotation = rotationToLookAtDestination * Quaternion.Inverse(rb.rotation);
 
         //Parse Quaternion to Vector3
         Vector3 torqueVector = new Vector3(rotation.x, rotation.y, rotation.z) * rotation.w;
@@ -112,6 +154,92 @@ public class Enemy : MonoBehaviour
         if (torqueFinal.magnitude != 0f) //so we don't get NaN error
         {
             rb.AddTorque(torqueFinal);
+        }
+    }
+
+    private void UpdateEnemyMovementThrust()
+    {
+        //SETUP
+        //Destination and direction to it
+        Vector3 directionToPointToMoveTo = Vector3.Normalize(destination - transform.position);
+
+        //Looking at destination?
+        float dot = (Vector3.Dot(directionToPointToMoveTo, transform.forward) + 1f) / 2f; //0 to 1 depending on how accurately facing the player
+        if (dot <= 0.5f) //clamp to either full thrust or no thrust
+        {
+            dot = 0f;
+        }
+        else
+        {
+            dot = 1f;
+        }
+
+        //THRUST DIRECTIONS
+        //Forward direction
+        Vector3 forwardVector = Vector3.zero;
+        //Don't thrust forward if very close to destination
+        if (Vector3.Magnitude(destination - transform.position) > DISTANCE_THRESHOLD_GREATER_THAN_TO_MOVE_FORWARD)
+        {
+            forwardVector = transform.forward * dot;
+        }
+
+        //Strafe direction
+        Vector3 strafeVector = Vector3.zero;
+        //Change left/right periodically
+        strafeDirectionChangeTimer = Mathf.Max(0f, strafeDirectionChangeTimer - Time.deltaTime); //decrement 1f per second
+        if (strafeDirectionChangeTimer <= 0f)
+        {
+            //Reset timer
+            strafeDirectionChangeTimer = Random.value * STRAFE_PERIOD_MAX;
+
+            //Change strafe direction
+            strafeRight = !strafeRight;
+        }
+        //Strafe if aggro'd and within distance threshold
+        if (aggro && Vector3.Magnitude(destination - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)
+        {
+            if (strafeRight)
+            {
+                //Right
+                strafeVector = transform.right * dot;
+            }
+            else
+            {
+                //Left
+                strafeVector = -transform.right * dot;
+            }
+            
+        }
+        
+        //COMBINING AND APPLYING
+        //Add forward and strafe vectors together with weights
+        thrustVector = (forwardVector * 1.5f) + strafeVector;
+
+        //Thrust
+        rb.AddForce(thrustVector.normalized * THRUST * Time.deltaTime);
+    }
+
+    private void UpdateEnemyMovementDrag()
+    {
+        rb.velocity *= (1f - (DRAG * Time.deltaTime));
+    }
+
+    private void UpdateEnemyWeaponsUse()
+    {
+        //Cooldown over time
+        weaponCooldown = Mathf.Max(0f, weaponCooldown - Time.deltaTime);
+
+        //Can fire?
+        if (weaponCooldown <= 0f && Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE)
+        {
+            //Fire only if aiming in the general direction of the player
+            float aimLinedUp = (Vector3.Dot(Vector3.Normalize(control.GetPlayerTransform().position - transform.position), transform.forward) + 1f) / 2f; //0 to 1 depending on how accurately facing the player
+            if (aimLinedUp >= 0.95f) //How close to aiming at target before willing to attempt firing
+            {
+                //Fire
+                GetComponent<EnemyWeaponLaser>().Fire();
+                weaponCooldown = weaponCooldownMax;
+            }
         }
     }
 

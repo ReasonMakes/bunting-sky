@@ -34,7 +34,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
             instancePlayerWeaponProjectileSeismicCharge.SetActive(false);
 
             //Put in weapons tree
-            instancePlayerWeaponProjectileSeismicCharge.transform.parent = player.playerWeaponsTreeSeismicCharge.transform;
+            instancePlayerWeaponProjectileSeismicCharge.transform.parent = control.generation.playerProjectilesSeismicCharges.transform;
 
             //Pass control reference
             instancePlayerWeaponProjectileSeismicCharge.GetComponent<PlayerWeaponProjectileSeismicCharge>().control = control;

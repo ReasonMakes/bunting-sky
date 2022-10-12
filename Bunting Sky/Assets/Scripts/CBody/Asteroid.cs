@@ -14,6 +14,7 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public bool destroyed = true;
     private float destroyingTime = 0f;
     [System.NonSerialized] public bool performantMode = false;
+    [System.NonSerialized] public static float distanceThresholdGreaterThanPerformantMode = 80f;
 
     [System.NonSerialized] public readonly static byte HEALTH_MAX = 4;
     [System.NonSerialized] public byte health = HEALTH_MAX;

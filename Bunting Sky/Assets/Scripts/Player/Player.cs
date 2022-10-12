@@ -50,12 +50,12 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 4e4f; //4e3f; //3e3f; //8416.65825f;
+    private readonly float THRUST = 12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
     private float matchVelOffThrustModifier = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
-    private readonly float THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER = 9.0f; //5.0f; //16f;
-    private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.5f; //3f;
+    private readonly float THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER = 3.0f; //6.0f; //9.0f; //5.0f; //16f; //multiplies forward thrust after holding forward for awhile
+    private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.25f; //0.5f; //3f;
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f; //internally used multiplier to keep track of total multiplier
@@ -66,6 +66,8 @@ public class Player : MonoBehaviour
     //Engine glow
     private float engineBrightness = 0f;
     public Material engineGlowMat;
+    private Color engineEmissionColor = new Color(191, 102, 43);
+    private Color engineEmissionColorRunningHot = new Color(199, 35, 35);
     private Color engineEmissionColorRunning = new Color(191, 102, 43);
     public Color engineEmissionColorDead = new Color(49, 195, 255);
     private float engineEmissionIntensity = 1.3f * 0.00748f; //1.4f * 0.00748f; //1.631096f;
@@ -82,6 +84,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public GameObject targetObject;
     [System.NonSerialized] public GameObject cBodies;
     [System.NonSerialized] public readonly float ORBITAL_DRAG_MODE_THRESHOLD = 50f;
+    [System.NonSerialized] public Vector3 velocityOfObjectDraggingRelativeTo = Vector3.zero; //used for fired projectiles
     private float distToClosestMoon = 100f; //this should be greater than the orbitalDragModeThreshold so that the player starts with drag relative to system
     private Transform closestMoonOrStationTransform;
     private float distToClosestAsteroid = 100f;
@@ -140,10 +143,10 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public double vitalsHealthMax = 10.0;
     private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
     [System.NonSerialized] public bool isDestroyed = false;
-    [System.NonSerialized] public double vitalsFuel = 3.0;
-    [System.NonSerialized] public double vitalsFuelMax = 4.0;
-    private readonly double VITALS_FUEL_MAX_STARTER = 4.0;
-    [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.025;
+    [System.NonSerialized] public double vitalsFuel = 3.0; //this is overridden by generation, as fuel needs to be reset every new game
+    [System.NonSerialized] public double vitalsFuelMax = 4.0d;
+    private readonly double VITALS_FUEL_MAX_STARTER = 4.0d;
+    [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.025d;
     [System.NonSerialized] public GameObject vitalsHealthUI;
     [System.NonSerialized] public TextMeshProUGUI vitalsHealthUIText;
     [System.NonSerialized] public GameObject vitalsFuelUI;
@@ -188,8 +191,6 @@ public class Player : MonoBehaviour
     
     public PlayerWeaponLaser playerWeaponLaser;
     public PlayerWeaponSeismicCharge playerWeaponSeismicCharge;
-    [System.NonSerialized] public GameObject playerWeaponsTreeLaser;
-    [System.NonSerialized] public GameObject playerWeaponsTreeSeismicCharge;
 
     [System.NonSerialized] public string weaponSelectedTitle = "Laser";
 
@@ -200,6 +201,8 @@ public class Player : MonoBehaviour
 
     [System.NonSerialized] public float weaponSelectedSingleCooldownDuration;
     [System.NonSerialized] public float weaponSelectedSingleCooldownCurrent;
+
+    private float weaponUsedRecently = 0f;
     #endregion
 
     //Skybox stars
@@ -211,19 +214,6 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-        //WEAPONS TREES
-        //Main
-        playerWeaponsTree = new GameObject("Weapons");
-        playerWeaponsTree.transform.parent = control.generation.verseSpace.transform;
-
-        //Laser
-        playerWeaponsTreeLaser = new GameObject("Laser");
-        playerWeaponsTreeLaser.transform.parent = playerWeaponsTree.transform;
-
-        //Seismic charge
-        playerWeaponsTreeSeismicCharge = new GameObject("Seismic Charge");
-        playerWeaponsTreeSeismicCharge.transform.parent = playerWeaponsTree.transform;
-
         //MODEL
         DecideWhichModelsToRender();
 
@@ -299,19 +289,30 @@ public class Player : MonoBehaviour
 
         //I or O to cheat
 
-        if (binds.GetInputDown(binds.bindCheat1))
+        if (binds.GetInput(binds.bindCheat1))
         {
-            Time.timeScale += 0.25f;
-        
-            control.ui.SetTip(Time.timeScale + "x");
+            rb.velocity = -transform.right * 8f;
+            control.ui.SetTip("Velocity: " + rb.velocity);
+        }
+        if (binds.GetInput(binds.bindCheat2))
+        {
+            rb.velocity = transform.right * 8f;
+            control.ui.SetTip("Velocity: " + rb.velocity);
         }
 
-        if (binds.GetInputDown(binds.bindCheat2))
-        {
-            Time.timeScale -= 0.25f;
-        
-            control.ui.SetTip(Time.timeScale + "x");
-        }
+        //if (binds.GetInputDown(binds.bindCheat1))
+        //{
+        //    Time.timeScale += 0.25f;
+        //
+        //    control.ui.SetTip(Time.timeScale + "x");
+        //}
+        //
+        //if (binds.GetInputDown(binds.bindCheat2))
+        //{
+        //    Time.timeScale -= 0.25f;
+        //
+        //    control.ui.SetTip(Time.timeScale + "x");
+        //}
 
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
@@ -575,6 +576,11 @@ public class Player : MonoBehaviour
             float collisionImmunityPeriod = 0.25f; //Time in seconds the player will be immune for
             float collisionImmunityDecrementRate = Time.deltaTime / collisionImmunityPeriod;
             collisionImmunity = Mathf.Max(0f, collisionImmunity - collisionImmunityDecrementRate);
+
+            //Recent weapon use movement penalty wears off
+            float weaponUsedRecentlyPeriod = 0.25f; //Time in seconds the player will be immune for
+            float weaponUsedRecentlyDecrementRate = Time.deltaTime / weaponUsedRecentlyPeriod;
+            weaponUsedRecently = Mathf.Max(0f, weaponUsedRecently - weaponUsedRecentlyDecrementRate);
         }
     }
 
@@ -594,9 +600,6 @@ public class Player : MonoBehaviour
         //}
 
         UpdatePlayerMovementDrag();         //Drag the ship relative to either the system or the nearest moon, depending on distance to nearest moon
-
-        //Add thrust on/off to engine effect brightness (should be run AFTER UpdatePlayerMovementThrust)
-        engineBrightness = Math.Max(engineBrightness, Math.Min(1f, engineBrightness + (thrustVector.normalized.magnitude / 40f)));
     }
 
     private void LateUpdate()
@@ -697,23 +700,40 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerEngineEffect()
     {
-        //Engine effect
-        Color engineEmissionColor = engineEmissionColorRunning;
+        //Subtract brightness over time by default
+        engineBrightness = Mathf.Max(0f, engineBrightness - (1.5f * Time.deltaTime));
+
+        //Add to engine brightness if moving (should be run AFTER UpdatePlayerMovementThrust, which is in LateUpdate())
+        engineBrightness = Mathf.Max(engineBrightness, Mathf.Min(1f, engineBrightness + (thrustVector.normalized.magnitude / 40f)));
+
+        //Decide colour
+        Color engineEmissionColorToChangeTo;
         if (vitalsFuel > 0.0d)
         {
-            //Set engine emission colour
-            //engineGlowMat.SetColor("_EmissionColor", engineEmissionColorRunning * engineEmissionIntensity);
-            //If the colour intensity reaches zero the material can never get bright again for some reason, so we ensure the lowest value is never equal to zero
-            engineGlowMat.SetColor("_EmissionColor", engineEmissionColor * engineEmissionIntensity * (1f + (engineBrightness)));
-            engineLight.intensity = (1 + engineBrightness) * 1.575f;
-            //Subtract from engine effect brightness
-            engineBrightness = Math.Max(0, engineBrightness - (1.5f * Time.deltaTime));
+            if (thrustEngineWarmupMultiplier > (thrustEngineWarmupMultiplierMax - 1f) / 2f)
+            {
+                engineEmissionColorToChangeTo = engineEmissionColorRunningHot;
+            }
+            else
+            {
+                engineEmissionColorToChangeTo = engineEmissionColorRunning;
+            }
         }
         else
         {
-            transform.Find("Blackness Behind Jet").gameObject.SetActive(false);
-            //engineEmissionColor = engineEmissionColorDead;
+            engineEmissionColorToChangeTo = engineEmissionColorDead;
         }
+        float colorChangeRate = 1f * Time.deltaTime; //Time in seconds to change colour
+        engineEmissionColor.r += (engineEmissionColorToChangeTo.r - engineEmissionColor.r) * colorChangeRate;
+        engineEmissionColor.g += (engineEmissionColorToChangeTo.g - engineEmissionColor.g) * colorChangeRate;
+        engineEmissionColor.b += (engineEmissionColorToChangeTo.b - engineEmissionColor.b) * colorChangeRate;
+
+        //Update engine LIGHT brightness
+        engineLight.intensity = (1f + engineBrightness) * 1.575f;
+
+        //Update total colour
+        //If the colour intensity reaches zero the material can never get bright again for some reason, so we ensure the lowest value is never equal to zero
+        engineGlowMat.SetColor("_EmissionColor", engineEmissionColor * engineEmissionIntensity * (1f + (engineBrightness)));
     }
 
     private void UpdatePlayerMovementDrag()
@@ -736,21 +756,25 @@ public class Player : MonoBehaviour
             if (closestMoonOrStationTransform != null && distToClosestMoon <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
                 //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestMoonOrStationTransform.GetComponent<Rigidbody>().velocity, DRAG);
+                velocityOfObjectDraggingRelativeTo = closestMoonOrStationTransform.GetComponent<Rigidbody>().velocity;
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
             }
             else if (closestAsteroidTransform != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
                 //Asteroid-relative drag (we check if the transform is null because asteroids are destructible)
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, closestAsteroidTransform.GetComponent<Rigidbody>().velocity, DRAG);
+                velocityOfObjectDraggingRelativeTo = closestAsteroidTransform.GetComponent<Rigidbody>().velocity;
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
             }
             else if (targetObject != null)
             {
                 //Target-relative drag
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, targetObject.GetComponent<Rigidbody>().velocity, DRAG);
+                velocityOfObjectDraggingRelativeTo = targetObject.GetComponent<Rigidbody>().velocity;
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
             }
             else
             {
                 //Centre planet-relative drag
+                velocityOfObjectDraggingRelativeTo = Vector3.zero;
                 rb.velocity *= (1f - (DRAG * Time.deltaTime));
             }
         }
@@ -841,24 +865,32 @@ public class Player : MonoBehaviour
         //Move if fuel
         if ((tempEngineDisable <= 0f || tempEngineDisableButFlickering) && vitalsFuel > 0.0)
         {
-            //Faster if moving forward
+            //Thrusting forward
             if (binds.GetInput(binds.bindThrustForward))
             {
                 //Add forward to thrust vector
                 thrustVector += transform.forward;
 
-                //Engine warmup jerk (increasing acceleration)
-                thrustEngineWarmupMultiplier = Mathf.Min(thrustEngineWarmupMultiplierMax,
-                    thrustEngineWarmupMultiplier + (thrustEngineWarmupMultiplier * THRUST_ENGINE_WARMUP_SPEED * Time.deltaTime));
-                
-                //Total multiplier
-                thrustMultiplier = THRUST_FORWARD_MULTIPLIER * thrustEngineWarmupMultiplier;
+                //Faster if moving forward
+                thrustMultiplier = THRUST_FORWARD_MULTIPLIER;
+
+                //Warming up; no weapons used recently
+                if (weaponUsedRecently <= 0f)
+                {
+                    //Engine warmup jerk (increasing acceleration)
+                    thrustEngineWarmupMultiplier = Mathf.Min(thrustEngineWarmupMultiplierMax,
+                        thrustEngineWarmupMultiplier + (thrustEngineWarmupMultiplier * THRUST_ENGINE_WARMUP_SPEED * Time.deltaTime));
+
+                    //Total multiplier (moving forward and warmed up)
+                    thrustMultiplier = THRUST_FORWARD_MULTIPLIER * thrustEngineWarmupMultiplier;
+                }
             }
-            else
+
+            //Not warming up
+            if (!binds.GetInput(binds.bindThrustForward) || weaponUsedRecently > 0f)
             {
-                //Engine warmup
-                thrustEngineWarmupMultiplier = Mathf.Max(1f,
-                    thrustEngineWarmupMultiplier - (Time.deltaTime * THRUST_ENGINE_COOLDOWN_SPEED));
+                //Engine warmup decrement
+                thrustEngineWarmupMultiplier = Mathf.Max(1f, thrustEngineWarmupMultiplier - (Time.deltaTime * THRUST_ENGINE_COOLDOWN_SPEED));
 
                 //Total multiplier
                 thrustMultiplier = 1f;
@@ -1098,8 +1130,9 @@ public class Player : MonoBehaviour
         }
 
         //Jet glow
-        transform.Find("TP Model").Find("Blackness Behind Jet").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
-        transform.Find("TP Model").Find("Jet Glow").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
+        //transform.Find("TP Model").Find("Blackness Behind Jet").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
+        //Instead of completely removing the jet glow we are changing its color
+        //transform.Find("TP Model").Find("Jet Glow").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
 
         //Ship direction reticles
         control.ui.playerShipDirectionReticleTree.SetActive(!isDestroyed);
@@ -1179,6 +1212,10 @@ public class Player : MonoBehaviour
     #region General methods: Weapons
     private void WeaponsFire()
     {
+        //Remember that a weapon was used recently
+        weaponUsedRecently = 1f;
+
+        //Fire whichever weapon is selected
         if (weaponSelectedTitle == "Laser")
         {
             playerWeaponLaser.Fire();
@@ -1190,19 +1227,14 @@ public class Player : MonoBehaviour
                 Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY
                 )
             {
-                control.ui.tipAimCertainty++;
+                control.ui.tipAimNeedsHelpCertainty++;
             }
         }
         else if (weaponSelectedTitle == "Seismic charges")
         {
             playerWeaponSeismicCharge.Fire();
+            control.ui.tipAimNeedsHelpCertainty = 0f;
         }
-    }
-
-    public void WeaponsDestroyTrees()
-    {
-        Control.DestroyAllChildren(playerWeaponsTreeLaser, 0f);
-        Control.DestroyAllChildren(playerWeaponsTreeSeismicCharge, 0f);
     }
 
     private void UpdateWeaponSelected()

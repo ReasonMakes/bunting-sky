@@ -123,6 +123,6 @@ Material:
     - _ShadowColor: {r: 0.09411765, g: 0.09411765, b: 0.28627452, a: 1}
     - _ShadowTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
-    - _Tint: {r: 1, g: 0.6094188, b: 0, a: 0}
+    - _Tint: {r: 1, g: 0.21165988, b: 0, a: 0}
     - _TintColor: {r: 0.09411765, g: 0.09411765, b: 0.28627452, a: 1}
   m_BuildTextureStacks: []

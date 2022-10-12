@@ -2,31 +2,27 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerWeaponProjectileLaser : MonoBehaviour
+public class EnemyWeaponProjectileLaser : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    private Transform playerBody;
-    public Rigidbody rb;
+    private Rigidbody rb;
 
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
-    private readonly float MIN_GLOW_DISTANCE = 4f; //1.0f;
-    //private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
 
     [System.NonSerialized] public bool canDamage = true;
+    [System.NonSerialized] public MeshCollider parentMeshCollider;
 
     private void Start()
     {
-        //Player reference
-        playerBody = control.generation.instancePlayer.transform.Find("Body");
-
-        //Ignore collisions with player
+        //Ignore collisions with the enemy who fired it
         Physics.IgnoreCollision(
             transform.Find("Non-Emissive Model").GetComponent<MeshCollider>(),
-            playerBody.Find("Player Collider").GetComponent<MeshCollider>()
+            parentMeshCollider
         );
 
         //General collision detection
+        rb = GetComponent<Rigidbody>();
         rb.detectCollisions = true;
     }
 
@@ -34,9 +30,6 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
     {
         if (!Menu.menuOpenAndGamePaused)
         {
-            //Make point light visible after awhile and invisible just before self-destruction
-            UpdateEmissionAndLuminosity();
-            
             //Raycast collisions
             UpdateCollisionDetection();
 
@@ -53,8 +46,8 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     private void DeactivateSelf()
     {
-        transform.Find("Emissive Model").gameObject.SetActive(false);
-        transform.Find("Point Light").gameObject.SetActive(false);
+        //transform.Find("Emissive Model").gameObject.SetActive(false);
+        //transform.Find("Point Light").gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -76,9 +69,6 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         float minimumRaycastDistance = 20f; //this value must be high enough that the projectile does not phase through objects directly in front of the player
         float raycastDistance = minimumRaycastDistance * rb.velocity.magnitude * Time.deltaTime;
 
-        //Debug.Log(raycastDistance);
-        //Debug.DrawRay(transform.position, transform.right * raycastDistance, Color.red);
-
         //if (Physics.Raycast(transform.position, transform.right, out RaycastHit hit, raycastDistance))
 
         LayerMask someLayerMask = -1;
@@ -98,10 +88,6 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                         //Calculate the direction from the laser to the asteroid hit point
                         Vector3 direction = (transform.position - hit.point).normalized;
 
-                        //Add force to the asteroid (negative direction because we should push away, not toward)
-                        //asteroidScript.rb.AddForce(-direction * COLLISION_ASTEROID_FORCE);
-                        //asteroidScript.rb.AddTorque(-direction * COLLISION_ASTEROID_FORCE);
-
                         //Damage the asteroid
                         asteroidScript.Damage(1, direction, hit.point, true);
                     }
@@ -110,16 +96,17 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                     control.ui.tipAimNeedsHelpCertainty = 0f;
                 }
             }
-            else if (hit.transform.name == control.generation.enemy.name + "(Clone)")
+            else if (hit.transform.name == control.generation.playerPrefab.name + "(Clone)")
             {
                 if (canDamage)
                 {
                     //Calculate the direction from the laser to the asteroid hit point
                     Vector3 direction = (transform.position - hit.point).normalized;
 
-                    //Damage the enemy
-                    Enemy enemyScript = hit.transform.GetComponent<Enemy>();
-                    enemyScript.Damage(1, direction, hit.point, true);
+                    //Damage the player
+                    //control.GetPlayerScript().DamagePlayer(control.GetPlayerScript().vitalsHealth - 1.0d, "enemy weapons fire", 1.0f);
+                    //Enemy enemyScript = hit.transform.GetComponent<Enemy>();
+                    //enemyScript.Damage(1, direction, hit.point, true);
                 }
 
                 //Reset tooltip certainty
@@ -129,29 +116,11 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
             //Can no longer deal damage
             canDamage = false;
-
-            //Deactivate self
-            //DeactivateSelf();
         }
     }
 
     void OnCollisionEnter(Collision collision)
     {
-        //Debug.Log("Collision!");
-
         DeactivateSelf();
-
-        //if (collision.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
-        //{
-        //    DeactivateSelf();
-        //}
-    }
-
-    private void UpdateEmissionAndLuminosity()
-    {
-        bool glow = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > MIN_GLOW_DISTANCE; //todo add SPECIFICALLY forward velocity of player (use dot product?)
-
-        transform.Find("Emissive Model").gameObject.SetActive(glow);
-        transform.Find("Point Light").gameObject.SetActive(glow);
     }
 }
