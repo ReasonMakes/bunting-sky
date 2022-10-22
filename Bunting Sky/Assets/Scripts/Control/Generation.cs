@@ -372,36 +372,38 @@ public class Generation : MonoBehaviour
         if (generationType != GENERATION_TYPE_LOADED_GAME)
         {
             //Moons
-            GameObject instanceMoonCluster = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
+            GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
 
             //Asteroid belt (some percent of all planets have one)
             float nPercentAsteroidBelts = 50f;
             if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
             {
-                AsteroidPoolSpawnCluster(CLUSTER_TYPE_PLANET_RINGS, Asteroid.GetRandomType(), position);
+                AsteroidPoolSpawnCluster(
+                    CLUSTER_TYPE_PLANET_RINGS,
+                    Asteroid.GetRandomType(),
+                    position,
+                    false
+                );
             }
 
-            ////Enemy (some percent of all planets have them)
-            //float nPercentEnemies = 50f;
-            //if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
-            //{
-            //    EnemySpawnCluster(CLUSTER_TYPE_PLANET_CLUMP, position);
-            //}
+            //Enemy (some percent of all planets have them)
+            float nPercentEnemies = 50f;
+            if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
+            {
+                EnemySpawnCluster(CLUSTER_TYPE_PLANET_CLUMP, position);
+            }
 
             //If home planetary system
             if (planetarySystemIndex == 0)
             {
                 //Set home moon
-                playerSpawnMoon = instanceMoonCluster;
+                playerSpawnMoon = instanceLastMoonSpawnedInCluster;
 
                 //Player
                 PlayerSpawn(
                     generationType,
                     playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
                 );
-
-                //Spawn test enemy
-                EnemySpawnCluster(CLUSTER_TYPE_PLANET_CLUMP, position);
             }
         }
 
@@ -498,14 +500,21 @@ public class Generation : MonoBehaviour
                 null, false, 0f, 0f, 0f, null
             );
 
+            //Debug.Log("moonIndex " + moonIndex + " / " + nMoons + " moons");
             //Spawn asteroid belt (some percentage of moons have them)
             float nPercentAsteroidBelts = 50f;
-            if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+            if (moonIndex == nMoons - 1 || Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
             {
-                AsteroidPoolSpawnCluster(CLUSTER_TYPE_MOON_RINGS, Asteroid.GetRandomType(), position);
+                AsteroidPoolSpawnCluster(
+                    CLUSTER_TYPE_MOON_RINGS,
+                    Asteroid.GetRandomType(),
+                    position,
+                    true
+                );
             }
         }
 
+        //Return the last moon spawned
         return instanceMoon;
     }
 
@@ -708,25 +717,39 @@ public class Generation : MonoBehaviour
         return instanceAsteroid;
     }
 
-    private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position)
+    private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position, bool guaranteeValuables)
     {
         if (clusterType == CLUSTER_TYPE_PLANET_RINGS || clusterType == CLUSTER_TYPE_MOON_RINGS)
         {
-            int nAsteroids = 70;
-            float chancePercentOfValuableType = 10f;
-            float radius = 170f;
+            int nAsteroids = 0;
+            float chancePercentOfValuableType = 0f;
+            float radius = 0f;
             
             if (clusterType == CLUSTER_TYPE_PLANET_RINGS)
             {
-                nAsteroids = 70;
-                chancePercentOfValuableType = 10f;
                 radius = 170f;
+                nAsteroids = 100; //70;
+                if (guaranteeValuables)
+                {
+                    chancePercentOfValuableType = 20f;
+                }
+                else
+                {
+                    chancePercentOfValuableType = Random.Range(0f, 30f); //10f;
+                }
             }
             else if (clusterType == CLUSTER_TYPE_MOON_RINGS)
             {
-                nAsteroids = 30;
-                chancePercentOfValuableType = 20f;
                 radius = 60f;
+                nAsteroids = 40; //70;
+                if (guaranteeValuables)
+                {
+                    chancePercentOfValuableType = 30f;
+                }
+                else
+                {
+                    chancePercentOfValuableType = Random.Range(0f, 40f); //10f;
+                }
             }
 
             float radiusRandomness = 0.12f * radius;
@@ -741,7 +764,6 @@ public class Generation : MonoBehaviour
 
                 //Pick whether clay-silicate or valuable
                 byte oreToSpawnAs = Asteroid.TYPE_CLAY_SILICATE;
-                //if (i % ((chancePercentOfValuableType / 100f) * nAsteroids) == 0)
                 if (Control.GetTrueForPercentOfIndices(i, nAsteroids, chancePercentOfValuableType))
                 {
                     oreToSpawnAs = oreType;
@@ -835,12 +857,9 @@ public class Generation : MonoBehaviour
                 //Position to spawn at
                 position += new Vector3(
                     Mathf.Cos(Mathf.Deg2Rad * angle) * radius,
-                    0f,
+                    30f,
                     Mathf.Sin(Mathf.Deg2Rad * angle) * radius
                 );
-
-                //Temporary debug position override
-                position = playerSpawnMoon.transform.position + new Vector3(6f, 22f, 2f);
 
                 //Spawn the enemy
                 GameObject instanceEnemy = EnemySpawn(position);

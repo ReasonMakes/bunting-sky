@@ -21,7 +21,10 @@ public class Enemy : MonoBehaviour
 
     //Weapons
     private float weaponCooldown = 0f;
-    private float weaponCooldownMax = 2f; //Time in seconds between shots
+    private readonly float WEAPON_COOLDOWN_MAX = 2f; //Time in seconds between shots
+    private readonly float WEAPON_COOLDOWN_WITHIN_BURST = 0.1f; //Time in seconds between shots
+    private int weaponBurst = 3;
+    private readonly int WEAPON_BURST_MAX = 4;
 
     //Behaviour settings
     [System.NonSerialized] public Vector3 spawnPointRaw = Vector3.zero;
@@ -96,7 +99,15 @@ public class Enemy : MonoBehaviour
                 else
                 {
                     //BEHAVIOUR (moving and shooting)
-                    aggro = (Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO);
+                    if (control.GetPlayerScript().isDestroyed)
+                    {
+                        aggro = false;
+                    }
+                    else
+                    {
+                        aggro = (Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO);
+                    }
+
                     if (aggro)
                     {
                         //destination = control.GetPlayerTransform().position;
@@ -126,18 +137,23 @@ public class Enemy : MonoBehaviour
 
     private void UpdateEnemyMovementTorque()
     {
-        //Angular drag to smooth out torque
-        rb.angularDrag = angularDragWhenEnginesOn;
-
         //Thank you Tobias, Conkex, HiddenMonk, and Derakon
         //https://answers.unity.com/questions/727254/use-rigidbodyaddtorque-with-quaternions-or-forward.html
 
-        //TORQUE DRIECTION
+        //DRAG
+        //Angular drag to smooth out torque
+        rb.angularDrag = angularDragWhenEnginesOn;
+
+        //DIRECTION
         //Vector to look toward
         Vector3 directionToDestinationToLookAt = Vector3.Normalize(destination - transform.position);
 
         //The rotation to look at that point
-        Quaternion rotationToLookAtDestination = Quaternion.LookRotation(directionToDestinationToLookAt);
+        Quaternion rotationToLookAtDestination = Quaternion.identity;
+        if (directionToDestinationToLookAt != Vector3.zero)
+        {
+            rotationToLookAtDestination = Quaternion.LookRotation(directionToDestinationToLookAt);
+        }
 
         //The rotation from how the ship is currently rotated to looking at the player
         //Multiplying by inverse is equivalent to subtracting
@@ -146,6 +162,7 @@ public class Enemy : MonoBehaviour
         //Parse Quaternion to Vector3
         Vector3 torqueVector = new Vector3(rotation.x, rotation.y, rotation.z) * rotation.w;
 
+        //STRENGTH
         //Adding all modifiers together
         float torqueStrength = torqueBaseStrength * rb.angularDrag * Time.deltaTime;
 
@@ -234,11 +251,21 @@ public class Enemy : MonoBehaviour
         {
             //Fire only if aiming in the general direction of the player
             float aimLinedUp = (Vector3.Dot(Vector3.Normalize(control.GetPlayerTransform().position - transform.position), transform.forward) + 1f) / 2f; //0 to 1 depending on how accurately facing the player
-            if (aimLinedUp >= 0.95f) //How close to aiming at target before willing to attempt firing
+            if (aimLinedUp >= 0.95f || weaponBurst < WEAPON_BURST_MAX) //How close to aiming at target before willing to attempt firing
             {
                 //Fire
                 GetComponent<EnemyWeaponLaser>().Fire();
-                weaponCooldown = weaponCooldownMax;
+
+                if (weaponBurst <= 1)
+                {
+                    weaponBurst = WEAPON_BURST_MAX;
+                    weaponCooldown = WEAPON_COOLDOWN_MAX;
+                }
+                else
+                {
+                    weaponBurst--;
+                    weaponCooldown = WEAPON_COOLDOWN_WITHIN_BURST;
+                }
             }
         }
     }
@@ -252,27 +279,27 @@ public class Enemy : MonoBehaviour
         if (this.strength == STRENGTH_SMALL)
         {
             modelGroup = modelGroupStrengthWeak;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
             health = 4;
         }
         else if (this.strength == STRENGTH_MEDIUM)
         {
             modelGroup = modelGroupStrengthMedium;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
             health = 4;
         }
         else if (this.strength == STRENGTH_LARGE)
         {
             modelGroup = modelGroupStrengthLarge;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
             health = 4;
         }
@@ -417,7 +444,7 @@ public class Enemy : MonoBehaviour
             );
 
             instanceAsteroid.GetComponent<Asteroid>().PassRigidbodyValuesAndAddRandomForce(
-                rb.velocity,
+                Vector3.one * ((0.5f + (0.5f * Random.value)) * 5f), //rb.velocity,
                 rb.angularVelocity,
                 rb.inertiaTensor,
                 rb.inertiaTensorRotation

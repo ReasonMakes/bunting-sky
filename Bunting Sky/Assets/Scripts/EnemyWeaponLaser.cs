@@ -15,6 +15,8 @@ public class EnemyWeaponLaser : MonoBehaviour
     [System.NonSerialized] public static readonly float PROJECTILE_SPEED = 50f; //80f; //120f;
     private float projectileLifetimeDuration = 4.5f; //THIS GETS CHANGED DYNAMICALLY
 
+    [System.NonSerialized] public static readonly double DAMAGE = 1.0d;
+
     private void Start()
     {
         projectileLifetimeDuration = 19.2f;

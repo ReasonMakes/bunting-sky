@@ -80,6 +80,8 @@ public class UI : MonoBehaviour
     private readonly float TIP_AIM_THRESHOLD_CERTAINTY = 4f;
     [System.NonSerialized] public readonly float TIP_AIM_THRESHOLD_ACCURACY = 0.995f;
     public string tipAimText;
+    private float tipTextAlphaDecrementDelay = 0f;
+    private readonly float TIP_TEXT_ALPHA_DECREMENT_RATE = 0.01f;
 
     //Player reference
     [System.NonSerialized] private Player playerScript;
@@ -173,9 +175,17 @@ public class UI : MonoBehaviour
         //Tip animation
         if (tipText.color.a > 0f)
         {
-            float tipTextAlphaDecrement = 0.01f;
-            float tipTextAlphaAdjustment = tipText.color.a - (tipTextAlphaDecrement * ((1f - tipText.color.a) + tipTextAlphaDecrement));
-            tipText.color = new Color(1f, 1f, 1f, Mathf.Max(0f, tipTextAlphaAdjustment));
+            if (tipTextAlphaDecrementDelay <= 0f)
+            {
+                //Text slowly becomes translucent
+                float tipTextAlphaAdjustment = tipText.color.a - (TIP_TEXT_ALPHA_DECREMENT_RATE * ((1f - tipText.color.a) + TIP_TEXT_ALPHA_DECREMENT_RATE));
+                tipText.color = new Color(1f, 1f, 1f, Mathf.Max(0f, tipTextAlphaAdjustment));
+            }
+            else
+            {
+                //Decrement the decrement delay
+                tipTextAlphaDecrementDelay = Mathf.Max(0f, tipTextAlphaDecrementDelay - Time.deltaTime);
+            }
         }
     }
 
@@ -195,32 +205,42 @@ public class UI : MonoBehaviour
     #region Tip
     private void UpdateTipCertainty()
     {
-        //AUTO TORQUING
-        if (tipAimNeedsHelpCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
-        {
-            SetTip(tipAimText, ref tipAimNeedsHelpCertainty);
-        }
+        //Provide a tip if a player repeatedly demonstrates a lack of understanding about that game feature
 
-        //Don't recommend auto torquing if firing when fuel is empty
-        if (playerScript.vitalsFuel <= 0d)
-        {
-            tipAimNeedsHelpCertainty = 0f;
-        }
-
-        //Decay
-        tipAimNeedsHelpCertainty = Mathf.Max(0f, tipAimNeedsHelpCertainty - TIP_CERTAINTY_DECAY);
+        ////AUTO TORQUING
+        //if (tipAimNeedsHelpCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
+        //{
+        //    SetTip(tipAimText, ref tipAimNeedsHelpCertainty);
+        //}
+        //
+        ////Don't recommend auto torquing if firing when fuel is empty
+        //if (playerScript.vitalsFuel <= 0d)
+        //{
+        //    tipAimNeedsHelpCertainty = 0f;
+        //}
+        //
+        ////Decay
+        //tipAimNeedsHelpCertainty = Mathf.Max(0f, tipAimNeedsHelpCertainty - TIP_CERTAINTY_DECAY);
     }
 
     public void SetTip(string text)
     {
         tipText.text = text;
-        tipText.color = Color.white;
+        tipText.color = Color.white; //reset alpha
+    }
+
+    public void SetTip(string text, float duration)
+    {
+        tipText.text = text;
+        tipText.color = Color.white; //reset alpha
+
+        tipTextAlphaDecrementDelay = duration;
     }
 
     public void SetTip(string text, ref float certainty)
     {
         tipText.text = text;
-        tipText.color = Color.white;
+        tipText.color = Color.white; //reset alpha
 
         certainty = 0f;
     }
@@ -230,16 +250,30 @@ public class UI : MonoBehaviour
         tipAimText = "Hold " + GetBindAsPrettyString(control.binds.bindAlignShipToReticle) + " to torque your starship in the direction you're looking!";
     }
 
-    private string GetBindAsPrettyString(short bind)
+    public string GetBindAsPrettyString(short bind)
     {
-        //Convert from our proprietary binds saving format of short back to KeyCode and read as string
-        string pretty = ((KeyCode)bind).ToString();
+        string pretty;
 
-        //Add spaces in between capitals (useful for binds like "LeftShift")
-        pretty = Control.InsertSpacesInFrontOfCapitals(pretty);
+        if (bind >= 1000 && bind <= 1004)
+        {
+            if (bind == control.binds.MOUSE_PRIMARY)            { pretty = "mouse primary"; }
+            else if (bind == control.binds.MOUSE_SECONDARY)     { pretty = "mouse secondary"; }
+            else if (bind == control.binds.MOUSE_MIDDLE)        { pretty = "mouse middle"; }
+            else if (bind == control.binds.MOUSE_SCROLL_UP)     { pretty = "scroll up"; }
+            else if (bind == control.binds.MOUSE_SCROLL_DOWN)   { pretty = "scroll down"; }
+            else                                                { pretty = "unrecognized keycode"; }
+        }
+        else
+        {
+            //Convert from our proprietary binds saving format of short back to KeyCode and read as string
+            pretty = ((KeyCode)bind).ToString();
 
-        //Make all lowercase
-        pretty = pretty.ToLower();
+            //Add spaces in between capitals (useful for binds like "LeftShift")
+            pretty = Control.InsertSpacesInFrontOfCapitals(pretty);
+
+            //Make all lowercase
+            pretty = pretty.ToLower();
+        }
 
         //Surround with square brackets
         pretty = "[" + pretty + "]";

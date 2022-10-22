@@ -50,7 +50,7 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
+    private readonly float THRUST = 10000f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
     private float matchVelOffThrustModifier = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
@@ -139,11 +139,12 @@ public class Player : MonoBehaviour
 
     #region Init fields: Vitals
     //Vitals
-    [System.NonSerialized] public double vitalsHealth = 10.0; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
-    [System.NonSerialized] public double vitalsHealthMax = 10.0;
-    private readonly double VITALS_HEALTH_MAX_STARTER = 10.0;
+    [System.NonSerialized] public double vitalsHealth = 10.0d; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
+    [System.NonSerialized] public double vitalsHealthMax = 10.0d;
+    private readonly double VITALS_HEALTH_MAX_STARTER = 10.0d;
+    private string lastDamageCause = "[no damage event detected]";
     [System.NonSerialized] public bool isDestroyed = false;
-    [System.NonSerialized] public double vitalsFuel = 3.0; //this is overridden by generation, as fuel needs to be reset every new game
+    [System.NonSerialized] public double vitalsFuel = 3.0d; //this is overridden by generation, as fuel needs to be reset every new game
     [System.NonSerialized] public double vitalsFuelMax = 4.0d;
     private readonly double VITALS_FUEL_MAX_STARTER = 4.0d;
     [System.NonSerialized] public double vitalsFuelConsumptionRate = 0.025d;
@@ -156,6 +157,16 @@ public class Player : MonoBehaviour
     private float warningUIFlashPosition = 0f;
     private readonly float WARNING_UI_FLASH_RATE = 10f;
     private float warningUIFlashTotalDuration = 5f; //This must be odd-numbered or it will not end smoothly (end while transparent)
+    private int tutorialLevel = 0; //Which tutorial tip should be displayed next?
+    private float tutorialTime = 0f; //The game time at which the next tutorial tip can be displayed
+    private readonly float TUTORIAL_DELAY = 6f; //The standard delay between timed tutorial tips, in seconds
+    private readonly float TUTORIAL_TIP_DURATION = 2f; //The standard delay between timed tutorial tips, in seconds
+    public bool tutorialHasMinedAsteroid = false;
+    public bool tutorialHasExitedStationDock = false;
+    public int tutorialMoonVisitedID1 = -1;
+    public int tutorialMoonVisitedID2 = -1;
+    public int tutorialMoonVisitedID3 = -1;
+    public bool tutorialHasUsedHeighliner = false;
     #endregion
 
     #region Init fields: Cargo
@@ -214,11 +225,20 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
+        //Dev mode modifications
+        if (control.IS_EDITOR)
+        {
+            thrustCheat = 2f;
+        }
+
         //MODEL
         DecideWhichModelsToRender();
 
         //SKYBOX
         skyboxStarsParticleSystem.Emit(SKYBOX_STARS_COUNT);
+
+        //Setup the first tutorial tip to display after a short delay
+        tutorialTime = Time.time + TUTORIAL_DELAY;
     }
 
     public void LateStart()
@@ -279,7 +299,7 @@ public class Player : MonoBehaviour
     #region Update/fixed update & their slow versions
     private void Update()
     {
-        //DEBUG
+        //CHEATS/DEBUG
         //---------------------------------------------------
 
         //control.ui.SetTip(
@@ -289,17 +309,19 @@ public class Player : MonoBehaviour
 
         //I or O to cheat
 
-        if (binds.GetInput(binds.bindCheat1))
-        {
-            rb.velocity = -transform.right * 8f;
-            control.ui.SetTip("Velocity: " + rb.velocity);
-        }
-        if (binds.GetInput(binds.bindCheat2))
-        {
-            rb.velocity = transform.right * 8f;
-            control.ui.SetTip("Velocity: " + rb.velocity);
-        }
+        ////Constant velocity
+        //if (binds.GetInput(binds.bindCheat1))
+        //{
+        //    rb.velocity = -transform.right * 8f;
+        //    control.ui.SetTip("Velocity: " + rb.velocity);
+        //}
+        //if (binds.GetInput(binds.bindCheat2))
+        //{
+        //    rb.velocity = transform.right * 8f;
+        //    control.ui.SetTip("Velocity: " + rb.velocity);
+        //}
 
+        ////Time warp
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
         //    Time.timeScale += 0.25f;
@@ -314,6 +336,7 @@ public class Player : MonoBehaviour
         //    control.ui.SetTip(Time.timeScale + "x");
         //}
 
+        ////Super thrust
         //if (binds.GetInputDown(binds.bindCheat1))
         //{
         //    thrustCheat += 0.25f;
@@ -433,11 +456,23 @@ public class Player : MonoBehaviour
         //    control.ui.UpdateAllPlayerResourcesUI();
         //}
 
-        ////Teleport forward
-        //if (binds.GetInputDown(binds.bindCheat1))
-        //{
-        //    transform.position += transform.forward * 400f;
-        //}
+        //Teleport forward
+        if (control.IS_EDITOR)
+        {
+            //Cheats enabled only while in editor
+            if (binds.GetInputDown(binds.bindCheat1))
+            {
+                transform.position += transform.forward * 400f;
+            }
+
+            //Unlock seismic charges
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+                control.ui.SetTip("Seismic charges unlocked.");
+            }
+        }
+        
 
         //Spawn
         //Press O to spawn asteroid
@@ -539,10 +574,8 @@ public class Player : MonoBehaviour
             bool hasUpgrade = upgradeLevels[control.commerce.UPGRADE_IN_SITU_FUEL_REFINERY] >= 1;
             bool hasEnoughOre = ore[ORE_WATER] > REFINERY_ORE_WATER_IN_RATE;
             bool enoughTimeHasPassed = Time.time > refineryTimeAtLastRefine + REFINERY_TIME_BETWEEN_REFINES;
-
             if (missingEnoughFuel && hasUpgrade && hasEnoughOre && enoughTimeHasPassed && control.settings.refine)
             {
-                //control.ui.SetTip("Fuel produced by in situ refinery");
                 ore[ORE_WATER] -= REFINERY_ORE_WATER_IN_RATE;
                 vitalsFuel += REFINERY_FUEL_OUT_RATE;
                 control.ui.UpdatePlayerOreWaterText();
@@ -566,12 +599,6 @@ public class Player : MonoBehaviour
                 warningUIFlashPosition = 1f;
             }
 
-            ////Night vision outline
-            //if (binds.GetInputDown(binds.bindToggleOutline))
-            //{
-            //    ToggleOutline();
-            //}
-
             //Collision immunity wears off
             float collisionImmunityPeriod = 0.25f; //Time in seconds the player will be immune for
             float collisionImmunityDecrementRate = Time.deltaTime / collisionImmunityPeriod;
@@ -581,7 +608,91 @@ public class Player : MonoBehaviour
             float weaponUsedRecentlyPeriod = 0.25f; //Time in seconds the player will be immune for
             float weaponUsedRecentlyDecrementRate = Time.deltaTime / weaponUsedRecentlyPeriod;
             weaponUsedRecently = Mathf.Max(0f, weaponUsedRecently - weaponUsedRecentlyDecrementRate);
+
+            //Show death reason constantly if dead
+            if (isDestroyed)
+            {
+                //control.ui.SetTip("Your ship was destroyed, and you have died.\nCause: " + lastDamageCause);
+                //control.ui.SetTip("You died.\nLast recorded warning message:\n" + lastDamageCause);
+                control.ui.SetTip("Your ship has been destroyed, and you have died\nLast recorded warning: \"" + lastDamageCause + "\"");
+            }
+            else
+            {
+                //Show tutorial
+                if (tutorialTime <= Time.time)
+                {
+                    if (tutorialLevel == 0)
+                    {
+                        control.ui.SetTip(
+                            "Fly with "
+                            + control.ui.GetBindAsPrettyString(binds.bindThrustForward) + ", "
+                            + control.ui.GetBindAsPrettyString(binds.bindThrustLeft) + ", "
+                            + control.ui.GetBindAsPrettyString(binds.bindThrustBackward) + ", "
+                            + control.ui.GetBindAsPrettyString(binds.bindThrustRight) + ", "
+                            + control.ui.GetBindAsPrettyString(binds.bindThrustDown) + ", and "
+                            + control.ui.GetBindAsPrettyString(binds.bindThrustUp),
+                            TUTORIAL_TIP_DURATION
+                        );
+                        IncrementTutorial();
+                    }
+                    else if (tutorialLevel == 1)
+                    {
+                        control.ui.SetTip(
+                            "You can always disable tips in Menu > Settings (press [ESC])",
+                            TUTORIAL_TIP_DURATION
+                        );
+                        IncrementTutorial();
+                    }
+                    else if (tutorialLevel == 2)
+                    {
+                        control.ui.SetTip(
+                            "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
+                            TUTORIAL_TIP_DURATION
+                        );
+                        IncrementTutorial();
+                    }
+                    else if (tutorialLevel == 3)
+                    {
+                        control.ui.SetTip(
+                            "Mine asteroids for valuable materials - press " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire) + " to fire your weapon",
+                            TUTORIAL_TIP_DURATION + 1.5f
+                        );
+                        IncrementTutorial();
+                    }
+                    else if (tutorialLevel == 4 && tutorialHasMinedAsteroid)
+                    {
+                        control.ui.SetTip(
+                            "Sell your cargo at space stations to afford fuel, repairs, and upgrades",
+                            TUTORIAL_TIP_DURATION
+                        );
+                        IncrementTutorial();
+                    }
+                    else if (tutorialLevel == 5 && tutorialHasExitedStationDock)
+                    {
+                        control.ui.SetTip(
+                            "New moons may have asteroids of differing compositions, but beware:\nbandits may be looking to steal your cargo, your ship, and your life",
+                            TUTORIAL_TIP_DURATION + 2f
+                        );
+                        IncrementTutorial();
+                    }
+                    else if (tutorialLevel == 6 && !tutorialHasUsedHeighliner && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1)
+                    {
+                        //Seen all other tips, hasn't visited a heighliner, and has visited several moons
+                        control.ui.SetTip(
+                            "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
+                            TUTORIAL_TIP_DURATION + 2f
+                        );
+                        IncrementTutorial();
+                    }
+                }
+            }
         }
+    }
+
+    private void IncrementTutorial()
+    {
+        tutorialLevel++;
+        tutorialTime = Time.time + TUTORIAL_DELAY + TUTORIAL_TIP_DURATION + 1f; //Add a minimum delay before displaying next tip
     }
 
     private void FixedUpdate()
@@ -647,7 +758,40 @@ public class Player : MonoBehaviour
 
     private void VerySlowUpdate()
     {
-        
+        //Tutorial - has the player visited a few moons?
+        Debug.Log("ID1: " + tutorialMoonVisitedID1);
+        Debug.Log("ID2: " + tutorialMoonVisitedID2);
+        Debug.Log("ID3: " + tutorialMoonVisitedID3);
+        Debug.Log("------");
+
+        if (tutorialMoonVisitedID1 == -1 || tutorialMoonVisitedID2 == -1 || tutorialMoonVisitedID3 == -1)
+        {
+            if (distToClosestMoon <= 60f)
+            {
+                if (tutorialMoonVisitedID1 == -1)
+                { 
+                    tutorialMoonVisitedID1 = GetNearestMoonID(); 
+                }
+                else if (tutorialMoonVisitedID2 == -1 && tutorialMoonVisitedID1 != GetNearestMoonID())
+                {
+                    tutorialMoonVisitedID2 = GetNearestMoonID();
+                }
+                else if (tutorialMoonVisitedID3 == -1 && tutorialMoonVisitedID2 != GetNearestMoonID() && tutorialMoonVisitedID1 != GetNearestMoonID())
+                {
+                    tutorialMoonVisitedID3 = GetNearestMoonID();
+                }
+            }
+        }
+    }
+
+    private int GetNearestMoonID()
+    {
+        Transform visitedMoonTransfrom = control.GetClosestSpecificTransformFromHierarchy(
+            control.generation.moon.name + "(Clone)",
+            control.generation.moons.transform,
+            transform.position
+        );
+        return visitedMoonTransfrom.GetSiblingIndex();
     }
 
     private void SlowFixedUpdate()
@@ -785,7 +929,7 @@ public class Player : MonoBehaviour
         //TODO
         //Don't overshoot: calculate if we have enough time to slow down rotation so we don't overshoot, and when we don't, torque in the opposite direction
 
-        if (vitalsFuel > 0.0)
+        if (vitalsFuel > 0.0d)
         {
             if (tempEngineDisable <= 0f && control.settings.spinStabilizers)
             {
@@ -798,7 +942,19 @@ public class Player : MonoBehaviour
                 rb.angularDrag = 0f;
             }
 
-            if (tempEngineDisable <= 0f && !binds.GetInput(binds.bindCameraFreeLook) && (canAndIsMoving || binds.GetInput(binds.bindAlignShipToReticle)))
+            //When to torque
+            if (
+                tempEngineDisable <= 0f
+                && !binds.GetInput(binds.bindCameraFreeLook)
+                && (
+                    canAndIsMoving
+                    || binds.GetInput(binds.bindAlignShipToReticle)
+                    || (
+                        vitalsFuel > 0.0d
+                        && binds.GetInput(binds.bindPrimaryFire)
+                    )
+                )
+            )
             {
                 //Angular drag to smooth out torque
                 rb.angularDrag = angularDragWhenEnginesOn;
@@ -863,7 +1019,7 @@ public class Player : MonoBehaviour
         thrustVector = Vector3.zero;
 
         //Move if fuel
-        if ((tempEngineDisable <= 0f || tempEngineDisableButFlickering) && vitalsFuel > 0.0)
+        if ((tempEngineDisable <= 0f || tempEngineDisableButFlickering) && vitalsFuel > 0.0d)
         {
             //Thrusting forward
             if (binds.GetInput(binds.bindThrustForward))
@@ -1020,6 +1176,7 @@ public class Player : MonoBehaviour
             if
             (
                 !isDestroyed
+                && vitalsFuel >= 0.0d
                 && Application.isFocused
                 && !Menu.menuOpenAndGamePaused
                 && !Commerce.menuOpen
@@ -1220,20 +1377,23 @@ public class Player : MonoBehaviour
         {
             playerWeaponLaser.Fire();
 
-            if (
-                !binds.GetInput(binds.bindCameraFreeLook) &&
-                !canAndIsMoving &&
-                !binds.GetInput(binds.bindAlignShipToReticle) &&
-                Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY
-                )
-            {
-                control.ui.tipAimNeedsHelpCertainty++;
-            }
+            //Auto-torquing tip
+            //if (
+            //    !binds.GetInput(binds.bindCameraFreeLook) &&
+            //    !canAndIsMoving &&
+            //    !binds.GetInput(binds.bindAlignShipToReticle) &&
+            //    Mathf.Abs(Quaternion.Dot(transform.localRotation, centreMountTran.localRotation)) < control.ui.TIP_AIM_THRESHOLD_ACCURACY
+            //    )
+            //{
+            //    control.ui.tipAimNeedsHelpCertainty++;
+            //}
         }
         else if (weaponSelectedTitle == "Seismic charges")
         {
             playerWeaponSeismicCharge.Fire();
-            control.ui.tipAimNeedsHelpCertainty = 0f;
+
+            //Auto-torquing tip
+            //control.ui.tipAimNeedsHelpCertainty = 0f;
         }
     }
 
@@ -1449,7 +1609,6 @@ public class Player : MonoBehaviour
     {
         Player.outline = !Player.outline;
         UpdateOutlines();
-        //control.ui.SetTip("Outline toggled to " + Player.outline);
     }
     #endregion
 
@@ -1494,16 +1653,18 @@ public class Player : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         //COLLISION PROPERTIES
+        //Was it a weapon?
+        bool isBanditLaser = (collision.collider.name == control.generation.enemy.GetComponent<EnemyWeaponLaser>().enemyWeaponProjectileLaserPrefab.GetComponentInChildren<MeshCollider>().name);
+
         //Collision speed
         float impactIntoleranceThreshold = 5f;
         float impactIntoleranceRange = 6f;
         float impactMaxDamage = 3f;
-
         Vector3 impactDeltaV = collision.relativeVelocity;
 
         //SELF
         double damageToDeal = 0.0d;
-        if (impactDeltaV.magnitude >= impactIntoleranceThreshold && collisionImmunity <= 0f)
+        if (isBanditLaser || impactDeltaV.magnitude >= impactIntoleranceThreshold && collisionImmunity <= 0f)
         {
             //Play sound effect
             soundSourceCollision.volume = 0.05f;
@@ -1511,19 +1672,40 @@ public class Player : MonoBehaviour
             soundSourceCollision.Play();
 
             //Damage
-            damageToDeal = Math.Min(
-                    impactIntoleranceThreshold * impactIntoleranceRange,
-                    impactDeltaV.magnitude
-                ) / (impactIntoleranceThreshold * impactIntoleranceRange / impactMaxDamage);
-
+            if (isBanditLaser)
+            {
+                //Damage is hardcoded per-projectile
+                damageToDeal = EnemyWeaponLaser.DAMAGE;
+            }
+            else
+            {
+                //Damage depends on impact speed
+                damageToDeal = Mathf.Min(
+                        impactIntoleranceThreshold * impactIntoleranceRange,
+                        impactDeltaV.magnitude
+                    ) / (impactIntoleranceThreshold * impactIntoleranceRange / impactMaxDamage);
+            }
+            //Subtract damage from current health
             double newHealthAmount = Math.Max(
                 0.0,
                 vitalsHealth - damageToDeal
             );
 
+            //Damage event cause
+            string cause;
+            if (isBanditLaser)
+            {
+                cause = "bandit laser impact";
+            }
+            else
+            {
+                cause = "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv";
+            }
+            
+            //Damage the player
             DamagePlayer(
                 newHealthAmount,
-                "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv",
+                cause,
                 (float)damageToDeal
             );
         }
@@ -1563,7 +1745,8 @@ public class Player : MonoBehaviour
             control.ui.UpdatePlayerVitalsDisplay(); //force a vitals update so that you can immediately see your health change
             FlashWarning("WARNING: " + cause + "\nHull integrity compromised"); //⚠
                                                                                 //deathMessage = "You died.\nLast recorded warning message: " + cause
-            
+            lastDamageCause = cause;
+
             if (vitalsHealth <= 0f)
             {
                 DestroyPlayer();

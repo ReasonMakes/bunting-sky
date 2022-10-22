@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Atmosphere
+  m_Shader: {fileID: -6465566751694194690, guid: ff5a1a01ae214ec40b32995d5af2b67f, type: 3}
+  m_ShaderKeywords: BOOLEAN_833C72E7_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - Texture2D_EA85A395:
+        m_Texture: {fileID: 2800000, guid: dffef66376be4fa480fb02b19edbe903, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - BOOLEAN_833C72E7: 1
+    - Vector1_11508988: 4
+    - Vector1_3E2515AA: 0.5
+    - Vector1_3E60F132: 0.06
+    - Vector1_CEB6DF8E: 0.01
+    - Vector1_CFC0D0E0: 0.25
+    - Vector1_D7C84CB5: 0.63
+    - _Alpha: 1
+    - _NightVisionOutline: 0
+    m_Colors:
+    - Color_58D26B04: {r: 0.7529412, g: 1.9764706, b: 2.9960785, a: 1}
+    - _Tint: {r: 1, g: 1, b: 1, a: 0}
+  m_BuildTextureStacks: []

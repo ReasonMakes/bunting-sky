@@ -66,6 +66,7 @@ public class Settings : MonoBehaviour
 
     public void InitIOBuffer()
     {
+        //Defaults
         ioBuffer = new IOBuffer();
         ioBuffer.mouseSensitivity = 3f;
         ioBuffer.hFieldOfView = 103f;
@@ -82,33 +83,8 @@ public class Settings : MonoBehaviour
         ioBuffer.fullscreen = true;
         ioBuffer.matchVelocity = true;
         ioBuffer.spinStabilizers = true;
-        if (control.IS_EDITOR)
-        {
-            ioBuffer.asteroidsConcurrentMin = 16;
-            ioBuffer.asteroidsConcurrentMax = 40;
-        }
-        else
-        {
-            ioBuffer.asteroidsConcurrentMin = 40;
-            ioBuffer.asteroidsConcurrentMax = 65;
-        }
-        //ioBuffer = new IOBuffer
-        //{
-        //    //Set defaults
-        //    mouseSensitivity = 3f,
-        //    hFieldOfView = 103f,
-        //    cameraFollowDistance = CAMERA_DISTANCE_MIN, //1.0f, //0.025 increments from scroll wheel
-        //    cameraFollowHeight = 0.2f,
-        //    displayFPS = false,
-        //    displayHUD = true,
-        //    targetFPS = 300,
-        //    spotlightOn = true,
-        //    refine = true,
-        //    music = true,
-        //    tips = true,
-        //    asteroidsConcurrentMin = 16,
-        //    asteroidsConcurrentMax = 40
-        //};
+        ioBuffer.asteroidsConcurrentMin = 900;
+        ioBuffer.asteroidsConcurrentMax = 1500;
     }
 
     public void SetIOBufferToSettings()

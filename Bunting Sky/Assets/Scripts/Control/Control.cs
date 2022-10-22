@@ -299,5 +299,41 @@ public class Control : MonoBehaviour
         //RETURN CLOSEST TRANSFORM
         return closestTransform;
     }
+
+    public Transform GetClosestSpecificTransformFromHierarchy(string name, Transform hierarchy, Vector3 positionRelativeTo)
+    {
+        //VARIABLE TO RETURN LATER
+        Transform closestTransform = null;
+
+        //CHECK DISTANCES OF ALL TRANSFORMS IN HIERARCHY
+        //Start with infinity distance away to compare to
+        float closestDistanceSoFar = Mathf.Infinity;
+
+        //Loop through all transforms
+        int nTransformsToCheck = hierarchy.childCount;
+        for (int i = 0; i < nTransformsToCheck; i++)
+        {
+            //The transform that we are currently checking
+            Transform transformToCheck = hierarchy.GetChild(i);
+
+            //Ensure this transform is one of the specific clones we want to check for
+            if (transformToCheck.gameObject.name == name)
+            {
+                //The distance from the player to that transform
+                float distanceToTransformToCheck = Vector3.Distance(positionRelativeTo, transformToCheck.position);
+
+                //If the distance is closer than the last transform we checked
+                if (distanceToTransformToCheck < closestDistanceSoFar)
+                {
+                    //Set this transform as the closest (so far)
+                    closestDistanceSoFar = distanceToTransformToCheck;
+                    closestTransform = transformToCheck;
+                }
+            }
+        }
+
+        //RETURN CLOSEST TRANSFORM
+        return closestTransform;
+    }
     #endregion
 }

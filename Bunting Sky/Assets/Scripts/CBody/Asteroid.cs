@@ -301,6 +301,16 @@ public class Asteroid : MonoBehaviour
     {
         if (!destroying)
         {
+            //Update player tutorial bool
+            if (!control.GetPlayerScript().tutorialHasMinedAsteroid && type == TYPE_CLAY_SILICATE)
+            {
+                control.ui.SetTip("Clay-silicate asteroids are worthless - look for differently coloured asteroids", 2f);
+            }
+            else
+            {
+                control.GetPlayerScript().tutorialHasMinedAsteroid = true;
+            }
+
             //Disable self
             destroying = true;
             DisableModelAndTriggerVolumes();
