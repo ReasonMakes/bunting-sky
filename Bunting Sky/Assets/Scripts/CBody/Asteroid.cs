@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 public class Asteroid : MonoBehaviour
 {
@@ -117,42 +118,46 @@ public class Asteroid : MonoBehaviour
         //Debug.Log("Checking to separate");
 
         //Ignore all collisions until separated from siblings (this will ignore collisions with player and with weapons, but should only last a few milliseconds)
+        Bounds thisAsteroidBounds = modelObject.transform.GetComponent<MeshCollider>().bounds;
         int nActiveAsteroids = control.generation.asteroidsEnabled.transform.childCount;
         if (nActiveAsteroids > 1)
         {
-            for (int nActiveAsteroidsChecked = 0; nActiveAsteroidsChecked < nActiveAsteroids; nActiveAsteroidsChecked++)
+            Profiler.BeginSample("Check all asteroids");
+            for (int asteroidCheckIndex = 0; asteroidCheckIndex < nActiveAsteroids; asteroidCheckIndex++)
             {
-                Transform asteroidToCheck = control.generation.asteroidsEnabled.transform.GetChild(nActiveAsteroidsChecked);
+                Transform asteroidToCheck = control.generation.asteroidsEnabled.transform.GetChild(asteroidCheckIndex);
                 if (asteroidToCheck.gameObject != gameObject)
                 {
-                    if (modelObject.transform.GetComponent<MeshCollider>().bounds.Intersects(
-                        asteroidToCheck.GetComponent<Asteroid>().modelObject.transform.GetComponent<MeshCollider>().bounds
-                    ))
+                    //Only check asteroids that are close enough to be collided with
+                    if (Vector3.Distance(transform.position, asteroidToCheck.position) < 10f)
                     {
-                        //Repel from the intersected asteroid
-                        //Get repel direction
-                        Vector3 repelDir = (transform.position - asteroidToCheck.transform.position).normalized;
-
-                        //Ensure we have a direction, even if spawning exactly inside each other by chance
-                        if (repelDir == Vector3.zero)
+                        //Check if colliding
+                        Bounds asteroidToCheckBounds = asteroidToCheck.GetComponent<Asteroid>().modelObject.transform.GetComponent<MeshCollider>().bounds;
+                        if (thisAsteroidBounds.Intersects(asteroidToCheckBounds))
                         {
-                            repelDir = new Vector3(Random.value, Random.value, Random.value);
+                            //Repel from the intersected asteroid
+                            //Get repel direction
+                            Vector3 repelDir = (transform.position - asteroidToCheck.transform.position).normalized;
+
+                            //Ensure we have a direction, even if spawning exactly inside each other by chance
+                            if (repelDir == Vector3.zero)
+                            {
+                                repelDir = new Vector3(Random.value, Random.value, Random.value);
+                            }
+
+                            //Repel
+                            transform.position += INTERSECTING_REPEL_TELEPORT_STEP_DIST * repelDir;
+
+                            //Skip the code below (this may be erroneous)
+                            return;
                         }
-
-                        //Debug.Log("Intersecting. Repel dir: " + repelDir);
-
-                        //Repel
-                        transform.position += INTERSECTING_REPEL_TELEPORT_STEP_DIST * repelDir;
-
-                        //Skip the code below
-                        return;
                     }
                 }
             }
+            Profiler.EndSample();
         }
 
         //Once we aren't intersecting anything anymore then we'll get to this point in the code
-        //modelObject.transform.GetComponent<MeshCollider>().enabled = true;
         SetHitboxEnabledAndChoose(true);
         rb.detectCollisions = true;
         separating = false;
@@ -433,7 +438,7 @@ public class Asteroid : MonoBehaviour
         for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
         {
             GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
-                transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)),
+                transform.position + (4f * new Vector3(Random.value, Random.value, Random.value)), //1.2f
                 asteroidsSizes,
                 type
             );
@@ -523,60 +528,16 @@ public class Asteroid : MonoBehaviour
         ));
     }
 
-    private void SpawnAsteroid(int size)
-    {
-        //Instantiate at parent position, plus some randomness
-        GameObject instanceCBodyAsteroid = Instantiate(
-            control.generation.asteroid,
-            transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)),
-            Quaternion.Euler(
-                Random.Range(0f, 360f),
-                Random.Range(0f, 360f),
-                Random.Range(0f, 360f)
-            )
-        );
-        //Put in CBodies tree
-        instanceCBodyAsteroid.transform.parent = control.generation.asteroids.transform;
-
-        //Rigidbody
-        Rigidbody instanceCBodyAsteroidRb = instanceCBodyAsteroid.GetComponent<Rigidbody>();
-        //Ignore all collisions unless explicitly enabled (once asteroid is separated from siblings)
-        instanceCBodyAsteroidRb.detectCollisions = false;
-        //Copy velocity and add some random impulse force
-        instanceCBodyAsteroidRb.velocity = rb.velocity;
-        instanceCBodyAsteroidRb.angularVelocity = rb.angularVelocity;
-        instanceCBodyAsteroidRb.inertiaTensor = rb.inertiaTensor;
-        instanceCBodyAsteroidRb.inertiaTensorRotation = rb.inertiaTensorRotation;
-        instanceCBodyAsteroidRb.AddForce(25f * new Vector3(
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value)
-        ));
-        instanceCBodyAsteroidRb.AddTorque(100f * new Vector3(
-            Random.value,
-            Random.value,
-            Random.value
-        ));
-
-        //Script
-        Asteroid instanceCBodyAsteroidScript = instanceCBodyAsteroid.GetComponent<Asteroid>();
-        instanceCBodyAsteroidScript.control = control;
-        instanceCBodyAsteroidScript.SetSize(size);
-        instanceCBodyAsteroidScript.SetType(type);
-    }
-
     private void SpawnOre()
     {
-        //Spawn with some of the position and speed randomized
-        GameObject instanceOre = Instantiate(
-            ore,
+        //Pool spawning
+        GameObject instanceOre = control.generation.OrePoolSpawn(
             transform.position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
-            Quaternion.identity
+            type,
+            rb.velocity
         );
-        //Put in Ore tree
-        instanceOre.transform.parent = control.generation.ores.transform;
 
-        //Rigidbody
+        //Pass rigidbody values
         Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();
         instanceOreRb.velocity = rb.velocity;
         instanceOreRb.angularVelocity = rb.angularVelocity;
@@ -589,10 +550,33 @@ public class Asteroid : MonoBehaviour
         ));
         instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
 
-        //Script
-        Ore instanceOreScript = instanceOre.GetComponent<Ore>();
-        instanceOreScript.control = control;
-        instanceOreScript.type = type;
-        instanceOreScript.parentVelocity = rb.velocity;
+        ////Instantiating - before we set up object pooling for ore
+        ////Spawn with some of the position and speed randomized
+        //GameObject instanceOre = Instantiate(
+        //    ore,
+        //    transform.position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
+        //    Quaternion.identity
+        //);
+        ////Put in Ore tree
+        //instanceOre.transform.parent = control.generation.ores.transform;
+        //
+        ////Rigidbody
+        //Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();
+        //instanceOreRb.velocity = rb.velocity;
+        //instanceOreRb.angularVelocity = rb.angularVelocity;
+        //instanceOreRb.inertiaTensor = rb.inertiaTensor;
+        //instanceOreRb.inertiaTensorRotation = rb.inertiaTensorRotation;
+        //instanceOreRb.AddForce(1000f * new Vector3(
+        //    0.5f + (0.5f * Random.value),
+        //    0.5f + (0.5f * Random.value),
+        //    0.5f + (0.5f * Random.value)
+        //));
+        //instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
+        //
+        ////Script
+        //Ore instanceOreScript = instanceOre.GetComponent<Ore>();
+        //instanceOreScript.control = control;
+        //instanceOreScript.type = type;
+        //instanceOreScript.parentVelocity = rb.velocity;
     }
 }

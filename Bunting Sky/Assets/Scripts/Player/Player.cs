@@ -456,20 +456,49 @@ public class Player : MonoBehaviour
         //    control.ui.UpdateAllPlayerResourcesUI();
         //}
 
-        //Teleport forward
+        //Cheats enabled only while in editor
         if (control.IS_EDITOR)
         {
-            //Cheats enabled only while in editor
-            if (binds.GetInputDown(binds.bindCheat1))
-            {
-                transform.position += transform.forward * 400f;
-            }
+            ////Teleport forward
+            //if (binds.GetInputDown(binds.bindCheat1))
+            //{
+            //    transform.position += transform.forward * 400f;
+            //}
 
             //Unlock seismic charges
-            if (binds.GetInputDown(binds.bindCheat2))
+            if (binds.GetInputDown(binds.bindCheat1))
             {
                 upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
                 control.ui.SetTip("Seismic charges unlocked.");
+            }
+
+            //Spawn ore
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                int oreCountToSpawn = 50;
+                for (int i = 0; i < oreCountToSpawn; i++)
+                {
+                    control.generation.OrePoolSpawn(
+                        transform.position + (10f * transform.forward) + (0.8f * new Vector3(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value)),
+                        Asteroid.TYPE_PRECIOUS_METAL,
+                        rb.velocity
+                    );
+
+                    ////Spawn with some of the position and speed randomized
+                    //GameObject instanceOre = Instantiate(
+                    //    control.generation.asteroid.GetComponent<Asteroid>().ore,
+                    //    transform.position + (5f * transform.forward) + (0.8f * new Vector3(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value)),
+                    //    Quaternion.identity
+                    //);
+                    ////Put in Ore tree
+                    //instanceOre.transform.parent = control.generation.ores.transform;
+                    //
+                    ////Script
+                    //Ore instanceOreScript = instanceOre.GetComponent<Ore>();
+                    //instanceOreScript.control = control;
+                    //instanceOreScript.type = Asteroid.TYPE_PRECIOUS_METAL;
+                    //instanceOreScript.parentVelocity = rb.velocity;
+                }
             }
         }
         
@@ -616,74 +645,71 @@ public class Player : MonoBehaviour
                 //control.ui.SetTip("You died.\nLast recorded warning message:\n" + lastDamageCause);
                 control.ui.SetTip("Your ship has been destroyed, and you have died\nLast recorded warning: \"" + lastDamageCause + "\"");
             }
-            else
+            else if (tutorialTime <= Time.time)
             {
                 //Show tutorial
-                if (tutorialTime <= Time.time)
+                if (tutorialLevel == 0)
                 {
-                    if (tutorialLevel == 0)
-                    {
-                        control.ui.SetTip(
-                            "Fly with "
-                            + control.ui.GetBindAsPrettyString(binds.bindThrustForward) + ", "
-                            + control.ui.GetBindAsPrettyString(binds.bindThrustLeft) + ", "
-                            + control.ui.GetBindAsPrettyString(binds.bindThrustBackward) + ", "
-                            + control.ui.GetBindAsPrettyString(binds.bindThrustRight) + ", "
-                            + control.ui.GetBindAsPrettyString(binds.bindThrustDown) + ", and "
-                            + control.ui.GetBindAsPrettyString(binds.bindThrustUp),
-                            TUTORIAL_TIP_DURATION
-                        );
-                        IncrementTutorial();
-                    }
-                    else if (tutorialLevel == 1)
-                    {
-                        control.ui.SetTip(
-                            "You can always disable tips in Menu > Settings (press [ESC])",
-                            TUTORIAL_TIP_DURATION
-                        );
-                        IncrementTutorial();
-                    }
-                    else if (tutorialLevel == 2)
-                    {
-                        control.ui.SetTip(
-                            "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
-                            TUTORIAL_TIP_DURATION
-                        );
-                        IncrementTutorial();
-                    }
-                    else if (tutorialLevel == 3)
-                    {
-                        control.ui.SetTip(
-                            "Mine asteroids for valuable materials - press " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire) + " to fire your weapon",
-                            TUTORIAL_TIP_DURATION + 1.5f
-                        );
-                        IncrementTutorial();
-                    }
-                    else if (tutorialLevel == 4 && tutorialHasMinedAsteroid)
-                    {
-                        control.ui.SetTip(
-                            "Sell your cargo at space stations to afford fuel, repairs, and upgrades",
-                            TUTORIAL_TIP_DURATION
-                        );
-                        IncrementTutorial();
-                    }
-                    else if (tutorialLevel == 5 && tutorialHasExitedStationDock)
-                    {
-                        control.ui.SetTip(
-                            "New moons may have asteroids of differing compositions, but beware:\nbandits may be looking to steal your cargo, your ship, and your life",
-                            TUTORIAL_TIP_DURATION + 2f
-                        );
-                        IncrementTutorial();
-                    }
-                    else if (tutorialLevel == 6 && !tutorialHasUsedHeighliner && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1)
-                    {
-                        //Seen all other tips, hasn't visited a heighliner, and has visited several moons
-                        control.ui.SetTip(
-                            "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
-                            TUTORIAL_TIP_DURATION + 2f
-                        );
-                        IncrementTutorial();
-                    }
+                    control.ui.SetTip(
+                        "Fly with "
+                        + control.ui.GetBindAsPrettyString(binds.bindThrustForward) + ", "
+                        + control.ui.GetBindAsPrettyString(binds.bindThrustLeft) + ", "
+                        + control.ui.GetBindAsPrettyString(binds.bindThrustBackward) + ", "
+                        + control.ui.GetBindAsPrettyString(binds.bindThrustRight) + ", "
+                        + control.ui.GetBindAsPrettyString(binds.bindThrustDown) + ", and "
+                        + control.ui.GetBindAsPrettyString(binds.bindThrustUp),
+                        TUTORIAL_TIP_DURATION
+                    );
+                    IncrementTutorial();
+                }
+                else if (tutorialLevel == 1)
+                {
+                    control.ui.SetTip(
+                        "You can always disable tips in Menu > Settings (press [ESC])",
+                        TUTORIAL_TIP_DURATION
+                    );
+                    IncrementTutorial();
+                }
+                else if (tutorialLevel == 2)
+                {
+                    control.ui.SetTip(
+                        "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
+                        TUTORIAL_TIP_DURATION
+                    );
+                    IncrementTutorial();
+                }
+                else if (tutorialLevel == 3)
+                {
+                    control.ui.SetTip(
+                        "Mine asteroids for valuable materials - press " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire) + " to fire your weapon",
+                        TUTORIAL_TIP_DURATION + 1.5f
+                    );
+                    IncrementTutorial();
+                }
+                else if (tutorialLevel == 4 && tutorialHasMinedAsteroid)
+                {
+                    control.ui.SetTip(
+                        "Sell your cargo at space stations to afford fuel, repairs, and upgrades",
+                        TUTORIAL_TIP_DURATION
+                    );
+                    IncrementTutorial();
+                }
+                else if (tutorialLevel == 5 && tutorialHasExitedStationDock)
+                {
+                    control.ui.SetTip(
+                        "New moons may have asteroids of differing compositions, but beware:\nbandits may be looking to steal your cargo, your ship, and your life",
+                        TUTORIAL_TIP_DURATION + 2f
+                    );
+                    IncrementTutorial();
+                }
+                else if (tutorialLevel == 6 && !tutorialHasUsedHeighliner && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1)
+                {
+                    //Seen all other tips, hasn't visited a heighliner, and has visited several moons
+                    control.ui.SetTip(
+                        "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
+                        TUTORIAL_TIP_DURATION + 2f
+                    );
+                    IncrementTutorial();
                 }
             }
         }
@@ -759,11 +785,6 @@ public class Player : MonoBehaviour
     private void VerySlowUpdate()
     {
         //Tutorial - has the player visited a few moons?
-        Debug.Log("ID1: " + tutorialMoonVisitedID1);
-        Debug.Log("ID2: " + tutorialMoonVisitedID2);
-        Debug.Log("ID3: " + tutorialMoonVisitedID3);
-        Debug.Log("------");
-
         if (tutorialMoonVisitedID1 == -1 || tutorialMoonVisitedID2 == -1 || tutorialMoonVisitedID3 == -1)
         {
             if (distToClosestMoon <= 60f)

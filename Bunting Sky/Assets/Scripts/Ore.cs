@@ -1,36 +1,45 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 public class Ore : MonoBehaviour
 {
-    public Rigidbody rb;
+    public Control control;
+    
+    //Material
     public Material matGlowPlatinoid;
     public Material matGlowPreciousMetal;
     public Material matGlowWater;
     public byte type; //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
 
-    public Control control; //this is set by its instantiator
-    private float deathTime;
+    //Auto-death & pooling
+    private float deathTime; //when to automatically absorb into the player and set as inactive, so that we don't have ore floating around forever
     private readonly float DEATH_DELAY = 20f;
     private readonly float DEATH_DELAY_ANIMATION_PORTION = 0.2f;
+    public bool active = false;
 
+    //Forces
+    public Rigidbody rb;
     public Vector3 parentVelocity = Vector3.zero;
-    //private Vector3 playerVAtInit = Vector3.zero;
-    private Transform playerBodyTransform;
     private readonly float DRAG = 3f;
     private readonly float ATTRACT_STRENGTH = 150000f;
     private readonly float ABSORB_DIST = 0.15f;
+    private float nextSlowUpdateCall = 0f;
+    private readonly float SLOW_UPDATE_PERIOD = 2f; //how often to call a slow update, in seconds
 
-    void Start()
+    public void Enable(byte type, Vector3 parentVelocity)
     {
-        //Setup deathTime
-        deathTime = Time.time + DEATH_DELAY + Random.Range(0f, 2f);
+        active = true;
 
-        //Get player data
-        playerBodyTransform = control.generation.instancePlayer.transform.Find("Body").transform;
-        //playerVAtInit = playerTransform.GetComponent<Rigidbody>().velocity;
+        //Hierarchy
+        transform.parent = control.generation.oreEnabled.transform;
+        control.generation.oreEnabled.name = "Enabled (" + control.generation.oreEnabled.transform.childCount + ")";
+        control.generation.oreDisabled.name = "Disabled (" + control.generation.oreDisabled.transform.childCount + ")";
 
+        //Pass values
+        this.parentVelocity = parentVelocity;
+        this.type = type;
         //Assign material equal to type
         switch (type) //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
         {
@@ -46,19 +55,44 @@ public class Ore : MonoBehaviour
                 GetComponent<MeshRenderer>().material = matGlowWater;
                 break;
         }
+
+        //Setup timers
+        deathTime = Time.time + DEATH_DELAY + Random.Range(0f, 2f);
+        nextSlowUpdateCall = Time.time + 0.25f + Random.Range(0f, SLOW_UPDATE_PERIOD);
+    }
+
+    public void Disable()
+    {
+        active = false;
+
+        //Hierarchy
+        transform.parent = control.generation.oreDisabled.transform;
+        control.generation.oreEnabled.name = "Enabled (" + control.generation.oreEnabled.transform.childCount + ")";
+        control.generation.oreDisabled.name = "Disabled (" + control.generation.oreDisabled.transform.childCount + ")";
+
+        //Scale (to turn invisible)
+        transform.localScale = new Vector3(
+            0f,
+            0f,
+            0f
+        );
     }
 
     void Update()
     {
-        if (!Menu.menuOpenAndGamePaused)
+        if (!Menu.menuOpenAndGamePaused && active)
         {
             //Get player data
-            float distanceBetweenOreAndPlayer = Vector3.Distance(transform.position, playerBodyTransform.position);
+            float distanceBetweenOreAndPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position);
 
             //Forces (gravitate toward player, repel away from other ore, drag relative)
             AttractToPlayer(distanceBetweenOreAndPlayer);
-            RepelFromOtherOre();
             DragOreRelative();
+            if (Time.time >= nextSlowUpdateCall)
+            {
+                RepelFromOtherOre();
+                nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;
+            }
 
             //Scale down as the ore gets closer to the player (to look like it's being absorbed) or as ore gets closer to deathTime
             Scale(distanceBetweenOreAndPlayer);
@@ -73,13 +107,15 @@ public class Ore : MonoBehaviour
 
     private void Scale(float distanceToPlayer)
     {
+        float minimumScale = 0.025f;
+
         //Calculate scale for each type
         //Scale relative to limited player distance
         float scaleByPlayerDist = Mathf.Min(0.05f, 0.0025f + (0.025f * Mathf.Max(0f, distanceToPlayer - ABSORB_DIST)));
         float scaleByDeathTime = Mathf.Min(1f, ((deathTime - Time.time) / DEATH_DELAY) * DEATH_DELAY_ANIMATION_PORTION);
         
         //Choose the scale type
-        float scale = Mathf.Min(scaleByPlayerDist, scaleByDeathTime);
+        float scale = Mathf.Max(minimumScale, Mathf.Min(scaleByPlayerDist, scaleByDeathTime));
 
         //Scale
         transform.localScale = new Vector3(
@@ -96,7 +132,7 @@ public class Ore : MonoBehaviour
         {
             if (ore != this)
             {
-                float repelStrength = ATTRACT_STRENGTH * 0.008f;
+                float repelStrength = ATTRACT_STRENGTH * 0.25f; //0.008f;
                 
                 float inverseDistanceMax = 0.1f;
                 float inverseDistanceMin = 0.001f;
@@ -112,7 +148,7 @@ public class Ore : MonoBehaviour
 
     private void AttractToPlayer(float distanceBetweenOreAndPlayer)
     {
-        Vector3 directionToPlayer = (playerBodyTransform.position - transform.position).normalized;
+        Vector3 directionToPlayer = (control.GetPlayerTransform().position - transform.position).normalized;
         float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenOreAndPlayer);
         rb.AddForce(directionToPlayer * ATTRACT_STRENGTH * LimitedInverseDistanceBetweenPlayer * Time.deltaTime);
     }
@@ -137,11 +173,11 @@ public class Ore : MonoBehaviour
         //Drag relative to player
         //rb.velocity = control.DragRelative(rb.velocity, playerTransform.GetComponent<Rigidbody>().velocity, DRAG);
 
-        //Drag relative to parent asteroid velocity
-        rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, parentVelocity, DRAG);
+        //Drag relative to parent asteroid velocity (original system)
+        //rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, parentVelocity, DRAG);
 
         //Drag relative to the system
-        //rb.velocity *= (1f - (DRAG * Time.deltaTime));
+        rb.velocity *= (1f - (DRAG * Time.deltaTime));
 
         //Drag relative to player velocity at ore's spawn time
         //rb.velocity = control.DragRelative(rb.velocity, playerVAtInit, DRAG);
@@ -150,16 +186,17 @@ public class Ore : MonoBehaviour
     private void AbsorbIntoPlayer()
     {
         //Only add to player inventory if player isn't in the middle of nowhere
-        if (Vector3.Distance(transform.position, playerBodyTransform.position) < 600f)
+        if (Vector3.Distance(transform.position, control.GetPlayerTransform().position) < 600f)
         {
             //Add ore type to player inventory
-            playerBodyTransform.GetComponent<Player>().ore[type]++;
+            control.GetPlayerScript().ore[type]++;
 
             //Update resources display
             control.ui.UpdateAllPlayerResourcesUI();
         }
 
         //Destroy if it hasn't been already
-        if (gameObject != null) Destroy(gameObject, 0f);
+        Disable();
+        //if (gameObject != null) Destroy(gameObject, 0f);
     }
 }

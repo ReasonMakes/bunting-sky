@@ -152,7 +152,8 @@ public class UI : MonoBehaviour
             if (control.IS_EDITOR)
             {
                 systemInfo.text = control.fps.ToString() + "FPS"
-                + "\n Asteroids: " + control.generation.asteroidsEnabled.transform.childCount + " (" + control.generation.asteroidsDetailed + " detailed)";
+                + "\n Asteroids: " + control.generation.asteroidsEnabled.transform.childCount + " (" + control.generation.asteroidsDetailed + " detailed)"
+                + "\n Ores: " + control.generation.oreEnabled.transform.childCount;
             }
             else
             {
@@ -225,24 +226,33 @@ public class UI : MonoBehaviour
 
     public void SetTip(string text)
     {
-        tipText.text = text;
-        tipText.color = Color.white; //reset alpha
+        if (control.settings.tips || control.GetPlayerScript().isDestroyed)
+        {
+            tipText.text = text;
+            tipText.color = Color.white; //reset alpha
+        }
     }
 
     public void SetTip(string text, float duration)
     {
-        tipText.text = text;
-        tipText.color = Color.white; //reset alpha
+        if (control.settings.tips || control.GetPlayerScript().isDestroyed)
+        {
+            tipText.text = text;
+            tipText.color = Color.white; //reset alpha
 
-        tipTextAlphaDecrementDelay = duration;
+            tipTextAlphaDecrementDelay = duration;
+        }
     }
 
     public void SetTip(string text, ref float certainty)
     {
-        tipText.text = text;
-        tipText.color = Color.white; //reset alpha
+        if (control.settings.tips || control.GetPlayerScript().isDestroyed)
+        {
+            tipText.text = text;
+            tipText.color = Color.white; //reset alpha
 
-        certainty = 0f;
+            certainty = 0f;
+        }
     }
 
     public void UpdateTipBinds()

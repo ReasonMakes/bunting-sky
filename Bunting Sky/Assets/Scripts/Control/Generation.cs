@@ -67,13 +67,17 @@ public class Generation : MonoBehaviour
                         [System.NonSerialized] public GameObject heighlinerOpenLinker = null;
 
                 public GameObject asteroids;
-                public GameObject asteroidsEnabled;
-                public GameObject asteroidsDisabled;
-                    public GameObject asteroid;
-                    [System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
+                    public GameObject asteroidsEnabled;
+                    public GameObject asteroidsDisabled;
+                        public GameObject asteroid;
+                        [System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
 
         public GameObject ores;
-
+            public GameObject oreEnabled;
+            public GameObject oreDisabled;
+                public GameObject ore;
+                [System.NonSerialized] public List<GameObject> orePool = new List<GameObject>();
+            
         public GameObject projectiles;
             public GameObject playerProjectiles;
                 public GameObject playerProjectilesLasers;
@@ -294,7 +298,8 @@ public class Generation : MonoBehaviour
         }
 
         //Asteroids
-        AsteroidPoolPopulate();
+        AsteroidPoolPopulate(1500);
+        OrePoolPopulate(500);
 
         //Home star
         StarSpawn(null);
@@ -474,6 +479,7 @@ public class Generation : MonoBehaviour
         float randSpacing;
         float spawnRadius;
         float spawnAngle;
+        float verticalOffsetRange = 20f;
 
         //Spawn all
         for (int moonIndex = 0; moonIndex < nMoons; moonIndex++)
@@ -483,9 +489,10 @@ public class Generation : MonoBehaviour
             spawnRadius = distanceOut + randSpacing;
             distanceOut = spawnRadius; //incremenet distanceOut for the next moon
             spawnAngle = Random.Range(0f, 360f);
+
             Vector3 position = new Vector3(
                 Mathf.Cos(spawnAngle) * spawnRadius,
-                0f,
+                Random.Range(-verticalOffsetRange, verticalOffsetRange),
                 Mathf.Sin(spawnAngle) * spawnRadius
             );
             //Offset to "orbit" planet
@@ -651,9 +658,9 @@ public class Generation : MonoBehaviour
 #endregion
 
     #region Asteroids
-    private void AsteroidPoolPopulate()
+    private void AsteroidPoolPopulate(int asteroidPoolLength)
     {
-        for (int nAsteroids = 0; nAsteroids < control.settings.asteroidsConcurrentMax; nAsteroids++)
+        for (int nAsteroids = 0; nAsteroids < asteroidPoolLength; nAsteroids++)
         {
             //OBJECT
             //Instantiate
@@ -678,6 +685,36 @@ public class Generation : MonoBehaviour
             //Set as disabled until needed
             instanceAsteroidScript.Disable();
         }
+
+        //Update hierarchy names
+        asteroidsEnabled.name = "Enabled (" + asteroidsEnabled.transform.childCount + ")";
+        asteroidsDisabled.name = "Disabled (" + asteroidsDisabled.transform.childCount + ")";
+    }
+
+    private void OrePoolPopulate(int orePoolLength)
+    {
+        for (int oreIndex = 0; oreIndex < orePoolLength; oreIndex++)
+        {
+            //Instantiate
+            GameObject instanceOre = Instantiate(
+                ore,
+                Vector3.zero,
+                Quaternion.identity
+            );
+
+            //Control ref
+            instanceOre.GetComponent<Ore>().control = control;
+
+            //Hierarchy
+            instanceOre.transform.parent = oreDisabled.transform;
+
+            //Add to pool
+            orePool.Add(instanceOre);
+        }
+
+        //Update hierarchy names
+        oreEnabled.name = "Enabled (" + oreEnabled.transform.childCount + ")";
+        oreDisabled.name = "Disabled (" + oreDisabled.transform.childCount + ")";
     }
 
     public GameObject AsteroidPoolSpawn(Vector3 position, int size, byte type)
@@ -715,6 +752,31 @@ public class Generation : MonoBehaviour
         }
 
         return instanceAsteroid;
+    }
+
+    public GameObject OrePoolSpawn(Vector3 position, byte type, Vector3 parentVelocity)
+    {
+        GameObject instanceOre = null;
+
+        //If we have room in the pool to draw from
+        if (oreDisabled.transform.childCount > 0)
+        {
+            //Remember which asteroid we're working with so we can return it later
+            instanceOre = oreDisabled.transform.GetChild(0).gameObject;
+
+            //Set the position
+            instanceOre.transform.position = position;
+
+            //Enable that asteroid
+            instanceOre.GetComponent<Ore>().Enable(type, parentVelocity);
+        }
+        else
+        {
+            Debug.Log("No free ores!");
+            //TODO: later we could either expand the pool or reuse enabled asteroids
+        }
+
+        return instanceOre;
     }
 
     private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position, bool guaranteeValuables)
@@ -773,7 +835,7 @@ public class Generation : MonoBehaviour
                 GameObject instanceAsteroid = AsteroidPoolSpawn(
                     position + new Vector3(
                         Mathf.Cos(Mathf.Deg2Rad * angle) * instanceAsteroidRadius,
-                        0f,
+                        position.y,
                         Mathf.Sin(Mathf.Deg2Rad * angle) * instanceAsteroidRadius
                     ),
                     Random.Range(0, Asteroid.SIZE_LENGTH),
