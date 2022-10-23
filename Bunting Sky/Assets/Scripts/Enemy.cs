@@ -12,41 +12,52 @@ public class Enemy : MonoBehaviour
 
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 4000f;
+    private readonly float THRUST = 10e3f; //8e3f; //6e3f; //4000f;
+    private readonly float thrustStrafeMultiplier = 1.5f; //4000f;
     //Torque
-    private float torqueBaseStrength = 600f;
+    private float torqueBaseStrength = 10e3f; //3000f; //600f;
     private float angularDragWhenEnginesOn = 40f; //for smoothing
     //Drag
     private readonly float DRAG = 3f;
 
     //Weapons
     private float weaponCooldown = 0f;
-    private readonly float WEAPON_COOLDOWN_MAX = 2f; //Time in seconds between shots
-    private readonly float WEAPON_COOLDOWN_WITHIN_BURST = 0.1f; //Time in seconds between shots
-    private int weaponBurst = 3;
-    private readonly int WEAPON_BURST_MAX = 4;
+    private readonly float WEAPON_COOLDOWN_MAX = 2f; //Time in seconds between bursts
+    private readonly float WEAPON_COOLDOWN_WITHIN_BURST = 0.075f; //0.1f; //Time in seconds between shots
+    private int weaponBurst = 0;
+    private readonly int WEAPON_BURST_MAX = 12; //8; //4; //Number of laser projectiles fired per burst
 
     //Behaviour settings
     [System.NonSerialized] public Vector3 spawnPointRaw = Vector3.zero;
     private Vector3 destination = Vector3.zero;
     private bool aggro = false;
-    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO = 70f;
-    private readonly float DISTANCE_THRESHOLD_GREATER_THAN_TO_MOVE_FORWARD = 9f;
-    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE = 20f;
-    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE = 40f;
-    [System.NonSerialized] public static readonly float DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE = 180f;
+    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO = 140f;
+    private readonly float DISTANCE_THRESHOLD_GREATER_THAN_TO_MOVE_FORWARD = 16f;
+    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE = 30f;
+    private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE = 70f;
+    [System.NonSerialized] public static readonly float DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE = 300f;
     private bool strafeRight = true;
     private float strafeDirectionChangeTimer = 2f;
     private readonly float STRAFE_PERIOD_MAX = 2f;
+    private bool canStrafe = true;
+    private readonly float MANUAL_LEAD_MULTIPLIER = 1.5f; //Add offset to account for how slow the torque is
+    private readonly float DESTINATION_RANDOM_OFFSET_MAGNITUDE = 20f;   //"Inaccuracy" (which in actuality actually helps the aim a little bit
+    public GameObject playerGhost;                                      //by creating a larger area-of-denial, and therefore a higher random
+                                                                        //chance of hitting the player despite their impossible-to-hit movement speed)
 
+    //Performance
     [System.NonSerialized] public bool destroying = false;
     [System.NonSerialized] public bool destroyed = true;
     private float destroyingTime = 0f;
     [System.NonSerialized] public bool performantMode = false;
+    [System.NonSerialized] public Vector3 rbMemVel;
+    [System.NonSerialized] public Vector3 rbMemAngularVel;
 
-    [System.NonSerialized] public readonly static byte HEALTH_MAX = 4;
+    //Health
+    [System.NonSerialized] public readonly static byte HEALTH_MAX = 6;
     [System.NonSerialized] public byte health = HEALTH_MAX;
 
+    //Type
     [System.NonSerialized] public int strength;
     [System.NonSerialized] public readonly static int STRENGTH_SMALL = 0;
     [System.NonSerialized] public readonly static int STRENGTH_MEDIUM = 1;
@@ -61,9 +72,6 @@ public class Enemy : MonoBehaviour
     [System.NonSerialized] public MeshRenderer meshRenderer;
 
     public GameObject ore;
-
-    [System.NonSerialized] public Vector3 rbMemVel;
-    [System.NonSerialized] public Vector3 rbMemAngularVel;
 
     private void Start()
     {
@@ -110,12 +118,41 @@ public class Enemy : MonoBehaviour
 
                     if (aggro)
                     {
-                        //destination = control.GetPlayerTransform().position;
-
                         //Lead, so that weapons fire is more likely to connect
-                        destination = control.GetPlayerTransform().position; //raw target
+
+                        //Target position
+                        destination = control.GetPlayerTransform().position;
+
+                        //Time until the projectiles hit the target
                         float timeToTarget = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) / EnemyWeaponLaser.PROJECTILE_SPEED; //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
-                        destination += (control.GetPlayerScript().rb.velocity * timeToTarget); //target with added lead
+
+                        //Lead speed
+                        destination += (control.GetPlayerScript().rb.velocity * (timeToTarget * MANUAL_LEAD_MULTIPLIER));
+
+                        //Lead acceleration
+                        //F = ma -> a = F/m
+                        Vector3 playerAcceleration = control.GetPlayerScript().lastForceAdded / control.GetPlayerScript().rb.mass;
+                        //displacement = velocity * deltaTime + (1/2)​(acceleration)(deltaTime^2)
+                        Vector3 displacementFromAcceleration = (control.GetPlayerScript().rb.velocity * Time.deltaTime) + ((playerAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
+                        destination += displacementFromAcceleration;
+
+                        //Display target destination (before randomness)
+                        playerGhost.transform.position = destination;
+
+                        //Add random offset IF FIRING
+                        float distanceThresholdMoreThanAddRandomOffset = 0f;
+                        float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
+                        float playerSpeedMaxRough = 22f;
+                        float playerSpeedWeight = Mathf.Min(1f, control.GetPlayerScript().rb.velocity.magnitude / playerSpeedMaxRough);
+                        float destinationOffsetMagnitude = distToPlayer * 0.25f * playerSpeedWeight;
+                        if (distToPlayer >= distanceThresholdMoreThanAddRandomOffset && weaponBurst < WEAPON_BURST_MAX && control.GetPlayerScript().rb.velocity.magnitude > 1f)
+                        {
+                            destination += new Vector3(
+                                (Random.value - 0.5f) * destinationOffsetMagnitude,
+                                (Random.value - 0.5f) * destinationOffsetMagnitude,
+                                (Random.value - 0.5f) * destinationOffsetMagnitude
+                            );
+                        }
                     }
                     else
                     {
@@ -155,8 +192,9 @@ public class Enemy : MonoBehaviour
             rotationToLookAtDestination = Quaternion.LookRotation(directionToDestinationToLookAt);
         }
 
-        //The rotation from how the ship is currently rotated to looking at the player
-        //Multiplying by inverse is equivalent to subtracting
+        //The rotation from how the ship is currently rotated to looking at the destination
+        //deltaRotation = finalRot - initialRot
+        //(Multiplying by inverse is equivalent to subtracting)
         Quaternion rotation = rotationToLookAtDestination * Quaternion.Inverse(rb.rotation);
 
         //Parse Quaternion to Vector3
@@ -213,7 +251,7 @@ public class Enemy : MonoBehaviour
             strafeRight = !strafeRight;
         }
         //Strafe if aggro'd and within distance threshold
-        if (aggro && Vector3.Magnitude(destination - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)
+        if (aggro) // && Vector3.Magnitude(destination - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)
         {
             if (strafeRight)
             {
@@ -225,12 +263,25 @@ public class Enemy : MonoBehaviour
                 //Left
                 strafeVector = -transform.right * dot;
             }
-            
         }
         
         //COMBINING AND APPLYING
         //Add forward and strafe vectors together with weights
-        thrustVector = (forwardVector * 1.5f) + strafeVector;
+        if (canStrafe)
+        {
+            float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
+            float weight = 0f; //weight approaches 1f as the distance from the enemy to the player approaches DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE
+            if (control.GetPlayerScript().weaponUsedRecently > 0f && distToPlayer < DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO)
+            {
+                float aggroDistMinusStrafeDist = DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE;
+                weight = (aggroDistMinusStrafeDist - (distToPlayer - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)) / aggroDistMinusStrafeDist;
+            }
+            thrustVector = (forwardVector * (1f - weight)) + (strafeVector * (weight));
+        }
+        else
+        {
+            thrustVector = forwardVector;
+        }
 
         //Thrust
         rb.AddForce(thrustVector.normalized * THRUST * Time.deltaTime);
@@ -283,7 +334,7 @@ public class Enemy : MonoBehaviour
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
-            health = 4;
+            health = HEALTH_MAX;
         }
         else if (this.strength == STRENGTH_MEDIUM)
         {
@@ -292,7 +343,7 @@ public class Enemy : MonoBehaviour
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
-            health = 4;
+            health = HEALTH_MAX;
         }
         else if (this.strength == STRENGTH_LARGE)
         {
@@ -301,7 +352,7 @@ public class Enemy : MonoBehaviour
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
-            health = 4;
+            health = HEALTH_MAX;
         }
         else
         {
@@ -347,8 +398,6 @@ public class Enemy : MonoBehaviour
             //Spawn goodies
             if (oreDrop)
             {
-                SpawnClusterFromPoolAndPassRigidbodyValues(2, 3);
-
                 if (strength == STRENGTH_LARGE)
                 {
                     for (int i = 0; i < Random.Range(9, 15 + 1); i++)
@@ -433,25 +482,6 @@ public class Enemy : MonoBehaviour
         SetEnabled(false);
     }
 
-    public void SpawnClusterFromPoolAndPassRigidbodyValues(int minCount, int maxCount)
-    {
-        for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
-        {
-            GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
-                transform.position + (1.2f * new Vector3(Random.value, Random.value, Random.value)),
-                Asteroid.SIZE_SMALL,
-                Asteroid.TYPE_PLATINOID
-            );
-
-            instanceAsteroid.GetComponent<Asteroid>().PassRigidbodyValuesAndAddRandomForce(
-                Vector3.one * ((0.5f + (0.5f * Random.value)) * 5f), //rb.velocity,
-                rb.angularVelocity,
-                rb.inertiaTensor,
-                rb.inertiaTensorRotation
-            );
-        }
-    }
-
     public void SetPerformant(bool performance)
     {
         //Don't bother with setting to the same value we already are at
@@ -505,38 +535,16 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public void PassRigidbodyValuesAndAddRandomForce(Vector3 velocity, Vector3 angularVelocity, Vector3 inertiaTensor, Quaternion inertiaTensorRotation)
-    {
-        rb.velocity = velocity;
-        rb.angularVelocity = angularVelocity;
-        rb.inertiaTensor = inertiaTensor;
-        rb.inertiaTensorRotation = inertiaTensorRotation;
-
-        //Add random force
-        rb.AddForce(25f * new Vector3(
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value)
-        ));
-        rb.AddTorque(100f * new Vector3(
-            Random.value,
-            Random.value,
-            Random.value
-        ));
-    }
-
     private void SpawnOre()
     {
-        //Spawn with some of the position and speed randomized
-        GameObject instanceOre = Instantiate(
-            ore,
+        //Pool spawning
+        GameObject instanceOre = control.generation.OrePoolSpawn(
             transform.position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
-            Quaternion.identity
+            Asteroid.TYPE_PLATINOID,
+            rb.velocity
         );
-        //Put in Ore tree
-        instanceOre.transform.parent = control.generation.ores.transform;
 
-        //Rigidbody
+        //Pass rigidbody values
         Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();
         instanceOreRb.velocity = rb.velocity;
         instanceOreRb.angularVelocity = rb.angularVelocity;
@@ -548,11 +556,5 @@ public class Enemy : MonoBehaviour
             0.5f + (0.5f * Random.value)
         ));
         instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
-
-        //Script
-        Ore instanceOreScript = instanceOre.GetComponent<Ore>();
-        instanceOreScript.control = control;
-        instanceOreScript.type = Asteroid.TYPE_PLATINOID;
-        instanceOreScript.parentVelocity = rb.velocity;
     }
 }

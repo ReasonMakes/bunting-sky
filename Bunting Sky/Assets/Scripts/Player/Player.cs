@@ -60,6 +60,7 @@ public class Player : MonoBehaviour
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f; //internally used multiplier to keep track of total multiplier
     private float thrustCheat = 1f;
+    public Vector3 lastForceAdded = Vector3.zero;
     //Torque
     private float torqueBaseStrength = 500f; //30f;
     private float angularDragWhenEnginesOn = 40f; //40f; //for smoothing
@@ -213,7 +214,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public float weaponSelectedSingleCooldownDuration;
     [System.NonSerialized] public float weaponSelectedSingleCooldownCurrent;
 
-    private float weaponUsedRecently = 0f;
+    [System.NonSerialized] public float weaponUsedRecently = 0f;
     #endregion
 
     //Skybox stars
@@ -459,47 +460,32 @@ public class Player : MonoBehaviour
         //Cheats enabled only while in editor
         if (control.IS_EDITOR)
         {
-            ////Teleport forward
-            //if (binds.GetInputDown(binds.bindCheat1))
-            //{
-            //    transform.position += transform.forward * 400f;
-            //}
+            //Teleport forward
+            if (binds.GetInputDown(binds.bindCheat1))
+            {
+                transform.position += transform.forward * 400f;
+            }
 
             //Unlock seismic charges
-            if (binds.GetInputDown(binds.bindCheat1))
+            if (binds.GetInputDown(binds.bindCheat2))
             {
                 upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
                 control.ui.SetTip("Seismic charges unlocked.");
             }
 
             //Spawn ore
-            if (binds.GetInputDown(binds.bindCheat2))
-            {
-                int oreCountToSpawn = 50;
-                for (int i = 0; i < oreCountToSpawn; i++)
-                {
-                    control.generation.OrePoolSpawn(
-                        transform.position + (10f * transform.forward) + (0.8f * new Vector3(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value)),
-                        Asteroid.TYPE_PRECIOUS_METAL,
-                        rb.velocity
-                    );
-
-                    ////Spawn with some of the position and speed randomized
-                    //GameObject instanceOre = Instantiate(
-                    //    control.generation.asteroid.GetComponent<Asteroid>().ore,
-                    //    transform.position + (5f * transform.forward) + (0.8f * new Vector3(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value)),
-                    //    Quaternion.identity
-                    //);
-                    ////Put in Ore tree
-                    //instanceOre.transform.parent = control.generation.ores.transform;
-                    //
-                    ////Script
-                    //Ore instanceOreScript = instanceOre.GetComponent<Ore>();
-                    //instanceOreScript.control = control;
-                    //instanceOreScript.type = Asteroid.TYPE_PRECIOUS_METAL;
-                    //instanceOreScript.parentVelocity = rb.velocity;
-                }
-            }
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    int oreCountToSpawn = 50;
+            //    for (int i = 0; i < oreCountToSpawn; i++)
+            //    {
+            //        control.generation.OrePoolSpawn(
+            //            transform.position + (10f * transform.forward) + (0.8f * new Vector3(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value)),
+            //            Asteroid.TYPE_PRECIOUS_METAL,
+            //            rb.velocity
+            //        );
+            //    }
+            //}
         }
         
 
@@ -1091,7 +1077,8 @@ public class Player : MonoBehaviour
                 if (binds.GetInput(binds.bindThrustUp)) thrustVector += transform.up;
                 if (binds.GetInput(binds.bindThrustDown)) thrustVector += -transform.up;
 
-                rb.AddForce(thrustVector.normalized * THRUST * thrustMultiplier * Time.deltaTime);
+                lastForceAdded = thrustVector.normalized * THRUST * thrustMultiplier * Time.deltaTime;
+                rb.AddForce(lastForceAdded);
             }
         }
     }

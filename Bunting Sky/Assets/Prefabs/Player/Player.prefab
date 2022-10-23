@@ -5786,6 +5786,7 @@ MonoBehaviour:
   mapLight: {fileID: 7002427501827165388}
   spotlight: {fileID: 3053305805468945929}
   rb: {fileID: 3053305804255348959}
+  lastForceAdded: {x: 0, y: 0, z: 0}
   engineGlowMat: {fileID: 2100000, guid: 62f22403c9e8b85469760db98b6764d3, type: 2}
   engineEmissionColorDead: {r: 24, g: 24, b: 73, a: 1}
   engineLight: {fileID: 731512772107279010}
@@ -5809,6 +5810,12 @@ MonoBehaviour:
   soundClipCoins: {fileID: 8300000, guid: d262567fb0e796e45aea95c290481788, type: 3}
   soundSourceCollision: {fileID: 298731642404369153}
   soundClipCollision: {fileID: 8300000, guid: 66f6a02ded0dd8a49bde752b4fb07b31, type: 3}
+  tutorialHasMinedAsteroid: 0
+  tutorialHasExitedStationDock: 0
+  tutorialMoonVisitedID1: -1
+  tutorialMoonVisitedID2: -1
+  tutorialMoonVisitedID3: -1
+  tutorialHasUsedHeighliner: 0
   playerWeaponLaser: {fileID: 5403147369654324799}
   playerWeaponSeismicCharge: {fileID: 4002489302505956663}
   skyboxStarsParticleSystem: {fileID: 617420397379647762}
