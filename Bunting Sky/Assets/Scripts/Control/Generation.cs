@@ -924,12 +924,12 @@ public class Generation : MonoBehaviour
                 );
 
                 //Spawn the enemy
-                GameObject instanceEnemy = EnemySpawn(position);
+                EnemySpawn(position, Enemy.STRENGTH_LARGE);
             }
         }
     }
 
-    public GameObject EnemySpawn(Vector3 position)
+    public GameObject EnemySpawn(Vector3 position, int strength)
     {
         GameObject instanceEnemy = Instantiate(
             enemy,
@@ -937,14 +937,13 @@ public class Generation : MonoBehaviour
             Quaternion.identity
         );
 
-        //Put in folder
+        //Hierarchy
         instanceEnemy.transform.parent = enemies.transform;
 
         //Update script
         instanceEnemy.GetComponent<Enemy>().control = control;
         instanceEnemy.GetComponent<Enemy>().spawnPointRaw = position;
-        instanceEnemy.GetComponent<Enemy>().SetStrength(Enemy.STRENGTH_SMALL);
-        instanceEnemy.GetComponent<Enemy>().Enable(position, Enemy.STRENGTH_SMALL);
+        instanceEnemy.GetComponent<Enemy>().Enable(position, strength);
 
         return instanceEnemy;
     }

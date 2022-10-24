@@ -26,20 +26,19 @@ public class Commerce : MonoBehaviour
 
     [System.NonSerialized] public string[,] upgradeDictionary;
 
-    [System.NonSerialized] public int UPGRADE_SOLD_OUT;
+    [System.NonSerialized] public readonly int UPGRADE_NAME = 0;
+    [System.NonSerialized] public readonly int UPGRADE_PRICE = 1;
+    [System.NonSerialized] public readonly int UPGRADE_DESCRIPTION = 2;
+    [System.NonSerialized] public readonly int UPGRADE_MAX_LEVEL = 3;
 
-    [System.NonSerialized] public int UPGRADE_NAME;
-    [System.NonSerialized] public int UPGRADE_PRICE;
-    [System.NonSerialized] public int UPGRADE_DESCRIPTION;
-    [System.NonSerialized] public int UPGRADE_MAX_LEVEL;
-
-    [System.NonSerialized] public int UPGRADE_FUEL_EFFICIENCY;
-    [System.NonSerialized] public int UPGRADE_TITAN_FUEL_TANK;
-    [System.NonSerialized] public int UPGRADE_REINFORCED_HULL;
-    [System.NonSerialized] public int UPGRADE_RAPTOR_ENGINES;
-    [System.NonSerialized] public int UPGRADE_DUAL_BATTERIES;
-    [System.NonSerialized] public int UPGRADE_IN_SITU_FUEL_REFINERY;
-    [System.NonSerialized] public int UPGRADE_SEISMIC_CHARGES;
+    [System.NonSerialized] public readonly int UPGRADE_SOLD_OUT = 0;
+    [System.NonSerialized] public readonly int UPGRADE_FUEL_EFFICIENCY = 1;
+    [System.NonSerialized] public readonly int UPGRADE_TITAN_FUEL_TANK = 2;
+    [System.NonSerialized] public readonly int UPGRADE_REINFORCED_HULL = 3;
+    [System.NonSerialized] public readonly int UPGRADE_RAPTOR_ENGINES = 4;
+    [System.NonSerialized] public readonly int UPGRADE_DUAL_BATTERIES = 5;
+    [System.NonSerialized] public readonly int UPGRADE_IN_SITU_FUEL_REFINERY = 6;
+    [System.NonSerialized] public readonly int UPGRADE_SEISMIC_CHARGES = 7;
 
     [System.NonSerialized] public int[] upgradeIndexAtButton;
     public Button menuButtonUpgrade0;
@@ -84,61 +83,47 @@ public class Commerce : MonoBehaviour
         upgradeIndexAtButton = new int[upgradeDictionary.GetLength(0)];
 
         //Definitions
-        //Enum
-        UPGRADE_SOLD_OUT = 0;
-        UPGRADE_FUEL_EFFICIENCY = 1;
-        UPGRADE_TITAN_FUEL_TANK = 2;
-        UPGRADE_REINFORCED_HULL = 3;
-        UPGRADE_RAPTOR_ENGINES = 4;
-        UPGRADE_DUAL_BATTERIES = 5;
-        UPGRADE_IN_SITU_FUEL_REFINERY = 6;
-        UPGRADE_SEISMIC_CHARGES = 7;
-
         //Name
-        UPGRADE_NAME = 0;
-        upgradeDictionary[UPGRADE_SOLD_OUT, UPGRADE_NAME] = "Sold out";
-        upgradeDictionary[1, UPGRADE_NAME] = "Fuel efficiency";
-        upgradeDictionary[2, UPGRADE_NAME] = "Titan fuel tank";
-        upgradeDictionary[3, UPGRADE_NAME] = "Reinforced hull";
-        upgradeDictionary[4, UPGRADE_NAME] = "Raptor engines";
-        upgradeDictionary[5, UPGRADE_NAME] = "Dual batteries";
-        upgradeDictionary[6, UPGRADE_NAME] = "In-situ fuel refinery";
+        upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_NAME] = "Sold out";
+        upgradeDictionary[UPGRADE_FUEL_EFFICIENCY,          UPGRADE_NAME] = "Fuel efficiency";
+        upgradeDictionary[UPGRADE_TITAN_FUEL_TANK,          UPGRADE_NAME] = "Titan fuel tank";
+        upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_NAME] = "Reinforced hull";
+        upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_NAME] = "Raptor engines";
+        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_NAME] = "Dual batteries";
+        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_NAME] = "In-situ fuel refinery";
+        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_NAME] = "Seismic charges";
         //upgradeDictionary[7, UPGRADE_NAME] = "Warp drive";
-        upgradeDictionary[7, UPGRADE_NAME] = "Seismic charges";
 
         //Price
-        UPGRADE_PRICE = 1;
-        upgradeDictionary[UPGRADE_SOLD_OUT, UPGRADE_PRICE] = UPGRADE_PRICE_MAX.ToString();
-        upgradeDictionary[1, UPGRADE_PRICE] = "500";
-        upgradeDictionary[2, UPGRADE_PRICE] = "2000";
-        upgradeDictionary[3, UPGRADE_PRICE] = "750";
-        upgradeDictionary[4, UPGRADE_PRICE] = "1000";
-        upgradeDictionary[5, UPGRADE_PRICE] = "2000";
-        upgradeDictionary[6, UPGRADE_PRICE] = "4000";
-        upgradeDictionary[7, UPGRADE_PRICE] = "6000";
+        upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_PRICE] = UPGRADE_PRICE_MAX.ToString();
+        upgradeDictionary[UPGRADE_FUEL_EFFICIENCY,          UPGRADE_PRICE] = "500";
+        upgradeDictionary[UPGRADE_TITAN_FUEL_TANK,          UPGRADE_PRICE] = "2000";
+        upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_PRICE] = "750";
+        upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_PRICE] = "1000";
+        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_PRICE] = "2000";
+        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_PRICE] = "4000";;
+        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_PRICE] = "6000";
 
         //Description
-        UPGRADE_DESCRIPTION = 2;
-        upgradeDictionary[UPGRADE_SOLD_OUT, UPGRADE_DESCRIPTION] = "Item is out of stock";
-        upgradeDictionary[1, UPGRADE_DESCRIPTION] = "25% less fuel consumption for the same resultant thrust";
-        upgradeDictionary[2, UPGRADE_DESCRIPTION] = "1.5x larger fuel tank made of lighter material, resulting in the same weight";
-        upgradeDictionary[3, UPGRADE_DESCRIPTION] = "Doubles outer hull integrity";
-        upgradeDictionary[4, UPGRADE_DESCRIPTION] = "Increases maximum forward thrust output by 1.5x";
-        upgradeDictionary[5, UPGRADE_DESCRIPTION] = "Doubles the mining laser's maximum ammunition per cycle";
-        upgradeDictionary[6, UPGRADE_DESCRIPTION] = "Automatically processes water ice cargo into usable jet fuel (toggle in settings)";
+        upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_DESCRIPTION] = "Item is out of stock";
+        upgradeDictionary[UPGRADE_FUEL_EFFICIENCY,          UPGRADE_DESCRIPTION] = "25% less fuel consumption for the same resultant thrust";
+        upgradeDictionary[UPGRADE_TITAN_FUEL_TANK,          UPGRADE_DESCRIPTION] = "1.5x larger fuel tank made of lighter material, resulting in the same weight";
+        upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_DESCRIPTION] = "Doubles outer hull integrity";
+        upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_DESCRIPTION] = "Increases maximum forward thrust output by 1.5x";
+        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_DESCRIPTION] = "Doubles the mining laser's maximum ammunition per cycle";
+        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_DESCRIPTION] = "Automatically processes water ice cargo into usable jet fuel (toggle in settings)";
+        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_DESCRIPTION] = "Explosive weapon. Useful for mining clusters of small asteroids";
         //upgradeDictionary[7, UPGRADE_DESCRIPTION] = "Enables extra-dimensional interstellar travel through the bulk";
-        upgradeDictionary[7, UPGRADE_DESCRIPTION] = "Explosive weapon. Useful for mining clusters of small asteroids";
 
         //Max level
-        UPGRADE_MAX_LEVEL = 3;
-        upgradeDictionary[UPGRADE_SOLD_OUT, UPGRADE_MAX_LEVEL] = "0";
-        upgradeDictionary[1, UPGRADE_MAX_LEVEL] = "2";
-        upgradeDictionary[2, UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[3, UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[4, UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[5, UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[6, UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[7, UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_MAX_LEVEL] = "0";
+        upgradeDictionary[UPGRADE_FUEL_EFFICIENCY,          UPGRADE_MAX_LEVEL] = "2";
+        upgradeDictionary[UPGRADE_TITAN_FUEL_TANK,          UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_MAX_LEVEL] = "1";
     }
 
     //MENU

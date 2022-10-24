@@ -12,20 +12,19 @@ public class Enemy : MonoBehaviour
 
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 10e3f; //8e3f; //6e3f; //4000f;
-    private readonly float thrustStrafeMultiplier = 1.5f; //4000f;
+    private float thrust = 10e3f; //8e3f; //6e3f; //4000f; //OVERRIDDEN BY DIFFICULTY
     //Torque
-    private float torqueBaseStrength = 10e3f; //3000f; //600f;
-    private float angularDragWhenEnginesOn = 40f; //for smoothing
+    private float torque = 10e3f; //3000f; //600f;
+    private readonly float ANGULAR_DRAG = 40f; //for smoothing
     //Drag
     private readonly float DRAG = 3f;
 
-    //Weapons
-    private float weaponCooldown = 0f;
-    private readonly float WEAPON_COOLDOWN_MAX = 2f; //Time in seconds between bursts
-    private readonly float WEAPON_COOLDOWN_WITHIN_BURST = 0.075f; //0.1f; //Time in seconds between shots
-    private int weaponBurst = 0;
-    private readonly int WEAPON_BURST_MAX = 12; //8; //4; //Number of laser projectiles fired per burst
+    //Weapons - all overridden by difficulty
+    private float weaponCooldown = 0f; //Current burst - DO NOT EDIT
+    private float weaponReloadPeriod = 2f; //Time in seconds between bursts
+    private float weaponInternalBurstCooldown = 0.075f; //0.1f; //Time in seconds between shots within the burst
+    private int weaponBurstIndex = 0; //Which projectile out of the burst we are currently on - DO NOT EDIT
+    private int weaponBurstLength = 12; //8; //4; //Total shots per burst
 
     //Behaviour settings
     [System.NonSerialized] public Vector3 spawnPointRaw = Vector3.zero;
@@ -41,9 +40,10 @@ public class Enemy : MonoBehaviour
     private readonly float STRAFE_PERIOD_MAX = 2f;
     private bool canStrafe = true;
     private readonly float MANUAL_LEAD_MULTIPLIER = 1.5f; //Add offset to account for how slow the torque is
-    private readonly float DESTINATION_RANDOM_OFFSET_MAGNITUDE = 20f;   //"Inaccuracy" (which in actuality actually helps the aim a little bit
-    public GameObject playerGhost;                                      //by creating a larger area-of-denial, and therefore a higher random
-                                                                        //chance of hitting the player despite their impossible-to-hit movement speed)
+    private float destinationRandomOffsetMultiplier = 0.25f;   //"Inaccuracy" (which in actuality actually helps the aim a little bit
+    public GameObject playerGhost;                             //by creating a larger area-of-denial, and therefore a higher random
+                                                               //chance of hitting the player despite their impossible-to-hit movement speed)
+                                                               //OVERRRIDDEN BY DIFFICULTY
 
     //Performance
     [System.NonSerialized] public bool destroying = false;
@@ -54,11 +54,10 @@ public class Enemy : MonoBehaviour
     [System.NonSerialized] public Vector3 rbMemAngularVel;
 
     //Health
-    [System.NonSerialized] public readonly static byte HEALTH_MAX = 6;
-    [System.NonSerialized] public byte health = HEALTH_MAX;
+    [System.NonSerialized] public byte health = 1; //overridden by difficulty
 
     //Type
-    [System.NonSerialized] public int strength;
+    [System.NonSerialized] public int strength = 0;
     [System.NonSerialized] public readonly static int STRENGTH_SMALL = 0;
     [System.NonSerialized] public readonly static int STRENGTH_MEDIUM = 1;
     [System.NonSerialized] public readonly static int STRENGTH_LARGE = 2;
@@ -136,6 +135,9 @@ public class Enemy : MonoBehaviour
                         Vector3 displacementFromAcceleration = (control.GetPlayerScript().rb.velocity * Time.deltaTime) + ((playerAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
                         destination += displacementFromAcceleration;
 
+                        //Lead change in thrust direction (for if player is thrusting in a circle around the enemy)
+                        //YET TO BE IMPLEMENTED
+
                         //Display target destination (before randomness)
                         playerGhost.transform.position = destination;
 
@@ -144,8 +146,8 @@ public class Enemy : MonoBehaviour
                         float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
                         float playerSpeedMaxRough = 22f;
                         float playerSpeedWeight = Mathf.Min(1f, control.GetPlayerScript().rb.velocity.magnitude / playerSpeedMaxRough);
-                        float destinationOffsetMagnitude = distToPlayer * 0.25f * playerSpeedWeight;
-                        if (distToPlayer >= distanceThresholdMoreThanAddRandomOffset && weaponBurst < WEAPON_BURST_MAX && control.GetPlayerScript().rb.velocity.magnitude > 1f)
+                        float destinationOffsetMagnitude = distToPlayer * destinationRandomOffsetMultiplier * playerSpeedWeight;
+                        if (distToPlayer >= distanceThresholdMoreThanAddRandomOffset && weaponBurstIndex < weaponBurstLength && control.GetPlayerScript().rb.velocity.magnitude > 1f)
                         {
                             destination += new Vector3(
                                 (Random.value - 0.5f) * destinationOffsetMagnitude,
@@ -179,7 +181,7 @@ public class Enemy : MonoBehaviour
 
         //DRAG
         //Angular drag to smooth out torque
-        rb.angularDrag = angularDragWhenEnginesOn;
+        rb.angularDrag = ANGULAR_DRAG;
 
         //DIRECTION
         //Vector to look toward
@@ -202,7 +204,7 @@ public class Enemy : MonoBehaviour
 
         //STRENGTH
         //Adding all modifiers together
-        float torqueStrength = torqueBaseStrength * rb.angularDrag * Time.deltaTime;
+        float torqueStrength = torque * rb.angularDrag * Time.deltaTime;
 
         //APPLY TORQUE
         Vector3 torqueFinal = torqueVector * torqueStrength;
@@ -284,7 +286,7 @@ public class Enemy : MonoBehaviour
         }
 
         //Thrust
-        rb.AddForce(thrustVector.normalized * THRUST * Time.deltaTime);
+        rb.AddForce(thrustVector.normalized * thrust * Time.deltaTime);
     }
 
     private void UpdateEnemyMovementDrag()
@@ -302,20 +304,20 @@ public class Enemy : MonoBehaviour
         {
             //Fire only if aiming in the general direction of the player
             float aimLinedUp = (Vector3.Dot(Vector3.Normalize(control.GetPlayerTransform().position - transform.position), transform.forward) + 1f) / 2f; //0 to 1 depending on how accurately facing the player
-            if (aimLinedUp >= 0.95f || weaponBurst < WEAPON_BURST_MAX) //How close to aiming at target before willing to attempt firing
+            if (aimLinedUp >= 0.95f || weaponBurstIndex < weaponBurstLength) //How close to aiming at target before willing to attempt firing
             {
                 //Fire
                 GetComponent<EnemyWeaponLaser>().Fire();
 
-                if (weaponBurst <= 1)
+                if (weaponBurstIndex <= 1)
                 {
-                    weaponBurst = WEAPON_BURST_MAX;
-                    weaponCooldown = WEAPON_COOLDOWN_MAX;
+                    weaponBurstIndex = weaponBurstLength;
+                    weaponCooldown = weaponReloadPeriod;
                 }
                 else
                 {
-                    weaponBurst--;
-                    weaponCooldown = WEAPON_COOLDOWN_WITHIN_BURST;
+                    weaponBurstIndex--;
+                    weaponCooldown = weaponInternalBurstCooldown;
                 }
             }
         }
@@ -329,31 +331,61 @@ public class Enemy : MonoBehaviour
         //Modify attributes based on size
         if (this.strength == STRENGTH_SMALL)
         {
+            //Physical size
             modelGroup = modelGroupStrengthWeak;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.8f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
-            health = HEALTH_MAX;
+
+            //Difficulty
+            health = 3;
+            thrust = 4e3f;
+            torque = 600f;
+            destinationRandomOffsetMultiplier = 2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+
+            weaponReloadPeriod = 2f; //Time in seconds between bursts
+            weaponInternalBurstCooldown = 0.25f; //Time in seconds between shots within the burst
+            weaponBurstLength = 4; //Total shots per burst
         }
         else if (this.strength == STRENGTH_MEDIUM)
         {
-            modelGroup = modelGroupStrengthMedium;
+            //Physical size
+            modelGroup = modelGroupStrengthWeak; //modelGroupStrengthMedium;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.8f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
-            health = HEALTH_MAX;
+
+            //Difficulty
+            health = 6; //same as player's default
+            thrust = 10e3f;
+            torque = 10e3f;
+            destinationRandomOffsetMultiplier = 0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+
+            weaponReloadPeriod = 2f; //Time in seconds between bursts
+            weaponInternalBurstCooldown = 0.1f; //Time in seconds between shots within the burst
+            weaponBurstLength = 12; //Total shots per burst
         }
         else if (this.strength == STRENGTH_LARGE)
         {
-            modelGroup = modelGroupStrengthLarge;
+            //Physical size
+            modelGroup = modelGroupStrengthWeak; //modelGroupStrengthLarge;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
+            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.8f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 0.5f;
-            health = HEALTH_MAX;
-        }
+
+            //Difficulty
+            health = 20; //player max health after upgrading hull strength
+            thrust = 11e3f;
+            torque = 12e3f;
+            destinationRandomOffsetMultiplier = 0.4f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+
+            weaponReloadPeriod = 1f; //Time in seconds between bursts
+            weaponInternalBurstCooldown = 0.05f; //Time in seconds between shots within the burst
+            weaponBurstLength = 18; //Total shots per burst
+}
         else
         {
             Debug.LogError("Unrecognized code: " + this.strength);
