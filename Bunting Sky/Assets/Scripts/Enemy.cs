@@ -123,7 +123,8 @@ public class Enemy : MonoBehaviour
                         destination = control.GetPlayerTransform().position;
 
                         //Time until the projectiles hit the target
-                        float timeToTarget = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) / EnemyWeaponLaser.PROJECTILE_SPEED; //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
+                        //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
+                        float timeToTarget = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) / EnemyWeaponLaser.PROJECTILE_SPEED;
 
                         //Lead speed
                         destination += (control.GetPlayerScript().rb.velocity * (timeToTarget * MANUAL_LEAD_MULTIPLIER));
@@ -359,7 +360,7 @@ public class Enemy : MonoBehaviour
 
             //Difficulty
             health = 6; //same as player's default
-            thrust = 10e3f;
+            thrust = 8e3f;
             torque = 10e3f;
             destinationRandomOffsetMultiplier = 0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
@@ -377,8 +378,8 @@ public class Enemy : MonoBehaviour
             rb.mass = 0.5f;
 
             //Difficulty
-            health = 20; //player max health after upgrading hull strength
-            thrust = 11e3f;
+            health = 10; //20hp is player max health after upgrading hull strength
+            thrust = 10e3f;
             torque = 12e3f;
             destinationRandomOffsetMultiplier = 0.4f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
@@ -461,6 +462,9 @@ public class Enemy : MonoBehaviour
     private void SetEnabled(bool enabled)
     {
         //This method should not be called directly except by Enable() and Disable()
+
+        //Reset weapon
+        weaponBurstIndex = weaponBurstLength;
 
         //Disable target triggers
         targetCollider1.enabled = enabled;

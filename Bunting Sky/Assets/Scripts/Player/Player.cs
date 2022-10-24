@@ -50,7 +50,7 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 10000f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
+    private readonly float THRUST = 10e3f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
     private float matchVelOffThrustModifier = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
