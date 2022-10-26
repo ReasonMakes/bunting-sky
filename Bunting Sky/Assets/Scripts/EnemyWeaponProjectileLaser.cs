@@ -91,9 +91,6 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
                         //Damage the asteroid
                         asteroidScript.Damage(1, direction, hit.point, true);
                     }
-
-                    //Reset tooltip certainty
-                    control.ui.tipAimNeedsHelpCertainty = 0f;
                 }
             }
             else if (hit.transform.name == control.generation.playerPrefab.name + "(Clone)")
@@ -101,17 +98,11 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
                 if (canDamage)
                 {
                     //Calculate the direction from the laser to the asteroid hit point
-                    Vector3 direction = (transform.position - hit.point).normalized;
+                    //Vector3 direction = (transform.position - hit.point).normalized;
 
                     //Damage the player
                     //control.GetPlayerScript().DamagePlayer(control.GetPlayerScript().vitalsHealth - 1.0d, "enemy weapons fire", 1.0f);
-                    //Enemy enemyScript = hit.transform.GetComponent<Enemy>();
-                    //enemyScript.Damage(1, direction, hit.point, true);
                 }
-
-                //Reset tooltip certainty
-                control.ui.tipAimNeedsHelpCertainty = 0f;
-                
             }
 
             //Can no longer deal damage

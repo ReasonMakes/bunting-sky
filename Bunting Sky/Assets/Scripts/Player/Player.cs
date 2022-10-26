@@ -168,6 +168,11 @@ public class Player : MonoBehaviour
     public int tutorialMoonVisitedID2 = -1;
     public int tutorialMoonVisitedID3 = -1;
     public bool tutorialHasUsedHeighliner = false;
+    public GameObject damageParticlePrefab;
+    private GameObject damageParticles;
+    [System.NonSerialized] public List<GameObject> damageParticlesPool = new List<GameObject>();
+    private int damageParticlesPoolIndex = 0;
+    private int damageParticlesPoolLength = 4;
     #endregion
 
     #region Init fields: Cargo
@@ -230,6 +235,24 @@ public class Player : MonoBehaviour
         if (control.IS_EDITOR)
         {
             thrustCheat = 2f;
+        }
+
+        //Damage particles pool
+        damageParticles = control.generation.damageParticles; //get hierarchy reference
+        for (int damageParticleIndex = 0; damageParticleIndex < damageParticlesPoolLength; damageParticleIndex++)
+        {
+            //Instantiate
+            GameObject instanceDamageParticle = Instantiate(
+                damageParticlePrefab,
+                Vector3.zero,
+                Quaternion.identity
+            );
+
+            //Hierarchy
+            instanceDamageParticle.transform.parent = damageParticles.transform;
+
+            //Add to pool
+            damageParticlesPool.Add(instanceDamageParticle);
         }
 
         //MODEL
@@ -759,7 +782,8 @@ public class Player : MonoBehaviour
                     vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
                 ),
                 "overheat",
-                0f
+                0f,
+                (control.generation.instanceStarHome.transform.position - transform.position).normalized
             );
         }
         else
@@ -1714,7 +1738,8 @@ public class Player : MonoBehaviour
             DamagePlayer(
                 newHealthAmount,
                 cause,
-                (float)damageToDeal
+                (float)damageToDeal,
+                (collision.collider.transform.position - transform.position).normalized
             );
         }
         else
@@ -1745,22 +1770,29 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void DamagePlayer(double newHealthAmount, string cause, float tempEngineDisableDuration)
+    public void DamagePlayer(double newHealthAmount, string cause, float tempEngineDisableDuration, Vector3 directionDamageCameFrom)
     {
         if (!isDestroyed)
         {
+            //Damage
             vitalsHealth = newHealthAmount;
+
+            //UI warning
             control.ui.UpdatePlayerVitalsDisplay(); //force a vitals update so that you can immediately see your health change
             FlashWarning("WARNING: " + cause + "\nHull integrity compromised"); //⚠
-                                                                                //deathMessage = "You died.\nLast recorded warning message: " + cause
             lastDamageCause = cause;
+
+            //Emit particles
+            EmitParticles(1, directionDamageCameFrom, false);
 
             if (vitalsHealth <= 0f)
             {
+                //Kill
                 DestroyPlayer();
             }
             else
             {
+                //Disable engines
                 tempEngineDisable = Mathf.Max(tempEngineDisable, tempEngineDisableDuration);
             }
         }
@@ -1769,7 +1801,7 @@ public class Player : MonoBehaviour
     private void DestroyPlayer()
     {
         //Emit particles
-        GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, transform.position, true);
+        EmitParticles(7, Vector3.zero, true);
 
         //Play sound
         //TODO
@@ -1779,6 +1811,24 @@ public class Player : MonoBehaviour
 
         //Hide models (after destroyed is called because their visibility is determined by that variable)
         DecideWhichModelsToRender();
+    }
+
+    private void EmitParticles(int amount, Vector3 direction, bool destroyAfter)
+    {
+        //Get the transform of the current particle from the pool
+        Transform particleTran = damageParticles.transform.GetChild(damageParticlesPoolIndex);
+
+        //Set particle system to current particle pool index
+        GetComponent<ParticlesDamageRock>().particlesDamageRock = particleTran.GetComponent<ParticleSystem>();
+
+        //Teleport particle system to player position
+        particleTran.position = transform.position;
+
+        //Emit particles
+        GetComponent<ParticlesDamageRock>().EmitDamageParticles(amount, direction, transform.position, destroyAfter);
+
+        //Advance index for the next call (but don't go over the limit)
+        damageParticlesPoolIndex = (damageParticlesPoolIndex + 1) % damageParticlesPoolLength;
     }
     #endregion
     #endregion

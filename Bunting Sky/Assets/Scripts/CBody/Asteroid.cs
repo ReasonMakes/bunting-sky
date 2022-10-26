@@ -549,34 +549,5 @@ public class Asteroid : MonoBehaviour
             0.5f + (0.5f * Random.value)
         ));
         instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
-
-        ////Instantiating - before we set up object pooling for ore
-        ////Spawn with some of the position and speed randomized
-        //GameObject instanceOre = Instantiate(
-        //    ore,
-        //    transform.position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
-        //    Quaternion.identity
-        //);
-        ////Put in Ore tree
-        //instanceOre.transform.parent = control.generation.ores.transform;
-        //
-        ////Rigidbody
-        //Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();
-        //instanceOreRb.velocity = rb.velocity;
-        //instanceOreRb.angularVelocity = rb.angularVelocity;
-        //instanceOreRb.inertiaTensor = rb.inertiaTensor;
-        //instanceOreRb.inertiaTensorRotation = rb.inertiaTensorRotation;
-        //instanceOreRb.AddForce(1000f * new Vector3(
-        //    0.5f + (0.5f * Random.value),
-        //    0.5f + (0.5f * Random.value),
-        //    0.5f + (0.5f * Random.value)
-        //));
-        //instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
-        //
-        ////Script
-        //Ore instanceOreScript = instanceOre.GetComponent<Ore>();
-        //instanceOreScript.control = control;
-        //instanceOreScript.type = type;
-        //instanceOreScript.parentVelocity = rb.velocity;
     }
 }

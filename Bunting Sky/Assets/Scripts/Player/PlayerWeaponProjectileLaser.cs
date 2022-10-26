@@ -5,7 +5,6 @@ using UnityEngine;
 public class PlayerWeaponProjectileLaser : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    private Transform playerBody;
     public Rigidbody rb;
 
     [System.NonSerialized] public float timeSpentAlive;
@@ -17,13 +16,10 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     private void Start()
     {
-        //Player reference
-        playerBody = control.generation.instancePlayer.transform.Find("Body");
-
         //Ignore collisions with player
         Physics.IgnoreCollision(
             transform.Find("Non-Emissive Model").GetComponent<MeshCollider>(),
-            playerBody.Find("Player Collider").GetComponent<MeshCollider>()
+            control.GetPlayerTransform().Find("Player Collider").GetComponent<MeshCollider>()
         );
 
         //General collision detection
@@ -118,8 +114,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                     Vector3 direction = (transform.position - hit.point).normalized;
 
                     //Damage the enemy
-                    Enemy enemyScript = hit.transform.GetComponent<Enemy>();
-                    enemyScript.Damage(1, direction, hit.point, true);
+                    hit.transform.GetComponent<Enemy>().Damage(1, direction, hit.point, true);
                 }
 
                 //Reset tooltip certainty
@@ -137,14 +132,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        //Debug.Log("Collision!");
-
         DeactivateSelf();
-
-        //if (collision.gameObject.name == control.generation.cBodyAsteroid.name + "(Clone)")
-        //{
-        //    DeactivateSelf();
-        //}
     }
 
     private void UpdateEmissionAndLuminosity()

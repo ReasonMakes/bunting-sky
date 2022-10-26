@@ -88,6 +88,8 @@ public class Generation : MonoBehaviour
         public GameObject enemies;
             public GameObject enemy;
 
+        public GameObject damageParticles;
+
     private void Start()
     {
         //Max distances, minus some padding

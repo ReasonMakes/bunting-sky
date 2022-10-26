@@ -21772,6 +21772,36 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 319.5}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1225834284
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1225834285}
+  m_Layer: 0
+  m_Name: Damage Particles
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1225834285
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1225834284}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1231246585}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1229077715
 GameObject:
   m_ObjectHideFlags: 0
@@ -22147,6 +22177,7 @@ Transform:
   - {fileID: 1434091534}
   - {fileID: 770183181}
   - {fileID: 1412937187}
+  - {fileID: 1225834285}
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -33052,6 +33083,7 @@ MonoBehaviour:
   enemyProjectilesLasers: {fileID: 778127965}
   enemies: {fileID: 1412937186}
   enemy: {fileID: 1333070546947983284, guid: 98f6b4ec03e5d95418128c41a99ce9d1, type: 3}
+  damageParticles: {fileID: 1225834284}
 --- !u!114 &2000740129
 MonoBehaviour:
   m_ObjectHideFlags: 0

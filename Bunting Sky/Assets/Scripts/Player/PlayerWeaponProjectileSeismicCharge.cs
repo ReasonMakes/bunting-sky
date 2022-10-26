@@ -25,8 +25,11 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
     private void Start()
     {
-        //rb.detectCollisions = true;
-        playerBody = control.generation.instancePlayer.transform.Find("Body");
+        //Ignore collisions with player
+        Physics.IgnoreCollision(
+            transform.Find("Non-Emissive Model").GetComponent<MeshCollider>(),
+            control.GetPlayerTransform().Find("Player Collider").GetComponent<MeshCollider>()
+        );
     }
 
     public void ResetPoolState(Vector3 position, Quaternion rotation, Vector3 velocity)
@@ -39,7 +42,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
         rb.AddTorque(100 * new Vector3(Random.value, Random.value, Random.value));
         timeAtWhichThisSelfDestructs = PROJECTILE_LIFETIME_DURATION;
         timeSpentAlive = 0f;
-        startVelocity = control.generation.instancePlayer.GetComponentInChildren<Rigidbody>().velocity;
+        startVelocity = control.generation.playerPrefab.GetComponentInChildren<Rigidbody>().velocity;
         exploded = false;
     }
 
@@ -116,46 +119,61 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
         Collider[] collidersInRadius = Physics.OverlapSphere(transform.position, EXPLOSION_RADIUS);
         foreach (Collider collider in collidersInRadius)
         {
-            //Don't bother raycasting unless the collider in the area is an asteroid
-            if (StringIsAnAsteroidModel(collider.gameObject.name))
+            //Don't bother raycasting unless the collider in the area is "damageable" (asteroid, enemy, player, etc.)
+            if (IsADamageableCollider(collider))
             {
-                //Cast a ray to make sure the asteroid is in LOS
+                //Cast a ray to make sure the collider is in LOS
                 LayerMask someLayerMask = -1;
                 Vector3 rayDirection = (collider.transform.position - transform.position).normalized;
                 float rayDistanceMax = (collider.transform.position - transform.position).magnitude;
 
                 if (Physics.Raycast(transform.position, rayDirection, out RaycastHit hit, rayDistanceMax, someLayerMask, QueryTriggerInteraction.Ignore))
                 {
-                    //Debug.LogFormat("{0}", hit.collider.name);
-                    //We need to be ignoring triggers?
-
                     //Make sure the ray is hitting an asteroid (something else could be in the way blocking LOS) that is within range
                     float distanceBetweenHitAndEpicentre = (transform.position - hit.point).magnitude;
-                    //Debug.Log(hit.transform.name);
-                    if (distanceBetweenHitAndEpicentre < EXPLOSION_RADIUS && hit.transform.name == control.generation.asteroid.name + "(Clone)")
+
+                    if (IsADamageableRaycastHit(hit) && distanceBetweenHitAndEpicentre < EXPLOSION_RADIUS)
                     {
-                        Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
-
-                        //Don't bother with already destroyed asteroids
-                        if (!asteroidScript.destroying)
+                        //Asteroid
+                        if (hit.transform.name == control.generation.asteroid.name + "(Clone)")
                         {
-                            
-                            //THIS RUNS FOUR TIMES BECAUSE IT IS HITTING THE TRIGGER COLLIDERS
-                            
+                            Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
+                            //Don't bother with already destroyed asteroids
+                            if (!asteroidScript.destroying)
+                            {
+                                //THIS RUNS FOUR TIMES BECAUSE IT IS HITTING THE TRIGGER COLLIDERS
 
-                            //Explosion push force
-                            //collider.GetComponent<Rigidbody>().AddExplosionForce(EXPLOSION_STRENGTH, transform.position, EXPLOSION_RADIUS);
-                            Vector3 directionFromEpicentreToHit = (hit.point - transform.position).normalized;
-                            Vector3 finalForceVector = directionFromEpicentreToHit * EXPLOSION_PUSH_STRENGTH * (1f - (distanceBetweenHitAndEpicentre / EXPLOSION_RADIUS));
-                            //Debug.Log(finalForceVector.magnitude);
-                            //Model Object -> Model Size Folder -> All Models Folder -> Complete Asteroid
-                            //collider.transform.parent.parent.parent.GetComponent<Rigidbody>().AddForce(finalForceVector);
-                            //hit.transform.GetComponent<Rigidbody>().AddForce(finalForceVector);
+                                //Explosion push force
+                                //Vector3 directionFromEpicentreToHit = (hit.point - transform.position).normalized;
+                                //Vector3 finalForceVector = directionFromEpicentreToHit * EXPLOSION_PUSH_STRENGTH * (1f - (distanceBetweenHitAndEpicentre / EXPLOSION_RADIUS));
 
-                            //Explosion damage
-                            Vector3 directionHitFrom = (transform.position - hit.point).normalized;
-                            asteroidScript.Damage(2, directionHitFrom, hit.point, true);
+                                //Explosion damage
+                                Vector3 directionHitFrom = (transform.position - hit.point).normalized;
+                                asteroidScript.Damage(2, directionHitFrom, hit.point, true);
+                            }
+                        }
+                        else if (hit.transform.name == control.generation.enemy.name + "(Clone)")
+                        {
+                            //Calculate the direction from the projectile to the collider hit point
+                            Vector3 direction = (transform.position - hit.point).normalized;
+
+                            //Damage
+                            Enemy enemyScript = hit.transform.GetComponent<Enemy>();
+                            enemyScript.Damage(1, direction, hit.point, true);
+                        }
+                        else if (hit.transform.name == "Body")
+                        {
+                            //Calculate the direction from the projectile to the collider hit point
+                            //Vector3 direction = (transform.position - hit.point).normalized;
+
+                            //Damage
+                            control.GetPlayerScript().DamagePlayer(
+                                control.GetPlayerScript().vitalsHealth - 1.0d,
+                                "seismic charge explosion",
+                                1.0f,
+                                (transform.position - control.GetPlayerTransform().position).normalized
+                            );
                         }
                     }
                 }
@@ -165,8 +183,6 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
     private bool StringIsAnAsteroidModel(string name)
     {
-        //control.generation.cBodyAsteroid.name + "(Clone)";
-
         bool itIs =
                name == "AsteroidSmall1"
             || name == "AsteroidSmall2"
@@ -176,14 +192,27 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
             || name == "Asteroid3"
             || name == "AsteroidLarge1";
 
-        /*
-        if (itIs)
-        {
-            Debug.Log("String is an asteroid name");
-        }
-        */
-
         return itIs;
+    }
+
+    private bool IsADamageableRaycastHit(RaycastHit hit)
+    {
+        return (
+               hit.transform.name == control.generation.asteroid.name + "(Clone)"
+            || hit.transform.name == control.generation.enemy.name + "(Clone)"
+            || hit.transform.name == "Player Collider"
+            || hit.transform.name == "Body"
+        );
+    }
+
+    private bool IsADamageableCollider(Collider collider)
+    {
+        return (
+            StringIsAnAsteroidModel(collider.gameObject.name)
+            || collider.gameObject.name == control.generation.enemy.name + "(Clone)"
+            || collider.gameObject.name == "Player Collider"
+            || collider.gameObject.name == "Body"
+        );
     }
 
     private void UpdateCollisionDetection()
@@ -234,7 +263,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
     private void UpdateEmissionAndLuminosity()
     {
         bool NotSelfDestructingYet = timeSpentAlive < timeAtWhichThisSelfDestructs - Time.deltaTime;
-        bool isFarEnoughAwayFromPlayer = Vector3.Distance(transform.position, playerBody.position) > MIN_GLOW_DISTANCE + (playerBody.GetComponent<Rigidbody>().velocity.magnitude / 25f);
+        bool isFarEnoughAwayFromPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > MIN_GLOW_DISTANCE + (control.GetPlayerScript().GetComponent<Rigidbody>().velocity.magnitude / 25f);
 
         //Debug.LogFormat("{0}, {1}", NotSelfDestructingYet, isFarEnoughAwayFromPlayer);
 

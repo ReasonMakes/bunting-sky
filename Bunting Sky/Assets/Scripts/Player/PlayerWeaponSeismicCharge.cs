@@ -94,7 +94,8 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
         //Physics.IgnoreCollision(weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Collider>(), transform.GetComponent<Collider>());
         //Reset weapon instance
         POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().ResetPoolState(
-            transform.position + (transform.forward * 0.14f) - (transform.up * 0.05f),
+            //transform.position + (transform.forward * 2f) - (transform.up * 0.015f),
+            transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f),
             transform.rotation * Quaternion.Euler(90, 270, 0),
             player.rb.velocity + (PROJECTILE_SPEED * transform.forward)
         );
@@ -111,7 +112,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
         POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().startVelocity = control.generation.instancePlayer.GetComponentInChildren<Rigidbody>().velocity;
         POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().exploded = false;
         */
-        
+
         //Iterate through list
         if (poolIndex < POOL_LENGTH - 1)
         {
