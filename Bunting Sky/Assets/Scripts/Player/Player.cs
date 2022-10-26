@@ -940,12 +940,12 @@ public class Player : MonoBehaviour
                 velocityOfObjectDraggingRelativeTo = closestAsteroidTransform.GetComponent<Rigidbody>().velocity;
                 rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
             }
-            else if (targetObject != null)
-            {
-                //Target-relative drag
-                velocityOfObjectDraggingRelativeTo = targetObject.GetComponent<Rigidbody>().velocity;
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
-            }
+            //else if (targetObject != null)
+            //{
+            //    //Target-relative drag
+            //    velocityOfObjectDraggingRelativeTo = targetObject.GetComponent<Rigidbody>().velocity;
+            //    rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
+            //}
             else
             {
                 //Centre planet-relative drag

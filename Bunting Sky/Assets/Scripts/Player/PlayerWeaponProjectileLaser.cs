@@ -113,8 +113,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                     //Calculate the direction from the laser to the asteroid hit point
                     Vector3 direction = (transform.position - hit.point).normalized;
 
-                    //Damage the enemy
-                    hit.transform.GetComponent<Enemy>().Damage(1, direction, hit.point, true);
+                    hit.transform.GetComponent<Enemy>().Damage(1, direction, hit.point, true, true);
                 }
 
                 //Reset tooltip certainty

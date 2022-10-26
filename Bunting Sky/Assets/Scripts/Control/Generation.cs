@@ -926,7 +926,7 @@ public class Generation : MonoBehaviour
                 );
 
                 //Spawn the enemy
-                EnemySpawn(position, Enemy.STRENGTH_SMALL);
+                EnemySpawn(position, Enemy.STRENGTH_LARGE);
             }
         }
     }

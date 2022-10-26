@@ -160,7 +160,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
                             //Damage
                             Enemy enemyScript = hit.transform.GetComponent<Enemy>();
-                            enemyScript.Damage(1, direction, hit.point, true);
+                            enemyScript.Damage(1, direction, hit.point, true, true);
                         }
                         else if (hit.transform.name == "Body")
                         {

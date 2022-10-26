@@ -788,7 +788,7 @@ public class UI : MonoBehaviour
         Vector3 playerVelocity = playerTransform.GetComponent<Rigidbody>().velocity;
 
         //Distance
-        float conversionRatio = 12.0f; //4.0f; //1 Unity unit = 4 metres
+        float conversionRatio = 12.0f; //1 Unity unit = 12 metres
         float distance = Vector3.Distance(subjectTransform.position, playerTransform.position) * conversionRatio;
         string distanceDisplay = " ?, ";
         if (distance < 1e3f)

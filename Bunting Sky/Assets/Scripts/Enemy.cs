@@ -30,6 +30,8 @@ public class Enemy : MonoBehaviour
     [System.NonSerialized] public Vector3 spawnPointRaw = Vector3.zero;
     private Vector3 destination = Vector3.zero;
     private bool aggro = false;
+    private float lastShotTime = 0f;
+    private readonly float LAST_SHOT_MEMORY_PERIOD = 10f; //How long in seconds the bandit remembers that they were recently shot for
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO = 140f;
     private readonly float DISTANCE_THRESHOLD_GREATER_THAN_TO_MOVE_FORWARD = 16f;
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE = 30f;
@@ -109,6 +111,10 @@ public class Enemy : MonoBehaviour
                     if (control.GetPlayerScript().isDestroyed)
                     {
                         aggro = false;
+                    }
+                    else if (Time.time <= lastShotTime + LAST_SHOT_MEMORY_PERIOD)
+                    {
+                        aggro = true;
                     }
                     else
                     {
@@ -329,16 +335,17 @@ public class Enemy : MonoBehaviour
         //Set the internal field for size
         this.strength = strength;
 
+        GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
+        GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.8f;
+        GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
+        rb.mass = 0.5f;
+
         //Modify attributes based on size
         if (this.strength == STRENGTH_SMALL)
         {
             //Physical size
             modelGroup = modelGroupStrengthWeak;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.8f;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
-            rb.mass = 0.5f;
-
+            
             //Difficulty
             health = 3;
             thrust = 4e3f;
@@ -352,11 +359,7 @@ public class Enemy : MonoBehaviour
         else if (this.strength == STRENGTH_MEDIUM)
         {
             //Physical size
-            modelGroup = modelGroupStrengthWeak; //modelGroupStrengthMedium;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.8f;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
-            rb.mass = 0.5f;
+            modelGroup = modelGroupStrengthWeak;
 
             //Difficulty
             health = 6; //same as player's default
@@ -371,11 +374,7 @@ public class Enemy : MonoBehaviour
         else if (this.strength == STRENGTH_LARGE)
         {
             //Physical size
-            modelGroup = modelGroupStrengthWeak; //modelGroupStrengthLarge;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.8f;
-            GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
-            rb.mass = 0.5f;
+            modelGroup = modelGroupStrengthWeak;
 
             //Difficulty
             health = 10; //20hp is player max health after upgrading hull strength
@@ -405,12 +404,17 @@ public class Enemy : MonoBehaviour
         GetComponent<ParticlesDamageRock>().SetParticleSystemDamageColour(modelObject.transform.GetChild(0), GetComponent<ParticlesDamageRock>().saturationDefault);
     }
 
-    public void Damage(byte damageAmount, Vector3 direction, Vector3 position, bool oreDrop)
+    public void Damage(byte damageAmount, Vector3 direction, Vector3 position, bool oreDrop, bool shotByPlayer)
     {
         health = (byte)Mathf.Max(0f, health - damageAmount);
         if (health > 0)
         {
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(1, direction, position, false);
+
+            if (shotByPlayer)
+            {
+                lastShotTime = Time.time;
+            }
         }
         else
         {
