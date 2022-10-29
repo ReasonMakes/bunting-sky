@@ -307,7 +307,8 @@ public class Generation : MonoBehaviour
         StarSpawn(null);
 
         //Planetary system (planets > moons > heighliners, stations > player)
-        nPlanetsPlanned = Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1);
+        nPlanetsPlanned = (PLANETS_RANGE_HIGH + PLANETS_RANGE_LOW) / 2; //the player's first system should have a very stable number of planets
+        //nPlanetsPlanned = Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1); //extrastellar systems should have varied planet numbers
         PlanetarySystemClusterSpawn(nPlanetsPlanned, generationType);
 
         //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
@@ -346,23 +347,55 @@ public class Generation : MonoBehaviour
     private void PlanetarySystemClusterSpawn(int nPlanets, int generationType)
     {
         //Properties
-        float distanceOut = maxMoonDist;
-        float randSpacing;
-        float spawnRadius;
-        float spawnAngle;
+        //float distanceOut = maxMoonDist;
+        //float randSpacing;
+        //float spawnRadius;
+        //float spawnAngle;
 
         //Spawn all planetary systems
+        //Start by creating a list of all available degrees, defaulting to be available
+        bool[] availableAngles = new bool[10];
+        for (int angleIndex = 0; angleIndex < availableAngles.Length; angleIndex++)
+        {
+            availableAngles[angleIndex] = true;
+        }
+        //Loop for each planet to spawn it
         for (int planetaryIndex = 0; planetaryIndex < nPlanets; planetaryIndex++)
         {
             //Generate planet position
-            randSpacing = Mathf.Pow(Random.Range(0f, planetsSpacingBaseMax), Random.Range(1f, PLANETS_SPACING_POWER));
-            spawnRadius = distanceOut + randSpacing;
-            distanceOut = spawnRadius; //incremenet distanceOut for the next moon
-            spawnAngle = Random.Range(0f, 360f);
+            //randSpacing = Mathf.Pow(Random.Range(0f, planetsSpacingBaseMax), Random.Range(1f, PLANETS_SPACING_POWER));
+            //spawnRadius = distanceOut + randSpacing;
+            //distanceOut = spawnRadius; //incremenet distanceOut for the next moon
+            //spawnAngle = Random.Range(0f, 360f);
+
+            //Try to find an availablke angle for the planet to spawn at
+            float spawnAngle = 0f;
+            int triesMax = 50;
+            for (int tryIndex = 0; tryIndex < triesMax; tryIndex++)
+            {
+                int angleToCheck = (int)Random.Range(0f, 10f);
+                if (availableAngles[angleToCheck])
+                {
+                    //Set the angle to use as no longer available for other planets to use
+                    availableAngles[angleToCheck] = false;
+
+                    //Set the angle to spawn the planet
+                    spawnAngle = angleToCheck * 36f; //360(angles we want) / 10(availableAngles.Length) = 36(conversion coefficient)
+
+                    //Exit the try loop
+                    break;
+                }
+                else if (tryIndex == triesMax - 1)
+                {
+                    //Default to a random angle if we run out of tries
+                    Debug.LogError("Ran out of tries trying to find an available angle for the planet to spawn");
+                    spawnAngle = Random.Range(0f, 360f);
+                }
+            }
             Vector3 position = new Vector3(
-                Mathf.Cos(spawnAngle) * distanceOut,
-                0f,
-                Mathf.Sin(spawnAngle) * distanceOut
+                Mathf.Cos(spawnAngle) * maxMoonDist,
+                Random.Range(-10f, 10f),
+                Mathf.Sin(spawnAngle) * maxMoonDist
             );
 
             //Spawn planet
@@ -381,25 +414,6 @@ public class Generation : MonoBehaviour
             //Moons
             GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
 
-            //Asteroid belt (some percent of all planets have one)
-            float nPercentAsteroidBelts = 50f;
-            if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
-            {
-                AsteroidPoolSpawnCluster(
-                    CLUSTER_TYPE_PLANET_RINGS,
-                    Asteroid.GetRandomType(),
-                    position,
-                    false
-                );
-            }
-
-            //Enemy (some percent of all planets have them)
-            float nPercentEnemies = 50f;
-            if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
-            {
-                EnemySpawnCluster(CLUSTER_TYPE_PLANET_CLUMP, position);
-            }
-
             //If home planetary system
             if (planetarySystemIndex == 0)
             {
@@ -411,6 +425,90 @@ public class Generation : MonoBehaviour
                     generationType,
                     playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
                 );
+
+                //Asteroid belt guaranteed at player's spawn planet
+                //The player's spawn system only has simple resources - the player must travel elsewhere to collect new resource types
+                byte asteroidType = Asteroid.TYPE_WATER;
+                if (Random.value > 0.5f)
+                {
+                    asteroidType = Asteroid.TYPE_PLATINOID;
+                }
+                AsteroidPoolSpawnCluster(
+                    CLUSTER_TYPE_PLANET_RINGS,
+                    asteroidType,
+                    position,
+                    false
+                );
+
+                //One minor bandit is guaranteed to spawn at the player's spawn planet
+                EnemySpawnCluster(
+                    CLUSTER_TYPE_PLANET_CLUMP,
+                    position,
+                    Enemy.STRENGTH_MINOR.ToString()
+                );
+            }
+            else
+            {
+                //Planetary systems OTHER than player spawn
+                //Asteroid belt (some percent of all planets have one)
+                float nPercentAsteroidBelts = 50f;
+                if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
+                {
+                    //Any asteroid type can spawn in other planetary systems than the one the player spawns at
+                    AsteroidPoolSpawnCluster(
+                        CLUSTER_TYPE_PLANET_RINGS,
+                        Asteroid.GetRandomType(),
+                        position,
+                        false
+                    );
+                }
+
+                //Bandits
+                float nPercentEnemies = 50f;
+                if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
+                {
+                    float roll = Random.value;
+                    if (roll <= 0.5f)
+                    {
+                        EnemySpawnCluster(
+                            CLUSTER_TYPE_PLANET_CLUMP,
+                            position,
+                              Enemy.STRENGTH_MAJOR.ToString()
+                            + Enemy.STRENGTH_MINOR.ToString()
+                        );
+                    }
+                    else if (roll <= 0.7f)
+                    {
+                        EnemySpawnCluster(
+                            CLUSTER_TYPE_PLANET_CLUMP,
+                            position,
+                              Enemy.STRENGTH_MAJOR.ToString()
+                            + Enemy.STRENGTH_MAJOR.ToString()
+                            + Enemy.STRENGTH_MINOR.ToString()
+                            + Enemy.STRENGTH_MINOR.ToString()
+                        );
+                    }
+                    else if (roll <= 0.9f)
+                    {
+                        EnemySpawnCluster(
+                            CLUSTER_TYPE_PLANET_CLUMP,
+                            position,
+                              Enemy.STRENGTH_ELITE.ToString()
+                            + Enemy.STRENGTH_MAJOR.ToString()
+                            + Enemy.STRENGTH_MINOR.ToString()
+                            + Enemy.STRENGTH_MINOR.ToString()
+                        );
+                    }
+                    else
+                    {
+                        EnemySpawnCluster(
+                            CLUSTER_TYPE_PLANET_CLUMP,
+                            position,
+                              Enemy.STRENGTH_ELITE.ToString()
+                            + Enemy.STRENGTH_ELITE.ToString()
+                        );
+                    }
+                }
             }
         }
 
@@ -494,7 +592,7 @@ public class Generation : MonoBehaviour
 
             Vector3 position = new Vector3(
                 Mathf.Cos(spawnAngle) * spawnRadius,
-                Random.Range(-verticalOffsetRange, verticalOffsetRange),
+                planetPosition.y + Random.Range(-verticalOffsetRange, verticalOffsetRange),
                 Mathf.Sin(spawnAngle) * spawnRadius
             );
             //Offset to "orbit" planet
@@ -509,11 +607,39 @@ public class Generation : MonoBehaviour
                 null, false, 0f, 0f, 0f, null
             );
 
-            //Debug.Log("moonIndex " + moonIndex + " / " + nMoons + " moons");
             //Spawn asteroid belt (some percentage of moons have them)
             float nPercentAsteroidBelts = 50f;
-            if (moonIndex == nMoons - 1 || Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+            if (moonIndex == nMoons - 1)
             {
+                //The player's spawn moon ALWAYS spawns with water ice asteroids
+                AsteroidPoolSpawnCluster(
+                    CLUSTER_TYPE_MOON_RINGS,
+                    Asteroid.TYPE_WATER,
+                    position,
+                    true
+                );
+            }
+            else if (planetIndex == 0)
+            {
+                if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+                {
+                    //Only water and platinoids can spawn in the player's home system
+                    byte asteroidType = Asteroid.TYPE_WATER;
+                    if (Random.value > 0.5f)
+                    {
+                        asteroidType = Asteroid.TYPE_PLATINOID;
+                    }
+                    AsteroidPoolSpawnCluster(
+                        CLUSTER_TYPE_PLANET_RINGS,
+                        asteroidType,
+                        position,
+                        false
+                    );
+                }
+            }
+            else if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+            {
+                //Any asteroid type can spawn at planetary systems other than the player's spawn system
                 AsteroidPoolSpawnCluster(
                     CLUSTER_TYPE_MOON_RINGS,
                     Asteroid.GetRandomType(),
@@ -749,7 +875,7 @@ public class Generation : MonoBehaviour
         }
         else
         {
-            Debug.Log("No free asteroids!");
+            Debug.LogError("No free asteroids!");
             //TODO: later we could either expand the pool or reuse enabled asteroids
         }
 
@@ -774,7 +900,7 @@ public class Generation : MonoBehaviour
         }
         else
         {
-            Debug.Log("No free ores!");
+            Debug.LogError("No free ores!");
             //TODO: later we could either expand the pool or reuse enabled asteroids
         }
 
@@ -847,7 +973,7 @@ public class Generation : MonoBehaviour
                 //Randomly move up/down relative the stellar plane
                 instanceAsteroid.transform.position = new Vector3(
                     instanceAsteroid.transform.position.x,
-                    Random.Range(0f, 2f * heightRandomness) - heightRandomness,
+                    instanceAsteroid.transform.position.y + (Random.Range(0f, 2f * heightRandomness) - heightRandomness),
                     instanceAsteroid.transform.position.z
                 );
 
@@ -908,27 +1034,61 @@ public class Generation : MonoBehaviour
     //    }
     //}
 
-    private void EnemySpawnCluster(int clusterType, Vector3 position)
+    private void EnemySpawnCluster(int clusterType, Vector3 position, string list)
     {
+        //clusterType - an enum of several spawn patterns
+        //position - where that spawn pattern will centre around
+        //list - how many enemies and of what strength. Example: "2100" = 1x elite bandit, 1x major bandits, and 2x minor bandits
+        //Should be written as Enemy.STRENGTH_ELITE.ToString() + Enemy.STRENGTH_MAJOR.ToString() + Enemy.STRENGTH_MINOR.ToString() + Enemy.STRENGTH_MINOR.ToString()
+
+        //Amount
+        int amount = list.Length;
+        
+        //Spawn pattern
         if (clusterType == CLUSTER_TYPE_PLANET_CLUMP)
         {
-            int nEnemies = 1;
-            float radius = 150f;
-            float angle = Random.value * 360f;
+            //Position - where around the planet will the cluster be?
+            float radiusFromPlanet = 150f;
+            float angleFromPlanet = Random.value * 360f;
+            Vector3 positionFromPlanet = position + new Vector3(
+                Mathf.Cos(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet,
+                position.y + 30f,
+                Mathf.Sin(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet
+            );
 
-            for (int i = 0; i < nEnemies; i++)
+            if (amount == 1)
             {
-                //Position to spawn at
-                position += new Vector3(
-                    Mathf.Cos(Mathf.Deg2Rad * angle) * radius,
-                    30f,
-                    Mathf.Sin(Mathf.Deg2Rad * angle) * radius
-                );
+                //Don't bother calculating offsets if there will only be one bandit spawned
+                EnemySpawn(positionFromPlanet, GetIntFromStringIndex(list, 0));
+            }
+            else
+            {
+                for (int i = 0; i < amount; i++)
+                {
+                    //Position - where within the cluster will this bandit be?
+                    float radiusFromCluster = 10f;
+                    float angleFromCluster = Random.value * 360f;
+                    Vector3 positionFromCluster = positionFromPlanet + new Vector3(
+                        Mathf.Cos(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster,
+                        positionFromPlanet.y + Random.Range(-10f, 10f),
+                        Mathf.Sin(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster
+                    );
 
-                //Spawn the enemy
-                EnemySpawn(position, Enemy.STRENGTH_LARGE);
+                    //Spawn the bandit
+                    EnemySpawn(positionFromCluster, GetIntFromStringIndex(list, i));
+                }
             }
         }
+    }
+
+    private int GetIntFromStringIndex(string str, int index)
+    {
+        //We are working with ASCII here, so we need to subtract the ASCII value of the first alpha numerical character in the lister
+        //Ex: list[i] = '3':
+        //int strength = (int)list[i] - (int)'0';
+        //int strength = 51 - 48; //'0' is encoded as 48 in ASCII
+        //int strength = 3;
+        return (int)str[index] - (int)'0';
     }
 
     public GameObject EnemySpawn(Vector3 position, int strength)

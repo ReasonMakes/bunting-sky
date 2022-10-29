@@ -437,12 +437,18 @@ public class Asteroid : MonoBehaviour
     {
         for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
         {
+            //Offset spawned asteroids randomly
+            float offsetMagnitude = 3f; //4f //1.2f
+            Vector3 position = transform.position + (offsetMagnitude * new Vector3(Random.value, Random.value, Random.value));
+
+            //Spawn the new asteroid(s) from pool
             GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
-                transform.position + (4f * new Vector3(Random.value, Random.value, Random.value)), //1.2f
+                position,
                 asteroidsSizes,
                 type
             );
 
+            //Pass rigidbody values
             instanceAsteroid.GetComponent<Asteroid>().PassRigidbodyValuesAndAddRandomForce(
                 rb.velocity,
                 rb.angularVelocity,

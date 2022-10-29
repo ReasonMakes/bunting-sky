@@ -720,15 +720,15 @@ public class UI : MonoBehaviour
                 //Waypoint
                 waypointTextType.text = "Bandit";
                 int strength = hit.collider.gameObject.GetComponent<Enemy>().strength;
-                if (strength == Enemy.STRENGTH_SMALL)
+                if (strength == Enemy.STRENGTH_MINOR)
                 {
                     waypointTextTitle.text = "Minor";
                 }
-                else if (strength == Enemy.STRENGTH_MEDIUM)
+                else if (strength == Enemy.STRENGTH_MAJOR)
                 {
                     waypointTextTitle.text = "Major";
                 }
-                else if (strength == Enemy.STRENGTH_LARGE)
+                else if (strength == Enemy.STRENGTH_ELITE)
                 {
                     waypointTextTitle.text = "Elite";
                 }

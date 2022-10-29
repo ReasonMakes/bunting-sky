@@ -30,14 +30,14 @@ public class HeighlinerEntry : MonoBehaviour
             {
                 if (exitNode == null)
                 {
-                    Debug.Log("Exit node for " + GetParentMoonName() + " is null; nowhere to teleport to");
+                    Debug.LogError("Exit node for " + GetParentMoonName() + " is null; nowhere to teleport to");
                 }
                 else
                 {
                     //Teleport
                     //----------------
-
-                    Debug.Log("Teleporting: " + GetParentMoonName() + " -> " + exitNode.GetComponentInChildren<HeighlinerEntry>().GetParentMoonName());
+                    //Log
+                    //Debug.Log("Teleporting: " + GetParentMoonName() + " -> " + exitNode.GetComponentInChildren<HeighlinerEntry>().GetParentMoonName());
 
                     //Remember recent teleport
                     control.GetPlayerScript().recentTeleport = true;

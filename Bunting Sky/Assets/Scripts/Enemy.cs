@@ -60,9 +60,9 @@ public class Enemy : MonoBehaviour
 
     //Type
     [System.NonSerialized] public int strength = 0;
-    [System.NonSerialized] public readonly static int STRENGTH_SMALL = 0;
-    [System.NonSerialized] public readonly static int STRENGTH_MEDIUM = 1;
-    [System.NonSerialized] public readonly static int STRENGTH_LARGE = 2;
+    [System.NonSerialized] public readonly static int STRENGTH_MINOR = 0;
+    [System.NonSerialized] public readonly static int STRENGTH_MAJOR = 1;
+    [System.NonSerialized] public readonly static int STRENGTH_ELITE = 2;
     private GameObject modelGroup;
     [System.NonSerialized] public GameObject modelObject;
     public GameObject modelGroupStrengthWeak;
@@ -341,7 +341,7 @@ public class Enemy : MonoBehaviour
         rb.mass = 0.5f;
 
         //Modify attributes based on size
-        if (this.strength == STRENGTH_SMALL)
+        if (this.strength == STRENGTH_MINOR)
         {
             //Physical size
             modelGroup = modelGroupStrengthWeak;
@@ -356,7 +356,7 @@ public class Enemy : MonoBehaviour
             weaponInternalBurstCooldown = 0.25f; //Time in seconds between shots within the burst
             weaponBurstLength = 4; //Total shots per burst
         }
-        else if (this.strength == STRENGTH_MEDIUM)
+        else if (this.strength == STRENGTH_MAJOR)
         {
             //Physical size
             modelGroup = modelGroupStrengthWeak;
@@ -371,7 +371,7 @@ public class Enemy : MonoBehaviour
             weaponInternalBurstCooldown = 0.1f; //Time in seconds between shots within the burst
             weaponBurstLength = 12; //Total shots per burst
         }
-        else if (this.strength == STRENGTH_LARGE)
+        else if (this.strength == STRENGTH_ELITE)
         {
             //Physical size
             modelGroup = modelGroupStrengthWeak;
@@ -435,21 +435,21 @@ public class Enemy : MonoBehaviour
             //Spawn goodies
             if (oreDrop)
             {
-                if (strength == STRENGTH_LARGE)
+                if (strength == STRENGTH_ELITE)
                 {
                     for (int i = 0; i < Random.Range(9, 15 + 1); i++)
                     {
                         SpawnOre();
                     }
                 }
-                else if (strength == STRENGTH_MEDIUM)
+                else if (strength == STRENGTH_MAJOR)
                 {
                     for (int i = 0; i < Random.Range(7, 12 + 1); i++)
                     {
                         SpawnOre();
                     }
                 }
-                else if (strength == STRENGTH_SMALL)
+                else if (strength == STRENGTH_MINOR)
                 {
                     for (int i = 0; i < Random.Range(5, 9 + 1); i++)
                     {

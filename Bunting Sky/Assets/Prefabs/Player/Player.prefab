@@ -5800,7 +5800,7 @@ MonoBehaviour:
   soundSourceLaser1: {fileID: 2814561463390554603}
   soundSourceLaser2: {fileID: 3028235927102417418}
   soundSourceLaser3: {fileID: 4657974608649234668}
-  soundClipLaser: {fileID: 8300000, guid: a575cca7bd8e36c4392be5b14e67b502, type: 3}
+  soundClipLaser: {fileID: 8300000, guid: de7557c0ed082b6408061a161949ee3e, type: 3}
   soundSourceLaserReload: {fileID: 6992828811605387521}
   soundClipLaserReload: {fileID: 8300000, guid: 80f0ad0c05fbd3c40aba71edd14acb00, type: 3}
   soundSourceOreCollected: {fileID: 3595227602481401798}
@@ -5815,7 +5815,6 @@ MonoBehaviour:
   tutorialMoonVisitedID2: -1
   tutorialMoonVisitedID3: -1
   tutorialHasUsedHeighliner: 0
-  damageParticles: {fileID: 0}
   damageParticlePrefab: {fileID: 8452405181040792583, guid: 17ed5034c99ed4849af084fcc2e8cb9e, type: 3}
   playerWeaponLaser: {fileID: 5403147369654324799}
   playerWeaponSeismicCharge: {fileID: 4002489302505956663}
