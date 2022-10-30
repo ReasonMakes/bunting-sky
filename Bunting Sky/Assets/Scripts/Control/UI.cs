@@ -35,7 +35,7 @@ public class UI : MonoBehaviour
     private float targetXMax;
     private float targetYMin;
     private float targetYMax;
-    private bool renderTarget = false;
+    [System.NonSerialized] public bool renderTarget = false;
     private string targetTypeAndTitle = "No target";
 
     //Player resources
@@ -60,6 +60,7 @@ public class UI : MonoBehaviour
     public Image weaponSelectedIcon;
     public Sprite weaponSelectedIconLaser;
     public Sprite weaponSelectedIconSeismicCharge;
+    public Sprite weaponSelectedIconNone;
 
     //Player camera reticle
     [System.NonSerialized] public GameObject cameraReticle;
@@ -82,9 +83,6 @@ public class UI : MonoBehaviour
     public string tipAimText;
     private float tipTextAlphaDecrementDelay = 0f;
     private readonly float TIP_TEXT_ALPHA_DECREMENT_RATE = 0.01f;
-
-    //Player reference
-    [System.NonSerialized] private Player playerScript;
 
     private void Awake()
     {
@@ -134,9 +132,6 @@ public class UI : MonoBehaviour
         targetXMax = Screen.width - targetXMin;
         targetYMin = targetImage.GetPixelAdjustedRect().height / 2;
         targetYMax = Screen.height - targetYMin;
-
-        //Get player reference
-        playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
     }
 
     private void Update()
@@ -262,7 +257,7 @@ public class UI : MonoBehaviour
 
     public string GetBindAsPrettyString(short bind)
     {
-        string pretty;
+        string pretty = "error";
 
         if (bind >= 1000 && bind <= 1004)
         {
@@ -272,6 +267,11 @@ public class UI : MonoBehaviour
             else if (bind == control.binds.MOUSE_SCROLL_UP)     { pretty = "scroll up"; }
             else if (bind == control.binds.MOUSE_SCROLL_DOWN)   { pretty = "scroll down"; }
             else                                                { pretty = "unrecognized keycode"; }
+        }
+        else if (bind >= 48 && bind <= 57)
+        {
+            //Alpha-numerics, 0 through 9
+            pretty = (bind - 48).ToString();
         }
         else
         {
@@ -306,44 +306,44 @@ public class UI : MonoBehaviour
         
         //Cursor and camera reticle
         Cursor.lockState = (CursorLockMode)System.Convert.ToByte(!displayMap);    //toggle cursor lock
-        cameraReticle.SetActive(!displayMap);
+        //cameraReticle.SetActive(!displayMap);
 
         //Player and map
-        GameObject playerInstance = control.generation.instancePlayer;
-        Player playerScript = playerInstance.GetComponentInChildren<Player>();
-        playerScript.mapLight.SetActive(displayMap);
+        //Map light
+        //control.GetPlayerScript().mapLight.SetActive(displayMap);
+        //Map ship model
+        control.GetPlayerScript().transform.parent.Find("Position Mount").Find("Centre Mount").Find("Ship Map Model").gameObject.SetActive(displayMap);
+        
         if (displayMap)
         {
             //Ship cameras
-            playerScript.fpCam.SetActive(!displayMap);
-            playerScript.tpCam.SetActive(!displayMap);
+            control.GetPlayerScript().fpCam.SetActive(!displayMap);
+            control.GetPlayerScript().tpCam.SetActive(!displayMap);
 
             //Map camera
-            playerScript.mapCam.SetActive(displayMap);
+            control.GetPlayerScript().mapCam.SetActive(displayMap);
 
             //Background stars
-            //skyboxStarsParticleSystem.transform.parent = mapCam.transform;
-
-            //Map ship model (deprecated)
-            //playerScript.transform.parent.Find("Ship Map Model").gameObject.SetActive(displayMap);
+            control.GetPlayerScript().skyboxStarsParticleSystem.gameObject.SetActive(false);
 
             //Enlarge player ship model
-            playerScript.tpModel.transform.localScale = Vector3.one * 200.0f;
+            //control.GetPlayerScript().tpModel.transform.localScale = Vector3.one * 200.0f;
         }
         else
         {
             //Ship cameras
-            playerScript.fpCam.SetActive(!displayMap);
-            playerScript.DecideWhichModelsToRender();
+            control.GetPlayerScript().fpCam.SetActive(!displayMap);
+            control.GetPlayerScript().DecideWhichModelsToRender();
 
             //Map camera
-            playerScript.mapCam.SetActive(displayMap);
+            control.GetPlayerScript().mapCam.SetActive(displayMap);
 
-            //Background stars
-            //skyboxStarsParticleSystem.transform.parent = positionMount.transform;
+            //Background stars (re-enable)
+            control.GetPlayerScript().skyboxStarsParticleSystem.gameObject.SetActive(true);
+            control.GetPlayerScript().skyboxStarsParticleSystem.Emit(control.GetPlayerScript().SKYBOX_STARS_COUNT);
 
             //Return size of player ship model to default
-            playerScript.tpModel.transform.localScale = Vector3.one;
+            //control.GetPlayerScript().tpModel.transform.localScale = Vector3.one * 4f;
         }
     }
 
@@ -458,10 +458,15 @@ public class UI : MonoBehaviour
             SetPlayerTargetObject(hit.collider.transform.gameObject);
 
             //Console
-            TextMesh consoleTargetTypeAndTitleText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Display Strut Left").Find("Target Type And Title Text").GetComponent<TextMesh>();
-            targetTypeAndTitle = waypointTextType.text + "\n" + waypointTextTitle.text;
-            consoleTargetTypeAndTitleText.text = targetTypeAndTitle;
+            UpdateTargetConsole();
         }
+    }
+
+    public void UpdateTargetConsole()
+    {
+        TextMesh consoleTargetTypeAndTitleText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Display Strut Left").Find("Target Type And Title Text").GetComponent<TextMesh>();
+        targetTypeAndTitle = waypointTextType.text + "\n" + waypointTextTitle.text;
+        consoleTargetTypeAndTitleText.text = targetTypeAndTitle;
     }
 
     private void SetPlayerTargetUI()
@@ -525,7 +530,7 @@ public class UI : MonoBehaviour
         targetImage.transform.position = targetUIPos;
     }
 
-    private void SetPlayerTargetObject(GameObject objectToTarget)
+    public void SetPlayerTargetObject(GameObject objectToTarget)
     {
         //Set or toggle the target object
 
@@ -760,7 +765,7 @@ public class UI : MonoBehaviour
         }
 
         //Don't render when in first-person
-        //if (!playerScript.isDestroyed && Player.firstPerson)
+        //if (!control.GetPlayerScript().isDestroyed && Player.firstPerson)
         //{
         //    renderWaypoint = false;
         //    waypointImage.gameObject.SetActive(true);
@@ -820,7 +825,8 @@ public class UI : MonoBehaviour
         Vector3 subjectVelocity;
         if (isStation)
         {
-            subjectVelocity = subjectTransform.GetComponent<StationOrbit>().planetoidToOrbit.GetComponent<Rigidbody>().velocity;
+            subjectVelocity = Vector3.zero;
+            //subjectVelocity = subjectTransform.GetComponent<StationOrbit>().planetoidToOrbit.GetComponent<Rigidbody>().velocity;
         }
         else
         {
@@ -866,7 +872,7 @@ public class UI : MonoBehaviour
     #region UI: Player resources
     public void UpdatePlayerVitalsDisplay()
     {
-        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.GetPlayerScript();
 
         playerScript.vitalsHealthUI.GetComponent<Image>().fillAmount = (float)(playerScript.vitalsHealth / playerScript.vitalsHealthMax);
         playerScript.vitalsHealthUIText.text = playerScript.vitalsHealth.ToString("F2");
@@ -878,14 +884,12 @@ public class UI : MonoBehaviour
 
     public void UpdatePlayerOreWaterText()
     {
-        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
-
-        resourcesTextWater.text = playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " kg";
+        resourcesTextWater.text = control.GetPlayerScript().ore[control.GetPlayerScript().ORE_WATER].ToString("F2") + " kg";
     }
 
     public void UpdateAllPlayerResourcesUI()
     {
-        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.GetPlayerScript();
 
         //Update values and start animations on a resource if its value changed
         UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F2") + " ICC",                              playerScript.soundSourceCoins);
@@ -951,7 +955,7 @@ public class UI : MonoBehaviour
 
     private void UpdatePlayerConsole()
     {
-        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.GetPlayerScript();
 
         //Vitals
         TextMesh consoleVitalsText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Vitals Text").GetComponent<TextMesh>();
@@ -962,7 +966,7 @@ public class UI : MonoBehaviour
         //Weapons
         TextMesh consoleWeaponsText = control.generation.instancePlayer.transform.Find("Body").Find("FP Model").Find("Interior").Find("Console").Find("Weapons Text").GetComponent<TextMesh>();
         consoleWeaponsText.text =
-                     "Weapon: " + playerScript.weaponSelectedTitle
+                     "Weapon: " + playerScript.GetWeaponSelectedName()
             + "\n" + "Cooldown: " + Mathf.RoundToInt(weaponCooldown.fillAmount * 100f).ToString() + "%";
 
         //Cargo
@@ -994,44 +998,44 @@ public class UI : MonoBehaviour
         );
     }
 
-    public void UpdateWeaponAlternate(string playerSelectedWeaponTitle, bool seismicChargesUnlocked)
+    public void UpdateWeapons()
     {
-        if (playerSelectedWeaponTitle == "Laser")
+        Player playerScript = control.GetPlayerScript();
+
+        //Name
+        if (playerScript.weaponSlotSelected == 0)
         {
-            if (seismicChargesUnlocked)
-            {
-                weaponAlternateTitleText.text = "Seismic charges";
-            }
-            else
-            {
-                weaponAlternateTitleText.text = "None";
-            }
+            //SELECTING SLOT 0
+            weaponSelectedTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0);
+            weaponAlternateTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1);
         }
-    }
-
-    public void UpdateWeaponSelected(string playerSelectedWeaponTitle)
-    { 
-        if (selectedWeaponTitle != playerSelectedWeaponTitle)
+        else
         {
-            Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+            //SELECTING SLOT 1
+            weaponSelectedTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1);
+            weaponAlternateTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0);
+        }
 
-            //Swap weapons
-            weaponAlternateTitleText.text = weaponSelectedTitleText.text;
-            weaponSelectedTitleText.text = playerSelectedWeaponTitle;
-            weaponSelectedClipSizeText.text = playerScript.playerWeaponLaser.clipSize.ToString();
+        //Ammo
+        weaponSelectedClipSizeText.text = playerScript.weaponSelectedClipSize.ToString();
+        weaponSelectedClipRemainingText.text = playerScript.weaponSelectedClipRemaining.ToString();
 
-            //Remember
-            selectedWeaponTitle = playerSelectedWeaponTitle;
-
-            //Weapon icon
-            if (playerSelectedWeaponTitle == "Laser")
-            {
-                weaponSelectedIcon.sprite = weaponSelectedIconLaser;
-            }
-            else
-            {
-                weaponSelectedIcon.sprite = weaponSelectedIconSeismicCharge;
-            }
+        //Sprite
+        if (playerScript.GetWeaponSelectedID() == Player.WEAPON_ID_MINING_LASER)
+        {
+            //Sprite
+            weaponSelectedIcon.sprite = weaponSelectedIconLaser;
+        }
+        else if (playerScript.GetWeaponSelectedID() == Player.WEAPON_ID_SEISMIC_CHARGES)
+        {
+            //Sprite
+            weaponSelectedIcon.sprite = weaponSelectedIconSeismicCharge;
+        }
+        else
+        {
+            //None OR unknown weapon
+            //Sprite
+            weaponSelectedIcon.sprite = weaponSelectedIconNone;
         }
     }
     #endregion

@@ -437,23 +437,23 @@ public class Enemy : MonoBehaviour
             {
                 if (strength == STRENGTH_ELITE)
                 {
-                    for (int i = 0; i < Random.Range(9, 15 + 1); i++)
+                    for (int i = 0; i < Random.Range(20, 30 + 1); i++)
                     {
-                        SpawnOre();
+                        SpawnOre(Asteroid.TYPE_PRECIOUS_METAL);
                     }
                 }
                 else if (strength == STRENGTH_MAJOR)
                 {
-                    for (int i = 0; i < Random.Range(7, 12 + 1); i++)
+                    for (int i = 0; i < Random.Range(20, 30 + 1); i++)
                     {
-                        SpawnOre();
+                        SpawnOre(Asteroid.TYPE_PLATINOID);
                     }
                 }
                 else if (strength == STRENGTH_MINOR)
                 {
-                    for (int i = 0; i < Random.Range(5, 9 + 1); i++)
+                    for (int i = 0; i < Random.Range(10, 20 + 1); i++)
                     {
-                        SpawnOre();
+                        SpawnOre(Asteroid.TYPE_PLATINOID);
                     }
                 }
             }
@@ -575,12 +575,14 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    private void SpawnOre()
+    private void SpawnOre(byte type)
     {
+        float positionOffsetMagnitude = 5f;
+
         //Pool spawning
         GameObject instanceOre = control.generation.OrePoolSpawn(
-            transform.position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
-            Asteroid.TYPE_PLATINOID,
+            transform.position + (positionOffsetMagnitude * new Vector3(Random.value, Random.value, Random.value)),
+            type,
             rb.velocity
         );
 

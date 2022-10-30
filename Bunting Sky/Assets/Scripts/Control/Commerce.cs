@@ -39,6 +39,7 @@ public class Commerce : MonoBehaviour
     [System.NonSerialized] public readonly int UPGRADE_DUAL_BATTERIES = 5;
     [System.NonSerialized] public readonly int UPGRADE_IN_SITU_FUEL_REFINERY = 6;
     [System.NonSerialized] public readonly int UPGRADE_SEISMIC_CHARGES = 7;
+    [System.NonSerialized] public readonly int UPGRADE_OUTLINE = 8;
 
     [System.NonSerialized] public int[] upgradeIndexAtButton;
     public Button menuButtonUpgrade0;
@@ -53,7 +54,7 @@ public class Commerce : MonoBehaviour
 
     public Button menuButtonRepair;
     public Button menuButtonRefuel;
-    private readonly float PRICE_REPAIR = 10f;
+    private readonly float PRICE_REPAIR = 50f;
     private readonly float PRICE_REFUEL = 10f;
 
     private void Awake()
@@ -79,7 +80,7 @@ public class Commerce : MonoBehaviour
     private void DefineUpgrades()
     {
         //Initializations
-        upgradeDictionary = new string[8, 4];
+        upgradeDictionary = new string[UPGRADE_OUTLINE + 1, 4];
         upgradeIndexAtButton = new int[upgradeDictionary.GetLength(0)];
 
         //Definitions
@@ -92,6 +93,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_NAME] = "Dual batteries";
         upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_NAME] = "In-situ fuel refinery";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_NAME] = "Seismic charges";
+        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_NAME] = "Eclipse vision";
         //upgradeDictionary[7, UPGRADE_NAME] = "Warp drive";
 
         //Price
@@ -103,6 +105,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_PRICE] = "2000";
         upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_PRICE] = "4000";;
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_PRICE] = "6000";
+        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_PRICE] = "1000";
 
         //Description
         upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_DESCRIPTION] = "Item is out of stock";
@@ -113,6 +116,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_DESCRIPTION] = "Doubles the mining laser's maximum ammunition per cycle";
         upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_DESCRIPTION] = "Automatically processes water ice cargo into usable jet fuel (toggle in settings)";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_DESCRIPTION] = "Explosive weapon. Useful for mining clusters of small asteroids";
+        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_DESCRIPTION] = "Highlights natural celestial bodies, making them visible even in shadow of eclipse";
         //upgradeDictionary[7, UPGRADE_DESCRIPTION] = "Enables extra-dimensional interstellar travel through the bulk";
 
         //Max level
@@ -124,6 +128,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_MAX_LEVEL] = "1";
     }
 
     //MENU
@@ -284,16 +289,41 @@ public class Commerce : MonoBehaviour
     public void SetTooltipToUpgradeButton(int buttonIndex)
     {
         //Set text
-        tooltip.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_DESCRIPTION];
-        
+        if (buttonIndex == 4)
+        {
+            //Repair
+            tooltip.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "$" + PRICE_REPAIR;
+        }
+        else if (buttonIndex == 5)
+        {
+            //Refuel
+            tooltip.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = "$" + PRICE_REFUEL;
+        }
+        else
+        {
+            //Upgrades
+            tooltip.transform.Find("Text").GetComponent<TextMeshProUGUI>().text = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_DESCRIPTION];
+        }
+
         //Set background to approximate width of text
+        int lengthOfString;
+        if (buttonIndex >= 4)
+        {
+            //Repair or refuel
+            lengthOfString = tooltip.transform.Find("Text").GetComponent<TextMeshProUGUI>().text.Length;
+        }
+        else
+        {
+            //Upgrades
+            lengthOfString = upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_DESCRIPTION].Length;
+        }
         float aproxFontWidth = 7.28f;
         tooltip.GetComponent<RectTransform>().sizeDelta = new Vector2(
-            aproxFontWidth * upgradeDictionary[upgradeIndexAtButton[buttonIndex], UPGRADE_DESCRIPTION].Length,
+            aproxFontWidth * lengthOfString,
             tooltip.GetComponent<RectTransform>().sizeDelta.y
         );
 
-        //Correct next frame-ish
+        //Correct next frame-ish (why?)
         Invoke("UpdateTooltipBackgroundWidth", Time.deltaTime);
     }
 
@@ -469,6 +499,32 @@ public class Commerce : MonoBehaviour
             //Update UI
             playerScript.UpdateUpgrades();
             UpdatePlayerResourcesAndCommerceMenuUI();
+
+            //Display tip if eclipse vision
+            if (upgradeIndex == UPGRADE_OUTLINE && !control.GetPlayerScript().tipHasBoughtOutline)
+            {
+                //Display tip
+                control.ui.SetTip(
+                    "Toggle eclipse vision with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleOutline)
+                );
+                control.GetPlayerScript().tipHasBoughtOutline = true;
+            }
+
+            //Update weapons if seismic charges
+            if (upgradeIndex == UPGRADE_SEISMIC_CHARGES)
+            {
+                //Slot 0 is always the mining laser
+                control.GetPlayerScript().weaponSlot1 = Player.weaponSeismicCharges;
+
+                //Display tip
+                if (!control.GetPlayerScript().tipHasBoughtSeismicCharges)
+                {
+                    control.ui.SetTip(
+                        "Select seismic charges with " + control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1)
+                    );
+                    control.GetPlayerScript().tipHasBoughtSeismicCharges = true;
+                }
+            }
         }
     }
 

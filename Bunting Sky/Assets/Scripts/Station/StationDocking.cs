@@ -54,8 +54,8 @@ public class StationDocking : MonoBehaviour
                 {
                     if (upgradeIndexAtButton[i] == upgradeIndexAtButton[i2])
                     {
-                        //Sold out
-                        upgradeIndexAtButton[i] = 0;
+                        //Duplicates generate as sold out
+                        upgradeIndexAtButton[i] = control.commerce.UPGRADE_SOLD_OUT;
                     }
                 }
             }

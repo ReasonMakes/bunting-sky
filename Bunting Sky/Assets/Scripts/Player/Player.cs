@@ -40,7 +40,14 @@ public class Player : MonoBehaviour
 
     //Visuals
     public GameObject spotlight;
-    [System.NonSerialized] public static bool outline = false;
+    [System.NonSerialized] public bool isOutlinesVisible = false;
+    [System.NonSerialized] public bool outlineCanUse = true; //Whether the player is able to toggle the outline on
+    [System.NonSerialized] public float outlineFade = 1f; //Multiplier for outline intensity - DO NOT EDIT; this changes dynamically
+    [System.NonSerialized] public readonly float OUTLINE_PERIOD_FADING = 2f; //Fade out over this period of time, in seconds
+    [System.NonSerialized] public readonly float OUTLINE_PERIOD_ENABLED = 5f; //Time in seconds outlines will show for
+    [System.NonSerialized] public readonly float OUTLINE_PERIOD_COOLDOWN = 3f; //Time in seconds before outlines can be shown again
+    [System.NonSerialized] public float outlineCanUseAgainTime = 0f; //At what time the player can use outlines again (measured against Time.time) - DO NOT EDIT; this changes dynamically
+    [System.NonSerialized] public float outlineDisableTime = 0f; //At what time outlines will be disabled - DO NOT EDIT; this changes dynamically
     [System.NonSerialized] public static int CBODY_TYPE_PLANET = 0;
     [System.NonSerialized] public static int CBODY_TYPE_MOON = 1;
     [System.NonSerialized] public static int CBODY_TYPE_ASTEROID = 2;
@@ -158,18 +165,33 @@ public class Player : MonoBehaviour
     private float warningUIFlashPosition = 0f;
     private readonly float WARNING_UI_FLASH_RATE = 10f;
     private float warningUIFlashTotalDuration = 5f; //This must be odd-numbered or it will not end smoothly (end while transparent)
+
+    //TUTORIAL
     private int tutorialLevel = 0; //Which tutorial tip should be displayed next?
     private float tutorialTime = 0f; //The game time at which the next tutorial tip can be displayed
-    private readonly float TUTORIAL_DELAY = 6f; //The standard delay between timed tutorial tips, in seconds
+    private readonly float TUTORIAL_DELAY = 2f; //6f; //The standard delay between timed tutorial tips, in seconds
     private readonly float TUTORIAL_TIP_DURATION = 2f; //The standard delay between timed tutorial tips, in seconds
-    public bool tutorialHasMinedAsteroid = false;
-    public bool tutorialHasExitedStationDock = false;
-    public int tutorialMoonVisitedID1 = -1;
-    public int tutorialMoonVisitedID2 = -1;
-    public int tutorialMoonVisitedID3 = -1;
-    public bool tutorialHasUsedHeighliner = false;
+    private bool tutorialHasPressedForward = false;
+    private bool tutorialHasPressedLeft = false;
+    private bool tutorialHasPressedBackward = false;
+    private bool tutorialHasPressedRight = false;
+    private bool tutorialHasPressedDown = false;
+    private bool tutorialHasPressedUp = false;
+    [System.NonSerialized] public bool tutorialHasMinedAsteroid = false;
+    [System.NonSerialized] public bool tutorialHasExitedStationDock = false;
+    [System.NonSerialized] public int tutorialMoonVisitedID1 = -1;
+    [System.NonSerialized] public int tutorialMoonVisitedID2 = -1;
+    [System.NonSerialized] public int tutorialMoonVisitedID3 = -1;
+    [System.NonSerialized] public bool tutorialHasUsedHeighliner = false;
+    private bool tutorialHasPressedZoomIn = false;
+    private bool tutorialHasPressedZoomOut = false;
+    private bool tutorialHasPressedPanMap = false;
+    [System.NonSerialized] public bool tipHasBoughtOutline = false;
+    [System.NonSerialized] public bool tipHasBoughtSeismicCharges = false;
+
+    //PARTICLES
     public GameObject damageParticlePrefab;
-    private GameObject damageParticles;
+    private GameObject damageParticles; //We need a particle pool because the player ship moves around a lot (maybe could have just set particles to move relative to 0,0, but this works so I'm not changing it)
     [System.NonSerialized] public List<GameObject> damageParticlesPool = new List<GameObject>();
     private int damageParticlesPoolIndex = 0;
     private int damageParticlesPoolLength = 4;
@@ -209,7 +231,26 @@ public class Player : MonoBehaviour
     public PlayerWeaponLaser playerWeaponLaser;
     public PlayerWeaponSeismicCharge playerWeaponSeismicCharge;
 
-    [System.NonSerialized] public string weaponSelectedTitle = "Laser";
+    public struct Weapon
+    {
+        public readonly int ID;
+        public readonly string NAME;
+
+        public Weapon(int id, string name)
+        {
+            ID = id;
+            NAME = name;
+        }
+    }
+    [System.NonSerialized] public static readonly int WEAPON_ID_NONE = 0;
+    [System.NonSerialized] public static Weapon weaponNone = new Weapon(WEAPON_ID_NONE, "<None>");
+    [System.NonSerialized] public static readonly int WEAPON_ID_MINING_LASER = 1;
+    [System.NonSerialized] public static Weapon weaponLaser = new Weapon(WEAPON_ID_MINING_LASER, "Mining laser");
+    [System.NonSerialized] public static readonly int WEAPON_ID_SEISMIC_CHARGES = 2;
+    [System.NonSerialized] public static Weapon weaponSeismicCharges = new Weapon(WEAPON_ID_SEISMIC_CHARGES, "Seismic charges");
+    [System.NonSerialized] public Weapon weaponSlot0 = weaponLaser; //Weapon in slot 0
+    [System.NonSerialized] public Weapon weaponSlot1 = weaponNone; //Weapon in slot 1
+    [System.NonSerialized] public int weaponSlotSelected = 0; //0 or 1
 
     [System.NonSerialized] public short weaponSelectedClipSize;
     [System.NonSerialized] public short weaponSelectedClipRemaining;
@@ -224,7 +265,7 @@ public class Player : MonoBehaviour
 
     //Skybox stars
     public ParticleSystem skyboxStarsParticleSystem;
-    private readonly int SKYBOX_STARS_COUNT = 400;
+    [System.NonSerialized] public readonly int SKYBOX_STARS_COUNT = 400;
     #endregion
 
     #region Start
@@ -483,11 +524,32 @@ public class Player : MonoBehaviour
         //Cheats enabled only while in editor
         if (control.IS_EDITOR)
         {
-            //Teleport forward
+            ////Teleport forward
+            //if (binds.GetInputDown(binds.bindCheat1))
+            //{
+            //    transform.position += transform.forward * 400f;
+            //}
+
+            //Eclipse vision upgrade
             if (binds.GetInputDown(binds.bindCheat1))
             {
-                transform.position += transform.forward * 400f;
+                upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
+                tipHasBoughtSeismicCharges = true;
+                weaponSlot1 = weaponSeismicCharges;
             }
+
+            ////Free money
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    currency += 1000;
+            //    control.ui.UpdateAllPlayerResourcesUI();
+            //}
+
+            ////Force tutorial level
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    tutorialLevel = 2;
+            //}
 
             //Unlock seismic charges
             if (binds.GetInputDown(binds.bindCheat2))
@@ -654,7 +716,45 @@ public class Player : MonoBehaviour
                 //control.ui.SetTip("You died.\nLast recorded warning message:\n" + lastDamageCause);
                 control.ui.SetTip("Your ship has been destroyed, and you have died\nLast recorded warning: \"" + lastDamageCause + "\"");
             }
-            else if (tutorialTime <= Time.time)
+            
+            //Map model
+            if (UI.displayMap)
+            {
+                Transform mapModel = transform.parent.Find("Position Mount").Find("Centre Mount").Find("Ship Map Model");
+
+                //Map model follows player's position exactly, but renders above everything else
+                mapModel.position = new Vector3(transform.position.x, mapCam.transform.position.y - 100f, transform.position.z);
+            }
+
+            //Outlines
+            if (outlineCanUseAgainTime <= Time.time)
+            {
+                //Allowed to use outlines again
+                outlineCanUse = true;
+            }
+            if (!outlineCanUse && outlineDisableTime <= Time.time)
+            {
+                if (outlineFade > 0f && outlineDisableTime + OUTLINE_PERIOD_FADING > Time.time)
+                {
+                    //Fade outlines out over time
+                    outlineFade = Mathf.Max(0f, (outlineDisableTime + OUTLINE_PERIOD_FADING - Time.time) / OUTLINE_PERIOD_FADING);
+                    UpdateOutlines();
+                }
+                else
+                {
+                    //Reset fade
+                    outlineFade = 1f;
+
+                    if (isOutlinesVisible)
+                    {
+                        //Disable outlines completely to prepare for reenabling
+                        ToggleOutline();
+                    }
+                }
+            }
+
+            //Tutorial
+            if (!isDestroyed && tutorialTime <= Time.time)
             {
                 //Show tutorial
                 if (tutorialLevel == 0)
@@ -667,53 +767,130 @@ public class Player : MonoBehaviour
                         + control.ui.GetBindAsPrettyString(binds.bindThrustRight) + ", "
                         + control.ui.GetBindAsPrettyString(binds.bindThrustDown) + ", and "
                         + control.ui.GetBindAsPrettyString(binds.bindThrustUp),
-                        TUTORIAL_TIP_DURATION
+                        0f
                     );
-                    IncrementTutorial();
+
+                    //Show this tutorial tip until the player demonstrates understanding
+                    if (binds.GetInput(binds.bindThrustForward))    { tutorialHasPressedForward = true; }
+                    if (binds.GetInput(binds.bindThrustLeft))       { tutorialHasPressedLeft = true; }
+                    if (binds.GetInput(binds.bindThrustBackward))   { tutorialHasPressedBackward = true; }
+                    if (binds.GetInput(binds.bindThrustRight))      { tutorialHasPressedRight = true; }
+                    if (binds.GetInput(binds.bindThrustDown))       { tutorialHasPressedDown = true; }
+                    if (binds.GetInput(binds.bindThrustUp))         { tutorialHasPressedUp = true; }
+                    if (
+                           tutorialHasPressedForward
+                        && tutorialHasPressedLeft
+                        && tutorialHasPressedBackward
+                        && tutorialHasPressedRight
+                        && tutorialHasPressedDown
+                        && tutorialHasPressedUp
+                    )
+                    {
+                        IncrementTutorial(0f);
+                    }
                 }
                 else if (tutorialLevel == 1)
                 {
                     control.ui.SetTip(
                         "You can always disable tips in Menu > Settings (press [ESC])",
-                        TUTORIAL_TIP_DURATION
+                        TUTORIAL_TIP_DURATION * 0.5f
                     );
                     IncrementTutorial();
                 }
                 else if (tutorialLevel == 2)
                 {
                     control.ui.SetTip(
-                        "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
-                        TUTORIAL_TIP_DURATION
+                        "Mine asteroids for valuable materials\nFire your weapon with " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire),
+                        0f
                     );
-                    IncrementTutorial();
+
+                    //Make the target (forced to the nearest asteroid) glow
+                    TargetGlow();
+
+                    //Show this tutorial tip until the player demonstrates understanding
+                    if (tutorialHasMinedAsteroid)
+                    {
+                        //Because we forced an outline on the nearest asteroid, we now need to update all outlines before moving on
+                        UpdateOutlines();
+                        //Same for the target image colour
+                        TargetReset();
+
+                        IncrementTutorial(0f);
+                    }
                 }
                 else if (tutorialLevel == 3)
                 {
                     control.ui.SetTip(
-                        "Mine asteroids for valuable materials - press " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire) + " to fire your weapon",
-                        TUTORIAL_TIP_DURATION + 1.5f
-                    );
-                    IncrementTutorial();
-                }
-                else if (tutorialLevel == 4 && tutorialHasMinedAsteroid)
-                {
-                    control.ui.SetTip(
                         "Sell your cargo at space stations to afford fuel, repairs, and upgrades",
-                        TUTORIAL_TIP_DURATION
+                        0f
+                    );
+
+                    //Make the target (forced to the nearest space station) glow
+                    TargetGlow();
+
+                    //Show this tutorial tip until the player demonstrates understanding
+                    if (tutorialHasExitedStationDock)
+                    {
+                        //Reset the colour of the target because we made it glow earlier
+                        TargetReset();
+
+                        IncrementTutorial(0f);
+                    }
+                }
+                else if (tutorialLevel == 4)
+                {
+                    control.ui.SetTip(
+                        "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
+                        TUTORIAL_TIP_DURATION * 0.5f
                     );
                     IncrementTutorial();
                 }
-                else if (tutorialLevel == 5 && tutorialHasExitedStationDock)
+                else if (tutorialLevel == 5)
                 {
                     control.ui.SetTip(
-                        "New moons may have asteroids of differing compositions, but beware:\nbandits may be looking to steal your cargo, your ship, and your life",
+                        "Different asteroid types may be found around other celestial bodies, but beware:\nbandits may be looking to steal your cargo, your ship, and your life",
                         TUTORIAL_TIP_DURATION + 2f
                     );
                     IncrementTutorial();
                 }
                 else if (tutorialLevel == 6 && !tutorialHasUsedHeighliner && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1)
                 {
-                    //Seen all other tips, hasn't visited a heighliner, and has visited several moons
+                    //Hasn't visited a heighliner, and has visited several moons
+                    control.ui.SetTip(
+                        "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap),
+                        0f
+                    );
+
+                    //Show this tutorial tip until the player demonstrates understanding
+                    if (binds.GetInput(binds.bindToggleMap))
+                    {
+                        IncrementTutorial(0f);
+                    }
+                }
+                else if (tutorialLevel == 7)
+                {
+                    control.ui.SetTip(
+                        "Zoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomIn) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomOut)
+                        + "\nPan around the map with " + control.ui.GetBindAsPrettyString(binds.bindPanMap)
+                        + "\nYou can use the map to set targets just as you would outside of it, with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget),
+                        TUTORIAL_TIP_DURATION
+                    );
+
+                    //Show this tutorial tip until the player demonstrates understanding
+                    if (binds.GetInput(binds.bindCameraZoomIn))     { tutorialHasPressedZoomIn = true; }
+                    if (binds.GetInput(binds.bindCameraZoomOut))    { tutorialHasPressedZoomOut = true; }
+                    if (binds.GetInput(binds.bindPanMap))           { tutorialHasPressedPanMap = true; }
+                    if (
+                           tutorialHasPressedZoomIn
+                        && tutorialHasPressedZoomOut
+                        && tutorialHasPressedPanMap
+                    )
+                    {
+                        IncrementTutorial(TUTORIAL_TIP_DURATION);
+                    }
+                }
+                else if (tutorialLevel == 8)
+                {
                     control.ui.SetTip(
                         "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
                         TUTORIAL_TIP_DURATION + 2f
@@ -724,10 +901,32 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void TargetGlow()
+    {
+        //Make the target glow
+        float period = 0.6f;
+        float intensity = (Time.time % period) * (2f / period);
+        //Loop back and forth smoothly (this is also why we multiply by 2f instead of 1f above)
+        intensity = Mathf.Abs(1f - intensity);
+        //Apply the glow to the sprite colour
+        control.ui.targetImage.color = new Color(1f, 1f, 0f, intensity);
+    }
+
+    private void TargetReset()
+    {
+        //Same for the target image colour
+        control.ui.targetImage.color = new Color(1f, 1f, 1f, 0.36078431372f);
+    }
+
     private void IncrementTutorial()
     {
         tutorialLevel++;
         tutorialTime = Time.time + TUTORIAL_DELAY + TUTORIAL_TIP_DURATION + 1f; //Add a minimum delay before displaying next tip
+    }
+    private void IncrementTutorial(float delay)
+    {
+        tutorialLevel++;
+        tutorialTime = Time.time + delay; //Add a minimum delay before displaying next tip
     }
 
     private void FixedUpdate()
@@ -790,11 +989,32 @@ public class Player : MonoBehaviour
         {
             //Debug.Log(":) " + distToCStar);
         }
+
+        //Highlight nearest asteroid
+        if (tutorialLevel == 2)
+        {
+            HighlightNearestAsteroid();
+        }
+        else if (tutorialLevel == 3)
+        {
+            //Target nearest space station
+            Transform nearestSpaceStation = control.GetClosestSpecificTransformFromHierarchy(
+                control.generation.station.name + "(Clone)",
+                control.generation.moons.transform,
+                transform.position
+            );
+
+            control.ui.targetImage.gameObject.SetActive(true);
+            control.ui.renderTarget = true;
+            targetObject = nearestSpaceStation.gameObject;
+            control.ui.UpdateTargetConsole();
+        }
     }
 
     private void VerySlowUpdate()
     {
-        //Tutorial - has the player visited a few moons?
+        //Tutorial
+        //Has the player visited a few moons?
         if (tutorialMoonVisitedID1 == -1 || tutorialMoonVisitedID2 == -1 || tutorialMoonVisitedID3 == -1)
         {
             if (distToClosestMoon <= 60f)
@@ -815,6 +1035,72 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void HighlightNearestAsteroid()
+    {
+        //OUTLINE
+        //Update outlines before proceeding so that outlines cannot get "sticky"
+        UpdateOutlines();
+
+        //Find nearest asteroid
+        //Transform nearestAsteroid = control.GetClosestSpecificTransformFromHierarchy(
+        //    control.generation.asteroid.name + "(Clone)",
+        //    control.generation.asteroidsEnabled.transform,
+        //    transform.position
+        //);
+        //Look for nearest asteroid that is medium or large, AND that isn't clay-silicate
+        Transform nearestAsteroid = null;
+        //Start with infinity distance away to compare to
+        float closestDistanceSoFar = Mathf.Infinity;
+        //Loop through all transforms
+        Transform hierarchy = control.generation.asteroidsEnabled.transform;
+        int nTransformsToCheck = hierarchy.childCount;
+        for (int i = 0; i < nTransformsToCheck; i++)
+        {
+            //The transform that we are currently checking
+            Transform transformCurrentlyChecking = hierarchy.GetChild(i);
+
+            //Ensure this transform is one of the specific clones we want to check for
+            if (transformCurrentlyChecking.gameObject.name == control.generation.asteroid.name + "(Clone)")
+            {
+                //Ensure the asteroid is the correct size and not a clay-silicate asteroid
+                if (
+                    transformCurrentlyChecking.GetComponentInChildren<Asteroid>().type != Asteroid.TYPE_CLAY_SILICATE
+                    && (
+                        transformCurrentlyChecking.GetComponentInChildren<Asteroid>().size == Asteroid.SIZE_MEDIUM
+                        || transformCurrentlyChecking.GetComponentInChildren<Asteroid>().size == Asteroid.SIZE_LARGE
+                    )
+                )
+                {
+                    //The distance from the player to that transform
+                    float distanceToTransformToCheck = Vector3.Distance(transform.position, transformCurrentlyChecking.position);
+
+                    //If the distance is closer than the last transform we checked
+                    if (distanceToTransformToCheck < closestDistanceSoFar)
+                    {
+                        //Set this transform as the closest (so far)
+                        closestDistanceSoFar = distanceToTransformToCheck;
+                        nearestAsteroid = transformCurrentlyChecking;
+                    }
+                }
+            }
+        }
+
+        //Highlight that asteroid
+        if (!nearestAsteroid.GetComponentInChildren<Asteroid>().destroying)
+        {
+            Material material = nearestAsteroid.GetComponentInChildren<MeshRenderer>().material;
+            material.SetFloat("_NightVisionOutline", 5f);
+        }
+
+        //TARGET
+        //Force the player to target the nearest asteroid
+        //control.ui.SetPlayerTargetObject(nearestAsteroid.gameObject);
+        control.ui.targetImage.gameObject.SetActive(true);
+        control.ui.renderTarget = true;
+        targetObject = nearestAsteroid.gameObject;
+        control.ui.UpdateTargetConsole();
+    }
+
     private int GetNearestMoonID()
     {
         Transform visitedMoonTransfrom = control.GetClosestSpecificTransformFromHierarchy(
@@ -833,11 +1119,41 @@ public class Player : MonoBehaviour
             closestMoonOrStationTransform = Control.GetClosestTransformFromHierarchy(control.generation.moons.transform, transform.position);
             distToClosestMoon = (transform.position - closestMoonOrStationTransform.transform.position).magnitude;
         }
-
         if (control.generation.asteroidsEnabled.transform.childCount > 0)
         {
-            closestAsteroidTransform = Control.GetClosestTransformFromHierarchy(control.generation.asteroidsEnabled.transform, transform.position);
-            distToClosestAsteroid = (transform.position - closestAsteroidTransform.transform.position).magnitude;
+            //closestAsteroidTransform = Control.GetClosestTransformFromHierarchy(control.generation.asteroidsEnabled.transform, transform.position);
+
+            //MANUALLY GET NEAREST ASTEROID BECAUSE WE NEED TO ENSURE IT IS NOT DESTROYED
+            Transform hierarchy = control.generation.asteroidsEnabled.transform;
+
+            //Start with infinity distance away to compare to
+            float closestDistanceSoFar = Mathf.Infinity;
+
+            //Loop through all transforms
+            int nTransformsToCheck = hierarchy.childCount;
+            for (int i = 0; i < nTransformsToCheck; i++)
+            {
+                //The transform that we are currently checking
+                Transform transformToCheck = hierarchy.GetChild(i);
+
+                //Only accept if not destroyed/destroying
+                if (!transformToCheck.GetComponent<Asteroid>().destroyed && !transformToCheck.GetComponent<Asteroid>().destroying)
+                {
+                    //The distance to this particular asteroid from the player position
+                    float distanceToTransformToCheck = Vector3.Distance(transform.position, transformToCheck.position);
+
+                    //If the distance is closer than the last transform we checked
+                    if (distanceToTransformToCheck < closestDistanceSoFar)
+                    {
+                        //Set this transform as the closest (so far)
+                        closestDistanceSoFar = distanceToTransformToCheck;
+                        closestAsteroidTransform = transformToCheck;
+                    }
+                }
+            }
+
+            //distToClosestAsteroid = (transform.position - closestAsteroidTransform.transform.position).magnitude;
+            distToClosestAsteroid = closestDistanceSoFar;
         }
     }
     #endregion
@@ -1124,6 +1440,7 @@ public class Player : MonoBehaviour
                 //Set map to player position
                 mapCam.transform.position = transform.position + mapOffset + (Vector3.up * mapCam.GetComponent<Camera>().farClipPlane / 2f);
 
+                //Map panning
                 if (binds.GetInput(binds.bindPanMap))
                 {
                     float mapRatio = 0.03f;
@@ -1140,6 +1457,10 @@ public class Player : MonoBehaviour
                 {
                     mapCam.GetComponent<Camera>().orthographicSize = Mathf.Max(10.0f, mapCam.GetComponent<Camera>().orthographicSize *= 0.9f);
                 }
+
+                //Map model of the player ship scales with the map zoom so that it is always visible
+                Transform mapModel = transform.parent.Find("Position Mount").Find("Centre Mount").Find("Ship Map Model");
+                mapModel.localScale = Vector3.one * mapCam.GetComponent<Camera>().orthographicSize;
             }
             else
             {
@@ -1399,13 +1720,45 @@ public class Player : MonoBehaviour
     #endregion
 
     #region General methods: Weapons
+    public int GetWeaponSelectedID()
+    {
+        int weaponSelectedId;
+
+        if (weaponSlotSelected == 0)
+        {
+            weaponSelectedId = weaponSlot0.ID;
+        }
+        else
+        {
+            weaponSelectedId = weaponSlot1.ID;
+        }
+
+        return weaponSelectedId;
+    }
+
+    public string GetWeaponSelectedName()
+    {
+        string weaponSelectedName;
+
+        if (weaponSlotSelected == 0)
+        {
+            weaponSelectedName = weaponSlot0.NAME;
+        }
+        else
+        {
+            weaponSelectedName = weaponSlot1.NAME;
+        }
+
+        return weaponSelectedName;
+    }
+
     private void WeaponsFire()
     {
-        //Remember that a weapon was used recently
+        //Remember that a weapon was used recently (used for disabling afterburners)
         weaponUsedRecently = 1f;
 
         //Fire whichever weapon is selected
-        if (weaponSelectedTitle == "Laser")
+        if (GetWeaponSelectedID() == WEAPON_ID_MINING_LASER)
         {
             playerWeaponLaser.Fire();
 
@@ -1420,7 +1773,7 @@ public class Player : MonoBehaviour
             //    control.ui.tipAimNeedsHelpCertainty++;
             //}
         }
-        else if (weaponSelectedTitle == "Seismic charges")
+        else if (GetWeaponSelectedID() == WEAPON_ID_SEISMIC_CHARGES)
         {
             playerWeaponSeismicCharge.Fire();
 
@@ -1432,19 +1785,18 @@ public class Player : MonoBehaviour
     private void UpdateWeaponSelected()
     {
         //Select
-        if (binds.GetInputDown(binds.bindSelectWeapon1))
+        if (binds.GetInputDown(binds.bindSelectWeaponSlot0))
         {
-            weaponSelectedTitle = "Laser";
+            weaponSlotSelected = 0;
         }
-        else if (upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1 && binds.GetInputDown(binds.bindSelectWeapon2))
+        else if (binds.GetInputDown(binds.bindSelectWeaponSlot1))
         {
-            weaponSelectedTitle = "Seismic charges";
+            weaponSlotSelected = 1;
         }
 
         //Get properties
-        if (weaponSelectedTitle == "Laser")
+        if (GetWeaponSelectedID() == WEAPON_ID_MINING_LASER)
         {
-            //Properties
             weaponSelectedClipSize = playerWeaponLaser.clipSize;
             weaponSelectedClipRemaining = playerWeaponLaser.clipRemaining;
             weaponSelectedClipCooldownDuration = playerWeaponLaser.CLIP_COOLDOWN_DURATION;
@@ -1453,9 +1805,8 @@ public class Player : MonoBehaviour
             weaponSelectedSingleCooldownDuration = playerWeaponLaser.SINGLE_COOLDOWN_DURATION;
             weaponSelectedSingleCooldownCurrent = playerWeaponLaser.singleCooldownCurrent;
         }
-        else if (weaponSelectedTitle == "Seismic charges")
+        else if (GetWeaponSelectedID() == WEAPON_ID_SEISMIC_CHARGES)
         {
-            //Properties
             weaponSelectedClipSize = playerWeaponSeismicCharge.clipSize;
             weaponSelectedClipRemaining = playerWeaponSeismicCharge.clipRemaining;
             weaponSelectedClipCooldownDuration = playerWeaponSeismicCharge.CLIP_COOLDOWN_DURATION;
@@ -1464,10 +1815,21 @@ public class Player : MonoBehaviour
             weaponSelectedSingleCooldownDuration = playerWeaponSeismicCharge.SINGLE_COOLDOWN_DURATION;
             weaponSelectedSingleCooldownCurrent = playerWeaponSeismicCharge.singleCooldownCurrent;
         }
+        else
+        {
+            //None
+            weaponSelectedClipSize = 0;
+            weaponSelectedClipRemaining = 0;
+            weaponSelectedClipCooldownDuration = 0f;
+            weaponSelectedClipCooldownCurrent = 0f;
+
+            weaponSelectedSingleCooldownDuration = 0f;
+            weaponSelectedSingleCooldownCurrent = 1f;
+        }
 
         //UI
-        control.ui.UpdateWeaponAlternate(weaponSelectedTitle, upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1);
-        control.ui.UpdateWeaponSelected(weaponSelectedTitle);
+        //control.ui.UpdateWeapons(weaponSlotSelected, upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1);
+        control.ui.UpdateWeapons();
     }
 
     
@@ -1591,12 +1953,12 @@ public class Player : MonoBehaviour
                 if (bodyIndex == 0)
                 {
                     //Planet
-                    Player.UpdateOutlineMaterial(CBODY_TYPE_PLANET, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
+                    UpdateOutlineMaterial(CBODY_TYPE_PLANET, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
                 }
                 else
                 {
                     //Moons
-                    Player.UpdateOutlineMaterial(CBODY_TYPE_MOON, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
+                    UpdateOutlineMaterial(CBODY_TYPE_MOON, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
                 }
             }
         }
@@ -1609,26 +1971,26 @@ public class Player : MonoBehaviour
             if (!asteroidTransform.GetComponentInChildren<Asteroid>().destroying)
             {
                 Material material = asteroidTransform.GetComponentInChildren<MeshRenderer>().material;
-                Player.UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, material);
+                UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, material);
             }
         }
     }
 
-    public static void UpdateOutlineMaterial(int cBodyType, Material material)
+    public void UpdateOutlineMaterial(int cBodyType, Material material)
     {
-        if (Player.outline)
+        if (isOutlinesVisible && upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1)
         {
             if (cBodyType == CBODY_TYPE_PLANET)
             {
-                material.SetFloat("_NightVisionOutline", 0.3f);
+                material.SetFloat("_NightVisionOutline", 0.3f * outlineFade);
             }
             else if (cBodyType == CBODY_TYPE_MOON)
             {
-                material.SetFloat("_NightVisionOutline", 0.7f);
+                material.SetFloat("_NightVisionOutline", 0.7f * outlineFade);
             }
             else if (cBodyType == CBODY_TYPE_ASTEROID)
             {
-                material.SetFloat("_NightVisionOutline", 5f);
+                material.SetFloat("_NightVisionOutline", 5f * outlineFade);
             }
         }
         else
@@ -1639,7 +2001,7 @@ public class Player : MonoBehaviour
 
     public void ToggleOutline()
     {
-        Player.outline = !Player.outline;
+        isOutlinesVisible = !isOutlinesVisible;
         UpdateOutlines();
     }
     #endregion

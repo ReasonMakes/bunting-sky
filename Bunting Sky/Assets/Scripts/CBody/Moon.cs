@@ -122,60 +122,56 @@ public class Moon : MonoBehaviour
         }
     }
 
-    public GameObject SpawnStation(bool forced, string titleOverride, bool generateOffers, float pricePlatinoid, float pricePreciousMetal, float priceWater, int[] upgradeIndex)
+    public GameObject SpawnStation(string titleOverride, bool generateOffers, float pricePlatinoid, float pricePreciousMetal, float priceWater, int[] upgradeIndex)
     {
         //Remember that this planetoid has a station oribting it, or at least we tried to spawn one (should this really be true before spawning it?)
         hasStation = true;
 
-        //4 in 5 chance of having a space station. Option to force-spawn the station
-        if (forced || Random.Range(0, 6) >= 1)
+        //Instantiate
+        instancedStation = Instantiate
+        (
+            station,
+            transform.position + new Vector3(10f, 10f, 10f),
+            Quaternion.Euler(270f, 0f, 270f)
+        );
+
+        //Set orbit
+        //instancedStation.GetComponent<StationOrbit>().planetoidToOrbit = gameObject;
+        //instancedStation.GetComponent<Rigidbody>().velocity = rb.velocity;
+        //instancedStation.GetComponent<Gravity>().SetVelocityToOrbit(instancedStation.GetComponent<StationOrbit>().planetoidToOrbit, 0f);
+
+        //Set parent
+        instancedStation.transform.parent = transform.parent;
+
+        //Generate name
+        if (titleOverride == null)
         {
-            instancedStation = Instantiate
-            (
-                station,
-                transform.position + new Vector3(10f, 10f, 10f),
-                Quaternion.Euler(270f, 0f, 270f)
-            );
+            instancedStation.GetComponent<NameHuman>().GenerateName();
+        }
+        else
+        {
+            instancedStation.GetComponent<NameHuman>().title = titleOverride;
+        }
 
-            StationDocking scriptStationDocking = instancedStation.GetComponentInChildren<StationDocking>();
+        //Give control references
+        StationDocking scriptStationDocking = instancedStation.GetComponentInChildren<StationDocking>();
+        scriptStationDocking.control = control;
+        instancedStation.GetComponentInChildren<StationOrbit>().control = control;
 
-            //Set orbit
-            instancedStation.GetComponent<StationOrbit>().planetoidToOrbit = gameObject;
-            instancedStation.GetComponent<Rigidbody>().velocity = rb.velocity;
-            //instancedStation.GetComponent<Gravity>().SetVelocityToOrbit(instancedStation.GetComponent<StationOrbit>().planetoidToOrbit, 0f);
+        //Offers
+        if (generateOffers)
+        {
+            scriptStationDocking.GenerateCommerceOffers();
+        }
+        else
+        {
+            //Ore purchase offers
+            scriptStationDocking.pricePlatinoid = pricePlatinoid;
+            scriptStationDocking.pricePreciousMetal = pricePreciousMetal;
+            scriptStationDocking.priceWater = priceWater;
 
-            //Set parent
-            instancedStation.transform.parent = transform.parent;
-
-            //Give control references
-            scriptStationDocking.control = control;
-            instancedStation.GetComponentInChildren<StationOrbit>().control = control;
-
-            //Generate name
-            if (titleOverride == null)
-            {
-                instancedStation.GetComponent<NameHuman>().GenerateName();
-            }
-            else
-            {
-                instancedStation.GetComponent<NameHuman>().title = titleOverride;
-            }
-
-            //Offers
-            if (generateOffers)
-            {
-                scriptStationDocking.GenerateCommerceOffers();
-            }
-            else
-            {
-                //Ore purchase offers
-                scriptStationDocking.pricePlatinoid = pricePlatinoid;
-                scriptStationDocking.pricePreciousMetal = pricePreciousMetal;
-                scriptStationDocking.priceWater = priceWater;
-
-                //Upgrades
-                scriptStationDocking.upgradeIndexAtButton = upgradeIndex;
-            }
+            //Upgrades
+            scriptStationDocking.upgradeIndexAtButton = upgradeIndex;
         }
 
         //Return coords so that player can spawn near station

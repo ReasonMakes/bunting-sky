@@ -52,6 +52,9 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public Vector3 rbMemVel;
     [System.NonSerialized] public Vector3 rbMemAngularVel;
 
+    public AudioSource soundHit;
+    public AudioSource soundExplosion;
+
     private void Update()
     {
         if (!performantMode)
@@ -293,6 +296,9 @@ public class Asteroid : MonoBehaviour
         if (health > 0)
         {
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(1, direction, position, false);
+
+            //Play hit sound effect
+            soundHit.Play();
         }
         else
         {
@@ -359,7 +365,7 @@ public class Asteroid : MonoBehaviour
             }
 
             //Play break apart sound effect
-            GetComponent<AudioSource>().Play();
+            soundExplosion.Play();
         }
     }
 
@@ -385,7 +391,10 @@ public class Asteroid : MonoBehaviour
         if (enabled)
         {
             gameObject.SetActive(true);
-            Player.UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, modelObject.GetComponentInChildren<MeshRenderer>().material);
+            if (control.generation.playerSpawned)
+            {
+                control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, modelObject.GetComponentInChildren<MeshRenderer>().material);
+            }
             separating = true;
             destroyed = false;
             targetCollider1.enabled = true;

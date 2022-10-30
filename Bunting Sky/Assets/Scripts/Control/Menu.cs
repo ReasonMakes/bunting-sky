@@ -399,22 +399,41 @@ public class Menu : MonoBehaviour
 
     public void MenuSettingsOutlineToggle()
     {
-        //Rectify toggle button being out-of-phase with actual setting boolean
-        //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
-        if (menuSettingsToggleOutline.isOn == control.settings.outline)
+        //Can only turn on when cooldown allows it, but can turn off at any time
+        if (control.GetPlayerScript().outlineCanUse || control.GetPlayerScript().isOutlinesVisible)
         {
-            //Rectifying this also calls the method again, causing the outline to still be updated from just one button toggle
-            menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
-        }
-        else
-        {
-            //Toggle outline setting
-            control.settings.outline = !control.settings.outline;
-            control.settings.Save();
-        }
+            //Update cooldowns
+            if (control.GetPlayerScript().outlineCanUse && !control.GetPlayerScript().isOutlinesVisible)
+            {
+                control.GetPlayerScript().outlineCanUse = false;
 
-        //Update outlines
-        control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
+                //Time at which the outlines themselves become disabled
+                control.GetPlayerScript().outlineDisableTime = Time.time + control.GetPlayerScript().OUTLINE_PERIOD_ENABLED;
+
+                //Time at which the player can use outlines again
+                control.GetPlayerScript().outlineCanUseAgainTime = Time.time
+                    + control.GetPlayerScript().OUTLINE_PERIOD_ENABLED       //period enabled for
+                    + control.GetPlayerScript().OUTLINE_PERIOD_FADING        //period animating from enabled to disabled for
+                    + control.GetPlayerScript().OUTLINE_PERIOD_COOLDOWN;     //period disabled for
+            }
+            
+            //Rectify toggle button being out-of-phase with actual setting boolean
+            //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
+            if (menuSettingsToggleOutline.isOn == control.settings.outline)
+            {
+                //Rectifying this also calls the method again, causing the outline to still be updated from just one button toggle
+                menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
+            }
+            else
+            {
+                //Toggle outline setting
+                control.settings.outline = !control.settings.outline;
+                control.settings.Save();
+            }
+
+            //Update outlines
+            control.GetPlayerScript().ToggleOutline();
+        }
     }
 
     public void MenuSettingsRefineToggle()
@@ -589,8 +608,8 @@ public class Menu : MonoBehaviour
                     if (menuKeybindsBindID == BIND_ID_OUTLINE) { control.binds.bindToggleOutline = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_MAP) { control.binds.bindToggleMap = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_REFINE) { control.binds.bindToggleRefine = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_WEAPON1) { control.binds.bindSelectWeapon1 = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_WEAPON2) { control.binds.bindSelectWeapon2 = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_WEAPON1) { control.binds.bindSelectWeaponSlot0 = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_WEAPON2) { control.binds.bindSelectWeaponSlot1 = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_HUD) { control.binds.bindToggleHUD = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_FPS) { control.binds.bindToggleFPS = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_SCREENSHOT) { control.binds.bindSaveScreenshot = inputCode; }
@@ -696,8 +715,8 @@ public class Menu : MonoBehaviour
         menuBindsToggleOutline.text         = MenuKeybindsGetBindString(control.binds.bindToggleOutline);
         menuBindsToggleMap.text             = MenuKeybindsGetBindString(control.binds.bindToggleMap);
         menuBindsToggleRefine.text          = MenuKeybindsGetBindString(control.binds.bindToggleRefine);
-        menuBindsSelectWeapon1.text         = MenuKeybindsGetBindString(control.binds.bindSelectWeapon1);
-        menuBindsSelectWeapon2.text         = MenuKeybindsGetBindString(control.binds.bindSelectWeapon2);
+        menuBindsSelectWeapon1.text         = MenuKeybindsGetBindString(control.binds.bindSelectWeaponSlot0);
+        menuBindsSelectWeapon2.text         = MenuKeybindsGetBindString(control.binds.bindSelectWeaponSlot1);
         menuBindsToggleHUD.text             = MenuKeybindsGetBindString(control.binds.bindToggleHUD);
         menuBindsToggleFPS.text             = MenuKeybindsGetBindString(control.binds.bindToggleFPS);
         menuBindsSaveScreenshot.text        = MenuKeybindsGetBindString(control.binds.bindSaveScreenshot);

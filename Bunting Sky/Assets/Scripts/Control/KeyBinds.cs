@@ -46,8 +46,8 @@ public class KeyBinds : MonoBehaviour
     [System.NonSerialized] public short bindToggleOutline;
     [System.NonSerialized] public short bindToggleMap;
     [System.NonSerialized] public short bindToggleRefine;
-    [System.NonSerialized] public short bindSelectWeapon1;
-    [System.NonSerialized] public short bindSelectWeapon2;
+    [System.NonSerialized] public short bindSelectWeaponSlot0;
+    [System.NonSerialized] public short bindSelectWeaponSlot1;
 
     [System.NonSerialized] public short bindToggleHUD;
     [System.NonSerialized] public short bindToggleFPS;
@@ -98,8 +98,8 @@ public class KeyBinds : MonoBehaviour
             bindToggleOutline = (short)KeyCode.C,
             bindToggleMap = (short)KeyCode.M,
             bindToggleRefine = (short)KeyCode.T,
-            bindSelectWeapon1 = (short)KeyCode.Z,
-            bindSelectWeapon2 = (short)KeyCode.X,
+            bindSelectWeaponSlot0 = (short)KeyCode.Alpha1,
+            bindSelectWeaponSlot1 = (short)KeyCode.Alpha2,
 
             bindToggleHUD = (short)KeyCode.F3,
             bindToggleFPS = (short)KeyCode.F4,
@@ -136,8 +136,8 @@ public class KeyBinds : MonoBehaviour
         ioBuffer.bindToggleOutline = bindToggleOutline;
         ioBuffer.bindToggleMap = bindToggleMap;
         ioBuffer.bindToggleRefine = bindToggleRefine;
-        ioBuffer.bindSelectWeapon1 = bindSelectWeapon1;
-        ioBuffer.bindSelectWeapon2 = bindSelectWeapon2;
+        ioBuffer.bindSelectWeaponSlot0 = bindSelectWeaponSlot0;
+        ioBuffer.bindSelectWeaponSlot1 = bindSelectWeaponSlot1;
 
         ioBuffer.bindToggleHUD = bindToggleHUD;
         ioBuffer.bindToggleFPS = bindToggleFPS;
@@ -173,8 +173,8 @@ public class KeyBinds : MonoBehaviour
         bindToggleOutline = ioBuffer.bindToggleOutline;
         bindToggleMap = ioBuffer.bindToggleMap;
         bindToggleRefine = ioBuffer.bindToggleRefine;
-        bindSelectWeapon1 = ioBuffer.bindSelectWeapon1;
-        bindSelectWeapon2 = ioBuffer.bindSelectWeapon2;
+        bindSelectWeaponSlot0 = ioBuffer.bindSelectWeaponSlot0;
+        bindSelectWeaponSlot1 = ioBuffer.bindSelectWeaponSlot1;
 
         bindToggleHUD = ioBuffer.bindToggleHUD;
         bindToggleFPS = ioBuffer.bindToggleFPS;
@@ -214,8 +214,8 @@ public class KeyBinds : MonoBehaviour
         public short bindToggleOutline;
         public short bindToggleMap;
         public short bindToggleRefine;
-        public short bindSelectWeapon1;
-        public short bindSelectWeapon2;
+        public short bindSelectWeaponSlot0;
+        public short bindSelectWeaponSlot1;
 
         public short bindToggleHUD;
         public short bindToggleFPS;

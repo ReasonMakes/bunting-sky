@@ -289,6 +289,10 @@ public class Generation : MonoBehaviour
             Control.DestroyAllChildren(asteroidsEnabled, 0f);
             Control.DestroyAllChildren(asteroidsDisabled, 0f);
             Control.DestroyAllChildren(ores, 0f);
+            Control.DestroyAllChildren(playerProjectilesLasers, 0f);
+            Control.DestroyAllChildren(playerProjectilesSeismicCharges, 0f);
+            Control.DestroyAllChildren(enemyProjectilesLasers, 0f);
+            Control.DestroyAllChildren(enemies, 0f);
             planetarySystems.Clear();
 
             //Destroy player
@@ -307,7 +311,7 @@ public class Generation : MonoBehaviour
         StarSpawn(null);
 
         //Planetary system (planets > moons > heighliners, stations > player)
-        nPlanetsPlanned = (PLANETS_RANGE_HIGH + PLANETS_RANGE_LOW) / 2; //the player's first system should have a very stable number of planets
+        nPlanetsPlanned = (PLANETS_RANGE_HIGH + PLANETS_RANGE_LOW) / 2; //the player's first system should have a very stable number of planets for progression reasons
         //nPlanetsPlanned = Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1); //extrastellar systems should have varied planet numbers
         PlanetarySystemClusterSpawn(nPlanetsPlanned, generationType);
 
@@ -346,61 +350,91 @@ public class Generation : MonoBehaviour
     #region Planets
     private void PlanetarySystemClusterSpawn(int nPlanets, int generationType)
     {
-        //Properties
-        //float distanceOut = maxMoonDist;
-        //float randSpacing;
-        //float spawnRadius;
-        //float spawnAngle;
-
         //Spawn all planetary systems
-        //Start by creating a list of all available degrees, defaulting to be available
-        bool[] availableAngles = new bool[10];
+
+        //Get positions for each planetary system
+        Vector3[] position = new Vector3[nPlanets];
+        position = GenerateOrbitalPositionsWithReservedAngles(nPlanets, (int)(nPlanets * 1.5f), 2f, 3800f, 500f);
+
+        //Spawn each planetary system
+        for (int planetaryIndex = 0; planetaryIndex < nPlanets; planetaryIndex++)
+        {
+            Vector3 positionToSpawnThisPlanet = position[planetaryIndex];
+            positionToSpawnThisPlanet.y += Random.value * 100f; //offset the vertical axis
+            PlanetarySystemSpawnAndPlayerSpawn(generationType, planetaryIndex, nPlanets, positionToSpawnThisPlanet, null);
+        }
+    }
+
+    private Vector3[] GenerateOrbitalPositionsWithReservedAngles(int nPositions, int nAngles, float angleNoiseMagnitude, float distanceOut, float distanceOutNoiseMagnitude)
+    {
+        /*  Returns an array of positions in a ring around (0,0), with angle reserving to prevent overlapping
+         * 
+         *  nPositions - how many positions to return
+         *  nAngles - how many discrete, evenly divided angles to reserve for each possible position
+         *            this number needs to be higher than nPositions otherwise we will not be able to generate angles for each position
+         *            a higher number results in finer angles, but more chance of overlapping
+         *  angleNoiseMagnitude - magnitude of random offset angle in degrees, to make a more natural generation
+         *  distanceOut - how far from the centre each position should be
+         *  distanceOutNoiseMagnitude - similar to angleNoiseMagnitude; adds some random noise to how far out from centre the position will generate
+         */
+
+        //Create a list of position to return later
+        Vector3[] positions = new Vector3[nPositions];
+
+        //Create a list of all available degrees, defaulting to be available
+        bool[] availableAngles = new bool[nAngles];
         for (int angleIndex = 0; angleIndex < availableAngles.Length; angleIndex++)
         {
             availableAngles[angleIndex] = true;
         }
-        //Loop for each planet to spawn it
-        for (int planetaryIndex = 0; planetaryIndex < nPlanets; planetaryIndex++)
-        {
-            //Generate planet position
-            //randSpacing = Mathf.Pow(Random.Range(0f, planetsSpacingBaseMax), Random.Range(1f, PLANETS_SPACING_POWER));
-            //spawnRadius = distanceOut + randSpacing;
-            //distanceOut = spawnRadius; //incremenet distanceOut for the next moon
-            //spawnAngle = Random.Range(0f, 360f);
 
-            //Try to find an availablke angle for the planet to spawn at
-            float spawnAngle = 0f;
+        //Loop for each position
+        for (int positionIndex = 0; positionIndex < nPositions; positionIndex++)
+        {
+            //Try to find an available angle for this position
+            float angle = 0f;
             int triesMax = 50;
             for (int tryIndex = 0; tryIndex < triesMax; tryIndex++)
             {
-                int angleToCheck = (int)Random.Range(0f, 10f);
+                int angleToCheck = (int)Random.Range(0f, (float)nAngles);
                 if (availableAngles[angleToCheck])
                 {
-                    //Set the angle to use as no longer available for other planets to use
+                    //Set the angle to use as no longer available for other positions to use
                     availableAngles[angleToCheck] = false;
 
-                    //Set the angle to spawn the planet
-                    spawnAngle = angleToCheck * 36f; //360(angles we want) / 10(availableAngles.Length) = 36(conversion coefficient)
+                    //Convert from angle index to degrees (because we add random noise in degrees)
+                    angle = angleToCheck * (360f / availableAngles.Length);
 
-                    //Exit the try loop
+                    //Add random noise to the angle
+                    angle += Random.value * angleNoiseMagnitude;
+
+                    //Convert from degrees to radians, since that's what the Mathf struct uses
+                    angle *= 0.01745329251f; //TauRadiansPerTurn / degreesPerTurn = 6.28 / 360;
+
+                    //Exit the try loop - we have found a working angle for this position
                     break;
                 }
                 else if (tryIndex == triesMax - 1)
                 {
                     //Default to a random angle if we run out of tries
-                    Debug.LogError("Ran out of tries trying to find an available angle for the planet to spawn");
-                    spawnAngle = Random.Range(0f, 360f);
+                    Debug.LogError("Ran out of tries trying to find an available angle to use for this position");
+                    angle = Random.Range(0f, 360f);
                 }
             }
-            Vector3 position = new Vector3(
-                Mathf.Cos(spawnAngle) * maxMoonDist,
-                Random.Range(-10f, 10f),
-                Mathf.Sin(spawnAngle) * maxMoonDist
-            );
 
-            //Spawn planet
-            PlanetarySystemSpawnAndPlayerSpawn(generationType, planetaryIndex, nPlanets, position, null);
+            //Generate the distance away from centre
+            float instanceDistanceOut = distanceOut + (Random.value * distanceOutNoiseMagnitude);
+
+            //Assign the position
+            positions[positionIndex] = new Vector3(
+                Mathf.Cos(angle) * instanceDistanceOut,
+                0f,
+                Mathf.Sin(angle) * instanceDistanceOut
+            );
         }
+
+        //Return the positions Vector3 array
+        return positions;
     }
 
     private GameObject PlanetarySystemSpawnAndPlayerSpawn(int generationType, int planetarySystemIndex, int nPlanets, Vector3 position, string titleOverride)
@@ -412,7 +446,17 @@ public class Generation : MonoBehaviour
         if (generationType != GENERATION_TYPE_LOADED_GAME)
         {
             //Moons
-            GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1), planetarySystemIndex, position);
+            int nMoons;
+            if (planetarySystemIndex == 0)
+            {
+                //Home system will always have a stable number of moons
+                nMoons = 5; //3 minimum to complete the tutorial
+            }
+            else
+            {
+                nMoons = Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1);
+            }
+            GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(nMoons, planetarySystemIndex, position);
 
             //If home planetary system
             if (planetarySystemIndex == 0)
@@ -525,7 +569,7 @@ public class Generation : MonoBehaviour
         );
 
         //Update outline
-        Player.UpdateOutlineMaterial(Player.CBODY_TYPE_PLANET, instancePlanet.GetComponentInChildren<MeshRenderer>().material);
+        //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_PLANET, instancePlanet.GetComponentInChildren<MeshRenderer>().material);
 
         //Put in hierarchy
         instancePlanet.transform.parent = planets.transform;
@@ -572,50 +616,62 @@ public class Generation : MonoBehaviour
     #region Moons
     private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition)
     {
+        //At the end we will return the last generated moon
         GameObject instanceMoon = null;
 
-        //Properties
-        float distanceOut = MOONS_DISTANCE_OUT;
-        float randSpacing;
-        float spawnRadius;
-        float spawnAngle;
-        float verticalOffsetRange = 20f;
+        //Spawn all moons in this planetary system
 
-        //Spawn all
+        //Get positions for each moon
+        Vector3[] moonPositions = new Vector3[nMoons];
+        moonPositions = GenerateOrbitalPositionsWithReservedAngles(nMoons, (int)(nMoons * 2f), 2f, 500f, 350f); //nMoons, (int)(nMoons * 2f), 2f, 300f, 200f
+
+        //Spawn each moon
         for (int moonIndex = 0; moonIndex < nMoons; moonIndex++)
         {
-            //Generate the position coords
-            randSpacing = Mathf.Pow(Random.Range(0f, MOONS_SPACING_BASE_MAX), Random.Range(1f, MOONS_SPACING_POWER));
-            spawnRadius = distanceOut + randSpacing;
-            distanceOut = spawnRadius; //incremenet distanceOut for the next moon
-            spawnAngle = Random.Range(0f, 360f);
+            Vector3 instanceMoonPosition = moonPositions[moonIndex];
 
-            Vector3 position = new Vector3(
-                Mathf.Cos(spawnAngle) * spawnRadius,
-                planetPosition.y + Random.Range(-verticalOffsetRange, verticalOffsetRange),
-                Mathf.Sin(spawnAngle) * spawnRadius
-            );
-            //Offset to "orbit" planet
-            position += planetPosition;
+            //Set all moon positions to be relative to parent planet's position
+            instanceMoonPosition += planetPosition;
 
-            //Spawn the moon
-            instanceMoon = MoonSpawn(
-                false,
-                planetIndex, moonIndex,
-                position,
-                null, false,
-                null, false, 0f, 0f, 0f, null
-            );
+            //Generate a slight vertical offset per moon
+            instanceMoonPosition.y += Random.value * 20f;
 
-            //Spawn asteroid belt (some percentage of moons have them)
+            //Spawn this moon
+            if (moonIndex == nMoons - 1)
+            {
+                //Player spawn moon - guarantee a space station
+                instanceMoon = MoonSpawn(
+                    false,
+                    planetIndex, moonIndex,
+                    instanceMoonPosition,
+                    true,
+                    null, false,
+                    null, false, 0f, 0f, 0f, null
+                );
+            }
+            else
+            {
+                //Not player spawn moon - station generation is randomized
+                instanceMoon = MoonSpawn(
+                    false,
+                    planetIndex, moonIndex,
+                    instanceMoonPosition,
+                    true,
+                    null, false,
+                    null, false, 0f, 0f, 0f, null
+                );
+            }
+                
+
+            //Spawn asteroid belt around this moon (some percentage of moons - other than player's spawn moon - have them)
             float nPercentAsteroidBelts = 50f;
             if (moonIndex == nMoons - 1)
             {
-                //The player's spawn moon ALWAYS spawns with water ice asteroids
+                //Player spawn moon - water asteroids only but GUARANTEED valuables
                 AsteroidPoolSpawnCluster(
                     CLUSTER_TYPE_MOON_RINGS,
                     Asteroid.TYPE_WATER,
-                    position,
+                    instanceMoonPosition,
                     true
                 );
             }
@@ -623,28 +679,28 @@ public class Generation : MonoBehaviour
             {
                 if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
                 {
-                    //Only water and platinoids can spawn in the player's home system
+                    //Player spawn SYSTEM - water and platinoid only
                     byte asteroidType = Asteroid.TYPE_WATER;
                     if (Random.value > 0.5f)
                     {
                         asteroidType = Asteroid.TYPE_PLATINOID;
                     }
                     AsteroidPoolSpawnCluster(
-                        CLUSTER_TYPE_PLANET_RINGS,
+                        CLUSTER_TYPE_MOON_RINGS,
                         asteroidType,
-                        position,
+                        instanceMoonPosition,
                         false
                     );
                 }
             }
             else if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
             {
-                //Any asteroid type can spawn at planetary systems other than the player's spawn system
+                //All other systems - any asteroid type
                 AsteroidPoolSpawnCluster(
                     CLUSTER_TYPE_MOON_RINGS,
                     Asteroid.GetRandomType(),
-                    position,
-                    true
+                    instanceMoonPosition,
+                    false
                 );
             }
         }
@@ -653,7 +709,9 @@ public class Generation : MonoBehaviour
         return instanceMoon;
     }
 
-    public GameObject MoonSpawn(bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position, string titleOverride, bool ifLoadingIsStation, string stationTitleOverride, bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
+    public GameObject MoonSpawn(bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position,
+        bool forceStation, string titleOverride, bool ifLoadingIsStation, string stationTitleOverride,
+        bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
     {
         //Generate a moon within a planetary system and return its station's coordinates for possible use in spawning the player
 
@@ -682,7 +740,7 @@ public class Generation : MonoBehaviour
         instanceMoon.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
 
         //Update outline
-        Player.UpdateOutlineMaterial(Player.CBODY_TYPE_MOON, instanceMoon.GetComponentInChildren<MeshRenderer>().material);
+        //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_MOON, instanceMoon.GetComponentInChildren<MeshRenderer>().material);
 
         //Generate (or load) name
         if (titleOverride == null)
@@ -700,7 +758,6 @@ public class Generation : MonoBehaviour
             if (ifLoadingIsStation) //does the save data dictate that this moon has a station?
             {
                 instanceMoon.GetComponent<Moon>().SpawnStation(
-                    loaded,
                     stationTitleOverride,
                     stationGenerateOffers,
                     stationPricePlatinoid,
@@ -716,7 +773,7 @@ public class Generation : MonoBehaviour
             if (moonIndex == 0)
             {
                 //Force a station to spawn and return those coords to spawn the player there (mainly for player station, but also to ensure each planetary system has at least one station)
-                instanceMoon.GetComponent<Moon>().SpawnStation(true, null, true, 0f, 0f, 0f, null);
+                instanceMoon.GetComponent<Moon>().SpawnStation(null, true, 0f, 0f, 0f, null);
             }
             else if (moonIndex == 1 || moonIndex == 2)
             {
@@ -724,12 +781,17 @@ public class Generation : MonoBehaviour
                 //Force a heighliner to spawn
                 instanceMoon.GetComponent<Moon>().SpawnHeighliner("Heighliner");
             }
+            else if (forceStation)
+            {
+                //Force a station to spawn (unless a heighliner is required)
+                instanceMoon.GetComponent<Moon>().SpawnStation(null, true, 0f, 0f, 0f, null);
+            }
             else
             {
                 //Other stations (random chance)
                 if (Random.value <= 0.75)
                 {
-                    instanceMoon.GetComponent<Moon>().SpawnStation(false, null, true, 0f, 0f, 0f, null);
+                    instanceMoon.GetComponent<Moon>().SpawnStation(null, true, 0f, 0f, 0f, null);
                 }
             }
         }
@@ -871,7 +933,7 @@ public class Generation : MonoBehaviour
             instanceAsteroidScript.rbMemAngularVel = instanceAsteroidScript.rb.angularVelocity;
 
             //Update outline
-            Player.UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, instanceAsteroidScript.modelObject.GetComponentInChildren<MeshRenderer>().material);
+            //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, instanceAsteroidScript.modelObject.GetComponentInChildren<MeshRenderer>().material);
         }
         else
         {
@@ -917,7 +979,7 @@ public class Generation : MonoBehaviour
             
             if (clusterType == CLUSTER_TYPE_PLANET_RINGS)
             {
-                radius = 170f;
+                radius = 250f; //200 //170
                 nAsteroids = 100; //70;
                 if (guaranteeValuables)
                 {
@@ -930,7 +992,7 @@ public class Generation : MonoBehaviour
             }
             else if (clusterType == CLUSTER_TYPE_MOON_RINGS)
             {
-                radius = 60f;
+                radius = 70f; //60
                 nAsteroids = 40; //70;
                 if (guaranteeValuables)
                 {
@@ -942,8 +1004,8 @@ public class Generation : MonoBehaviour
                 }
             }
 
-            float radiusRandomness = 0.12f * radius;
-            float heightRandomness = 0.12f * radius;
+            float radiusRandomness = 21f; //radius * 0.28f; //0.4 //0.12
+            float heightRandomness = 20f; //radius * 0.28f; //0.3 //0.24 0.12
             float angle = 0f;
             float angleRandomness = 6f;
 
@@ -963,7 +1025,7 @@ public class Generation : MonoBehaviour
                 GameObject instanceAsteroid = AsteroidPoolSpawn(
                     position + new Vector3(
                         Mathf.Cos(Mathf.Deg2Rad * angle) * instanceAsteroidRadius,
-                        position.y,
+                        0f, //this needs to be 0f because we are already ADDING to the moonar position - if we were to set this to position.y we would be doubling the y position!
                         Mathf.Sin(Mathf.Deg2Rad * angle) * instanceAsteroidRadius
                     ),
                     Random.Range(0, Asteroid.SIZE_LENGTH),
@@ -973,7 +1035,7 @@ public class Generation : MonoBehaviour
                 //Randomly move up/down relative the stellar plane
                 instanceAsteroid.transform.position = new Vector3(
                     instanceAsteroid.transform.position.x,
-                    instanceAsteroid.transform.position.y + (Random.Range(0f, 2f * heightRandomness) - heightRandomness),
+                    instanceAsteroid.transform.position.y + (Random.value * heightRandomness),
                     instanceAsteroid.transform.position.z
                 );
 
@@ -981,58 +1043,7 @@ public class Generation : MonoBehaviour
                 angle += (360f / (float)nAsteroids) + (Random.Range(0f, 2f * angleRandomness) - angleRandomness);
             }
         }
-
-        //GameObject instancePlanet = Control.GetClosestTransformFromHierarchy(control.generation.planets.transform, transform.position).gameObject;
-        ////instancePlanet.SetActive(!instancePlanet.activeSelf);
-        //int index = instancePlanet.GetComponent<PlanetarySystemBody>().planetarySystemIndex;
-        //int count = control.generation.planetarySystems[index].Count;
-        //control.ui.SetTip("Index: " + index + "; Count: " + count);
-        //for (int i = 0; i < count; i++)
-        //{
-        //    GameObject instancePlanetarySystemBody = control.generation.planetarySystems[index][i];
-        //    instancePlanetarySystemBody.SetActive(!instancePlanetarySystemBody.activeSelf);
-        //}
     }
-
-    //private void AsteroidManageCount()
-    //{
-    //    //Asteroid count manager
-    //    //Minimum
-    //    if (asteroids.transform.childCount < control.settings.asteroidsConcurrentMin)
-    //    {
-    //        int asteroidsToGenerate = control.settings.asteroidsConcurrentMin - asteroids.transform.childCount;
-    //        int clustersToGenerate = asteroidsToGenerate / 4;
-    //
-    //        //GenerateAsteroidClusters(Random.Range(ASTEROID_CLUSTERS_RANGE_LOW, ASTEROID_CLUSTERS_RANGE_HIGH + 1));
-    //        //GenerateAsteroidClusters(clustersToGenerate, 4);
-    //    }
-    //
-    //    //Limit
-    //    if (asteroids.transform.childCount >= control.settings.asteroidsConcurrentMax)
-    //    {
-    //        //Destroy asteroids that are far from the player
-    //        //Limit number of attempts to prevent getting stuck
-    //        int ASTEROIDS_TO_DESTROY = 5;
-    //        int asteroidsDestroyed = 0;
-    //        int ATTEMPT_QUIT = asteroids.transform.childCount;
-    //        for (int attempt = 0; attempt < ATTEMPT_QUIT; attempt++)
-    //        {
-    //            GameObject asteroidToDestroy = asteroids.transform.GetChild(Random.Range(0, asteroids.transform.childCount)).gameObject;
-    //
-    //            if (Vector3.Distance(asteroidToDestroy.transform.position, instancePlayer.transform.Find("Body").position) > 250.0f)
-    //            {
-    //                //Destroy this asteroid and increment counts
-    //                Destroy(asteroidToDestroy, 0f);
-    //
-    //                asteroidsDestroyed++;
-    //                if (asteroidsDestroyed >= ASTEROIDS_TO_DESTROY)
-    //                {
-    //                    attempt = ATTEMPT_QUIT;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
 
     private void EnemySpawnCluster(int clusterType, Vector3 position, string list)
     {
@@ -1368,6 +1379,7 @@ public class Generation : MonoBehaviour
                                 data.moonPosition[moonIndex, 1],
                                 data.moonPosition[moonIndex, 2]
                             ),
+                            data.moonHasStation[moonIndex],
                             data.moonName[moonIndex],
                             data.moonHasStation[moonIndex],
                             data.stationTitle[moonIndex],
@@ -1389,6 +1401,7 @@ public class Generation : MonoBehaviour
                                 data.moonPosition[moonIndex, 1],
                                 data.moonPosition[moonIndex, 2]
                             ),
+                            data.moonHasStation[moonIndex],
                             data.moonName[moonIndex],
                             data.moonHasStation[moonIndex],
                             null,
