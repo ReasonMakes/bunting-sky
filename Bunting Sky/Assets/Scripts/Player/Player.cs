@@ -135,6 +135,12 @@ public class Player : MonoBehaviour
     public AudioSource soundSourceLaserReload;
     public AudioClip soundClipLaserReload;
 
+    public AudioSource soundSourceSeismicCharge0;
+    public AudioSource soundSourceSeismicCharge1;
+    [System.NonSerialized] public int soundSourceSeismicChargeArrayIndex = 0;
+    [System.NonSerialized] public int soundSourceSeismicChargeArrayLength = 2;
+    public AudioClip soundClipSeismicCharge;
+
     public AudioSource soundSourceOreCollected;
     public AudioClip soundClipOreCollected;
 
@@ -349,6 +355,8 @@ public class Player : MonoBehaviour
         soundSourceLaserReload.clip = soundClipLaserReload;
         soundSourceCoins.clip = soundClipCoins;
         soundSourceCollision.clip = soundClipCollision;
+        soundSourceSeismicCharge0.clip = soundClipSeismicCharge;
+        soundSourceSeismicCharge1.clip = soundClipSeismicCharge;
 
         //Start rocket sound
         soundSourceRocket.Play();

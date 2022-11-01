@@ -38,9 +38,9 @@ public class StationDocking : MonoBehaviour
     public void GenerateCommerceOffers()
     {
         //Choose ore purchase offers
-        pricePlatinoid = Random.Range(1, 7) * 10f;
-        pricePreciousMetal = Random.Range(2, 13) * 10f;
-        priceWater = Random.Range(1, 16);
+        pricePlatinoid = Random.Range(1, 7 + 1) * 10f;
+        pricePreciousMetal = Random.Range(2, 13 + 1) * 10f;
+        priceWater = Random.Range(2, 7 + 1) * 5f;
 
         //Choose which upgrades this station has for sale
         for (int i = 0; i < upgradeButtons; i++)

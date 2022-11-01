@@ -144,8 +144,21 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
                 break;
         }
 
+        //Play sound effect
+        switch (player.soundSourceSeismicChargeArrayIndex)
+        {
+            case 0:
+                player.soundSourceSeismicCharge0.Play();
+                break;
+            case 1:
+                player.soundSourceSeismicCharge1.Play();
+                break;
+        }
+
         //Increment and loop sound source array
-        player.soundSourceLaserArrayIndex++;
-        if (player.soundSourceLaserArrayIndex > player.soundSourceLaserArrayLength - 1) player.soundSourceLaserArrayIndex = 0;
+        //player.soundSourceSeismicChargeArrayIndex++;
+        //if (player.soundSourceSeismicChargeArrayIndex > player.soundSourceSeismicChargeArrayLength - 1) player.soundSourceSeismicChargeArrayIndex = 0;
+        //value = (value + 1) % limitInclusive
+        player.soundSourceSeismicChargeArrayIndex = (player.soundSourceSeismicChargeArrayIndex + 1) % player.soundSourceSeismicChargeArrayLength;
     }
 }

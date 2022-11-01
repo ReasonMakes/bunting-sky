@@ -359,6 +359,18 @@ public class Asteroid : MonoBehaviour
                 }
             }
 
+            //Clay-silicate asteroids have a low chance to drop SOME material
+            if (type == TYPE_CLAY_SILICATE)
+            {
+                if (Random.value <= 0.20f)
+                {
+                    for (int i = 0; i < Random.Range(1, 2 + 1); i++)
+                    {
+                        SpawnOre();
+                    }
+                }
+            }
+
             //Play break apart sound effect
             soundExplosion.Play();
         }
@@ -574,10 +586,24 @@ public class Asteroid : MonoBehaviour
 
     private void SpawnOre()
     {
+        //Clay silicate asteroids drop a mixture
+        byte typeToSpawn = type;
+        if (type == TYPE_CLAY_SILICATE)
+        {
+            if (Random.value <= 0.75f)
+            {
+                typeToSpawn = TYPE_PLATINOID;
+            }
+            else
+            {
+                typeToSpawn = TYPE_WATER;
+            }
+        }
+
         //Pool spawning
         GameObject instanceOre = control.generation.OrePoolSpawn(
             transform.position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
-            type,
+            typeToSpawn,
             rb.velocity
         );
 
