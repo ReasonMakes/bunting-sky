@@ -148,9 +148,12 @@ public class Ore : MonoBehaviour
 
     private void AttractToPlayer(float distanceBetweenOreAndPlayer)
     {
-        Vector3 directionToPlayer = (control.GetPlayerTransform().position - transform.position).normalized;
-        float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenOreAndPlayer);
-        rb.AddForce(directionToPlayer * ATTRACT_STRENGTH * LimitedInverseDistanceBetweenPlayer * Time.deltaTime);
+        if (!control.GetPlayerScript().isDestroyed)
+        {
+            Vector3 directionToPlayer = (control.GetPlayerTransform().position - transform.position).normalized;
+            float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenOreAndPlayer);
+            rb.AddForce(directionToPlayer * ATTRACT_STRENGTH * LimitedInverseDistanceBetweenPlayer * Time.deltaTime);
+        }
     }
 
     private void DragOreRelative()

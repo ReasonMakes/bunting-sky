@@ -9,7 +9,10 @@ public class Generation : MonoBehaviour
     //Control
     public Control control;
 
+    private int newGameTypeQueued = -1; //none
+
     //Generation type
+    [System.NonSerialized] public readonly int GENERATION_TYPE_NONE = -1;
     [System.NonSerialized] public readonly int GENERATION_TYPE_NEW_GAME = 0;
     [System.NonSerialized] public readonly int GENERATION_TYPE_LOADED_GAME = 1;
     [System.NonSerialized] public readonly int GENERATION_TYPE_RESTARTED_GAME = 2;
@@ -62,6 +65,7 @@ public class Generation : MonoBehaviour
                     public GameObject moon;
                     public GameObject station;
                     public GameObject heighliner;
+                        [System.NonSerialized] public List<GameObject> heighlinerList = new List<GameObject>();
                         [System.NonSerialized] public int heighlinerCount = 0;
                         [System.NonSerialized] public GameObject heighlinerInitial = null;
                         [System.NonSerialized] public GameObject heighlinerOpenLinker = null;
@@ -70,7 +74,7 @@ public class Generation : MonoBehaviour
                     public GameObject asteroidsEnabled;
                     public GameObject asteroidsDisabled;
                         public GameObject asteroid;
-                        [System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
+                        //[System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
 
         public GameObject ores;
             public GameObject oreEnabled;
@@ -89,6 +93,15 @@ public class Generation : MonoBehaviour
             public GameObject enemy;
 
         public GameObject damageParticles;
+
+    //Debug
+    [System.NonSerialized] public int callsAsteroidPoolSpawn = 0;
+    [System.NonSerialized] public int callsAsteroidSetPoolStatus = 0;
+    [System.NonSerialized] public int callsAsteroidSetPoolStatusTrue = 0;
+    [System.NonSerialized] public int callsAsteroidSetPoolStatusFalse = 0;
+    [System.NonSerialized] public int countAsteroidsPutInEnabledTree = 0;
+    [System.NonSerialized] public int callsAsteroidPoolSpawnCluster = 0;
+    [System.NonSerialized] public bool printGenerationDetailedToAsteroids = false;
 
     private void Start()
     {
@@ -112,6 +125,16 @@ public class Generation : MonoBehaviour
     #region Update
     private void Update()
     {
+        //Debug
+        //Debug.Log(asteroidsEnabled.transform.childCount);
+
+        //Wait to generate new game (otherwise we will be spawning asteroids at the same time we are destroying them!)
+        if (newGameTypeQueued != GENERATION_TYPE_NONE && asteroidsEnabled.transform.childCount == 0)
+        {
+            GenerateGameNew(newGameTypeQueued);
+            newGameTypeQueued = GENERATION_TYPE_NONE;
+        }
+
         //Checks one object per type per frame to avoid lag spikes
         SwapHitboxes();
 
@@ -144,7 +167,6 @@ public class Generation : MonoBehaviour
     private void SwapHitboxes()
     {
         //Mesh Collider to Sphere collider swapper (for performance)
-
 
         //MOONS CHILDREN
         //Could be a moon, station, or heighliner (all have the same children collider names)
@@ -185,44 +207,6 @@ public class Generation : MonoBehaviour
 
         //Increment, unless at max
         hitboxSwapPlanetsChild = (hitboxSwapPlanetsChild + 1) % planets.transform.childCount;
-
-        ////Could be a moon, station, or heighliner (all have the same children collider names)
-        //for (int i = 0; i < moons.transform.childCount; i++)
-        //{
-        //    //The transform to check whether to swap
-        //    Transform transformToSwap = moons.transform.GetChild(i);
-        //
-        //    //Check which collider to use
-        //    bool useMesh = (
-        //        Vector3.Distance(
-        //        instancePlayer.transform.Find("Body").position,
-        //        transformToSwap.position
-        //        ) < 40f
-        //    );
-        //
-        //    //Use proper colliders
-        //    transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
-        //    transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
-        //}
-        //
-        ////Planets
-        //for (int i = 0; i < planets.transform.childCount; i++)
-        //{
-        //    //The transform to check whether to swap
-        //    Transform transformToSwap = planets.transform.GetChild(i);
-        //
-        //    //Check which collider to use
-        //    bool useMesh = (
-        //        Vector3.Distance(
-        //        instancePlayer.transform.Find("Body").position,
-        //        transformToSwap.position
-        //        ) < 170f
-        //    );
-        //
-        //    //Use proper colliders
-        //    transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
-        //    transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
-        //}
     }
 
     private void SwapAsteroidPerformanceMode()
@@ -278,31 +262,18 @@ public class Generation : MonoBehaviour
 
     public void GenerateGame(int generationType)
     {
+        //Destroy the previous game's objects
         if (generationType == GENERATION_TYPE_RESTARTED_GAME)
         {
-            //Destroy verse
-            Destroy(instanceStarHome, 0f);
-            Control.DestroyAllChildren(planets, 0f);
-            hitboxSwapPlanetsChild = 0;
-            Control.DestroyAllChildren(moons, 0f);
-            hitboxSwapMoonsChild = 0;
-            Control.DestroyAllChildren(asteroidsEnabled, 0f);
-            Control.DestroyAllChildren(asteroidsDisabled, 0f);
-            Control.DestroyAllChildren(ores, 0f);
-            Control.DestroyAllChildren(playerProjectilesLasers, 0f);
-            Control.DestroyAllChildren(playerProjectilesSeismicCharges, 0f);
-            Control.DestroyAllChildren(enemyProjectilesLasers, 0f);
-            Control.DestroyAllChildren(enemies, 0f);
-            planetarySystems.Clear();
-
-            //Destroy player
-            Destroy(control.ui.playerShipDirectionReticleTree, 0f);
-            control.ui.playerShipDirectionReticleList.Clear();
-            playerSpawned = false;
-            instancePlayer.GetComponentInChildren<Player>().warningUIText.color = new Color(1f, 0f, 0f, 0f);
-            Destroy(instancePlayer, 0f);
+            GenerateGameDestroyPreviousGame();
         }
 
+        //Queue generating new game until we are finished destroying the previous game's objects if restarting, or instantly if new game
+        newGameTypeQueued = generationType;
+    }
+
+    private void GenerateGameNew(int generationType)
+    {
         //Asteroids
         AsteroidPoolPopulate(1500);
         OrePoolPopulate(500);
@@ -315,8 +286,55 @@ public class Generation : MonoBehaviour
         //nPlanetsPlanned = Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1); //extrastellar systems should have varied planet numbers
         PlanetarySystemClusterSpawn(nPlanetsPlanned, generationType);
 
-        //Save generation (especially important for when we restart, but also good to save the type of world the player just generated if their computer crashes or something)
+        //Update player UI
+        control.ui.UpdateAllPlayerResourcesUI();
+
+        //Save
         SaveGame();
+    }
+
+    private void GenerateGameDestroyPreviousGame()
+    {
+        //Destroy verse
+        Destroy(instanceStarHome, 0f);
+
+        Control.DestroyAllChildren(planets, 0f);
+        hitboxSwapPlanetsChild = 0;
+        foreach (List<GameObject> planetarySystemChildren in planetarySystems)
+        {
+            planetarySystemChildren.Clear();
+        }
+        planetarySystems.Clear();
+
+        Control.DestroyAllChildren(moons, 0f);
+        hitboxSwapMoonsChild = 0;
+
+        heighlinerList.Clear();
+
+        Control.DestroyAllChildren(asteroidsEnabled, 0f);
+        Control.DestroyAllChildren(asteroidsDisabled, 0f);
+        //asteroidsPool.Clear();
+
+        Control.DestroyAllChildren(oreEnabled, 0f);
+        Control.DestroyAllChildren(oreDisabled, 0f);
+        orePool.Clear();
+
+        Control.DestroyAllChildren(playerProjectilesLasers, 0f);
+        Control.DestroyAllChildren(playerProjectilesSeismicCharges, 0f);
+
+        Control.DestroyAllChildren(enemyProjectilesLasers, 0f);
+
+        Control.DestroyAllChildren(enemies, 0f);
+
+        //Destroy player
+        Destroy(control.ui.playerShipDirectionReticleTree, 0f);
+        control.ui.playerShipDirectionReticleList.Clear();
+        if (playerSpawned)
+        {
+            playerSpawned = false;
+            instancePlayer.GetComponentInChildren<Player>().warningUIText.color = new Color(1f, 0f, 0f, 0f);
+            Destroy(instancePlayer, 0f);
+        }
     }
 
     #region Stars
@@ -361,7 +379,12 @@ public class Generation : MonoBehaviour
         {
             Vector3 positionToSpawnThisPlanet = position[planetaryIndex];
             positionToSpawnThisPlanet.y += Random.value * 100f; //offset the vertical axis
-            PlanetarySystemSpawnAndPlayerSpawn(generationType, planetaryIndex, nPlanets, positionToSpawnThisPlanet, null);
+            PlanetarySystemSpawnAndPlayerSpawn(
+                generationType,
+                planetaryIndex, nPlanets, positionToSpawnThisPlanet,
+                null,
+                true
+            );
         }
     }
 
@@ -437,7 +460,11 @@ public class Generation : MonoBehaviour
         return positions;
     }
 
-    private GameObject PlanetarySystemSpawnAndPlayerSpawn(int generationType, int planetarySystemIndex, int nPlanets, Vector3 position, string titleOverride)
+    private GameObject PlanetarySystemSpawnAndPlayerSpawn(
+        int generationType,
+        int planetarySystemIndex, int nPlanets, Vector3 position, string titleOverride,
+        bool spawnAsteroids
+        )
     {
         //PLANET
         GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride);
@@ -456,7 +483,18 @@ public class Generation : MonoBehaviour
             {
                 nMoons = Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1);
             }
-            GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(nMoons, planetarySystemIndex, position);
+            if (printGenerationDetailedToAsteroids) Debug.Log("PLANET - system generating.\nSystem index: " + planetarySystemIndex + ", moons: " + nMoons);
+            GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(
+                nMoons,
+                planetarySystemIndex,
+                position,
+                spawnAsteroids
+            );
+            //Instance heighliner map connection pieces after all moons and their heighliners have been generated
+            for (int heighlinerIndex = 0; heighlinerIndex < heighlinerList.Count; heighlinerIndex++)
+            {
+                heighlinerList[heighlinerIndex].GetComponentInChildren<HeighlinerEntry>().SpawnMapLineModel();
+            }
 
             //If home planetary system
             if (planetarySystemIndex == 0)
@@ -477,12 +515,16 @@ public class Generation : MonoBehaviour
                 {
                     asteroidType = Asteroid.TYPE_PLATINOID;
                 }
-                AsteroidPoolSpawnCluster(
-                    CLUSTER_TYPE_PLANET_RINGS,
-                    asteroidType,
-                    position,
-                    false
-                );
+                if (printGenerationDetailedToAsteroids) Debug.Log("PLANET, PLAYER SPAWN - spawning asteroids");
+                if (spawnAsteroids)
+                {
+                    AsteroidPoolSpawnCluster(
+                        CLUSTER_TYPE_PLANET_RINGS,
+                        asteroidType,
+                        position,
+                        false
+                    );
+                }
 
                 //One minor bandit is guaranteed to spawn at the player's spawn planet
                 EnemySpawnCluster(
@@ -495,16 +537,25 @@ public class Generation : MonoBehaviour
             {
                 //Planetary systems OTHER than player spawn
                 //Asteroid belt (some percent of all planets have one)
+                if (printGenerationDetailedToAsteroids) Debug.Log("PLANET ROLLING 50%");
                 float nPercentAsteroidBelts = 50f;
                 if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
                 {
+                    if (printGenerationDetailedToAsteroids) Debug.Log("PLANET TRUE - spawning asteroid cluster");
                     //Any asteroid type can spawn in other planetary systems than the one the player spawns at
-                    AsteroidPoolSpawnCluster(
-                        CLUSTER_TYPE_PLANET_RINGS,
-                        Asteroid.GetRandomType(),
-                        position,
-                        false
-                    );
+                    if (spawnAsteroids)
+                    {
+                        AsteroidPoolSpawnCluster(
+                            CLUSTER_TYPE_PLANET_RINGS,
+                            Asteroid.GetRandomType(),
+                            position,
+                            false
+                        );
+                    }
+                }
+                else
+                {
+                    if (printGenerationDetailedToAsteroids) Debug.Log("PLANET FALSE");
                 }
 
                 //Bandits
@@ -614,7 +665,7 @@ public class Generation : MonoBehaviour
     #endregion
 
     #region Moons
-    private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition)
+    private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition, bool spawnAsteroids)
     {
         //At the end we will return the last generated moon
         GameObject instanceMoon = null;
@@ -661,47 +712,61 @@ public class Generation : MonoBehaviour
                     null, false, 0f, 0f, 0f, null
                 );
             }
-                
-
+            
             //Spawn asteroid belt around this moon (some percentage of moons - other than player's spawn moon - have them)
-            float nPercentAsteroidBelts = 50f;
-            if (moonIndex == nMoons - 1)
+            if (spawnAsteroids)
             {
-                //Player spawn moon - water asteroids only but GUARANTEED valuables
-                AsteroidPoolSpawnCluster(
-                    CLUSTER_TYPE_MOON_RINGS,
-                    Asteroid.TYPE_WATER,
-                    instanceMoonPosition,
-                    true
-                );
-            }
-            else if (planetIndex == 0)
-            {
-                if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+                if (printGenerationDetailedToAsteroids) Debug.Log("MOON - considering asteroid belt");
+                float nPercentAsteroidBelts = 50f;
+                if (moonIndex == nMoons - 1)
                 {
-                    //Player spawn SYSTEM - water and platinoid only
-                    byte asteroidType = Asteroid.TYPE_WATER;
-                    if (Random.value > 0.5f)
-                    {
-                        asteroidType = Asteroid.TYPE_PLATINOID;
-                    }
+                    if (printGenerationDetailedToAsteroids) Debug.Log("MOON PLAYER SPAWN - spawning asteroid belt.\nMoonar index: " + moonIndex);
+                    //Player spawn moon - water asteroids only but GUARANTEED valuables
                     AsteroidPoolSpawnCluster(
                         CLUSTER_TYPE_MOON_RINGS,
-                        asteroidType,
+                        Asteroid.TYPE_WATER,
+                        instanceMoonPosition,
+                        true
+                    );
+                }
+                else if (planetIndex == 0)
+                {
+                    if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+                    {
+                        if (printGenerationDetailedToAsteroids) Debug.Log("MOON TRUE 50%");
+                        //Player spawn SYSTEM - water and platinoid only
+                        byte asteroidType = Asteroid.TYPE_WATER;
+                        if (Random.value > 0.5f)
+                        {
+                            asteroidType = Asteroid.TYPE_PLATINOID;
+                        }
+                        AsteroidPoolSpawnCluster(
+                            CLUSTER_TYPE_MOON_RINGS,
+                            asteroidType,
+                            instanceMoonPosition,
+                            false
+                        );
+                    }
+                    else
+                    {
+                        if (printGenerationDetailedToAsteroids) Debug.Log("MOON FALSE");
+                    }
+                }
+                else if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+                {
+                    if (printGenerationDetailedToAsteroids) Debug.Log("MOON TRUE 50%");
+                    //All other systems - any asteroid type
+                    AsteroidPoolSpawnCluster(
+                        CLUSTER_TYPE_MOON_RINGS,
+                        Asteroid.GetRandomType(),
                         instanceMoonPosition,
                         false
                     );
                 }
-            }
-            else if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
-            {
-                //All other systems - any asteroid type
-                AsteroidPoolSpawnCluster(
-                    CLUSTER_TYPE_MOON_RINGS,
-                    Asteroid.GetRandomType(),
-                    instanceMoonPosition,
-                    false
-                );
+                else
+                {
+                    if (printGenerationDetailedToAsteroids) Debug.Log("MOON FALSE");
+                }
             }
         }
 
@@ -803,6 +868,9 @@ public class Generation : MonoBehaviour
     #region Player
     private void PlayerSpawn(int generationType, Vector3 position)
     {
+        //Remember that the player has spawned. This must be placed at the top of this method otherwise the player's own functions will null reference on the player itself!
+        playerSpawned = true;
+
         //Instantiate at position, rotation, velocity
         instancePlayer = Instantiate(
             playerPrefab,
@@ -841,13 +909,10 @@ public class Generation : MonoBehaviour
         playerScript.LateStart();
 
         control.ui.CreatePlayerShipDirectionReticles();
-
-        //Remember
-        playerSpawned = true;
     }
-#endregion
+    #endregion
 
-    #region Asteroids
+    #region Entities
     private void AsteroidPoolPopulate(int asteroidPoolLength)
     {
         for (int nAsteroids = 0; nAsteroids < asteroidPoolLength; nAsteroids++)
@@ -868,47 +933,25 @@ public class Generation : MonoBehaviour
             instanceAsteroidScript.rb.detectCollisions = false;
             
             //ORGANIZATION
-            //Put in hierarchy
-            instanceAsteroid.transform.parent = asteroidsDisabled.transform;
+            //Put in hierarchy (disabling this will put it in the hierarchy anyway)
+            //instanceAsteroid.transform.parent = asteroidsDisabled.transform;
             //Add to pool
-            asteroidsPool.Add(instanceAsteroid);
+            //asteroidsPool.Add(instanceAsteroid);
             //Set as disabled until needed
-            instanceAsteroidScript.Disable();
+            instanceAsteroidScript.DisableInPool();
         }
 
         //Update hierarchy names
-        asteroidsEnabled.name = "Enabled (" + asteroidsEnabled.transform.childCount + ")";
-        asteroidsDisabled.name = "Disabled (" + asteroidsDisabled.transform.childCount + ")";
-    }
-
-    private void OrePoolPopulate(int orePoolLength)
-    {
-        for (int oreIndex = 0; oreIndex < orePoolLength; oreIndex++)
-        {
-            //Instantiate
-            GameObject instanceOre = Instantiate(
-                ore,
-                Vector3.zero,
-                Quaternion.identity
-            );
-
-            //Control ref
-            instanceOre.GetComponent<Ore>().control = control;
-
-            //Hierarchy
-            instanceOre.transform.parent = oreDisabled.transform;
-
-            //Add to pool
-            orePool.Add(instanceOre);
-        }
-
-        //Update hierarchy names
-        oreEnabled.name = "Enabled (" + oreEnabled.transform.childCount + ")";
-        oreDisabled.name = "Disabled (" + oreDisabled.transform.childCount + ")";
+        UpdateAsteroidPoolHierarchyCount();
     }
 
     public GameObject AsteroidPoolSpawn(Vector3 position, int size, byte type)
     {
+        //Spawn a single asteroid from the pool (move an asteroid from disabled to enabled)
+
+        //Debug
+        callsAsteroidPoolSpawn++;
+
         GameObject instanceAsteroid = null;
 
         //If we have room in the pool to draw from
@@ -918,9 +961,9 @@ public class Generation : MonoBehaviour
             instanceAsteroid = asteroidsDisabled.transform.GetChild(0).gameObject;
 
             //Enable that asteroid
-            instanceAsteroid.GetComponent<Asteroid>().Enable(position, size, type);
+            instanceAsteroid.GetComponent<Asteroid>().EnableInPool(position, size, type);
 
-            //Add torque
+            //Add random torque
             instanceAsteroid.GetComponent<Rigidbody>().AddTorque(50f * new Vector3(
                 Mathf.Sqrt(Random.value),
                 Mathf.Sqrt(Random.value),
@@ -934,6 +977,9 @@ public class Generation : MonoBehaviour
 
             //Update outline
             //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, instanceAsteroidScript.modelObject.GetComponentInChildren<MeshRenderer>().material);
+
+            //Update hierarchy name to reflect count
+            UpdateAsteroidPoolHierarchyCount();
         }
         else
         {
@@ -944,33 +990,20 @@ public class Generation : MonoBehaviour
         return instanceAsteroid;
     }
 
-    public GameObject OrePoolSpawn(Vector3 position, byte type, Vector3 parentVelocity)
+    public void UpdateAsteroidPoolHierarchyCount()
     {
-        GameObject instanceOre = null;
-
-        //If we have room in the pool to draw from
-        if (oreDisabled.transform.childCount > 0)
+        if (control.IS_EDITOR)
         {
-            //Remember which asteroid we're working with so we can return it later
-            instanceOre = oreDisabled.transform.GetChild(0).gameObject;
-
-            //Set the position
-            instanceOre.transform.position = position;
-
-            //Enable that asteroid
-            instanceOre.GetComponent<Ore>().Enable(type, parentVelocity);
+            asteroidsEnabled.name = "Enabled (" + asteroidsEnabled.transform.childCount + ")";
+            asteroidsDisabled.name = "Disabled (" + asteroidsDisabled.transform.childCount + ")";
         }
-        else
-        {
-            Debug.LogError("No free ores!");
-            //TODO: later we could either expand the pool or reuse enabled asteroids
-        }
-
-        return instanceOre;
     }
 
     private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position, bool guaranteeValuables)
     {
+        //Debug
+        callsAsteroidPoolSpawnCluster++;
+
         if (clusterType == CLUSTER_TYPE_PLANET_RINGS || clusterType == CLUSTER_TYPE_MOON_RINGS)
         {
             int nAsteroids = 0;
@@ -1045,6 +1078,57 @@ public class Generation : MonoBehaviour
         }
     }
 
+    private void OrePoolPopulate(int orePoolLength)
+    {
+        for (int oreIndex = 0; oreIndex < orePoolLength; oreIndex++)
+        {
+            //Instantiate
+            GameObject instanceOre = Instantiate(
+                ore,
+                Vector3.zero,
+                Quaternion.identity
+            );
+
+            //Control ref
+            instanceOre.GetComponent<Ore>().control = control;
+
+            //Hierarchy
+            instanceOre.transform.parent = oreDisabled.transform;
+
+            //Add to pool
+            orePool.Add(instanceOre);
+        }
+
+        //Update hierarchy names
+        oreEnabled.name = "Enabled (" + oreEnabled.transform.childCount + ")";
+        oreDisabled.name = "Disabled (" + oreDisabled.transform.childCount + ")";
+    }
+
+    public GameObject OrePoolSpawn(Vector3 position, byte type, Vector3 parentVelocity)
+    {
+        GameObject instanceOre = null;
+
+        //If we have room in the pool to draw from
+        if (oreDisabled.transform.childCount > 0)
+        {
+            //Remember which asteroid we're working with so we can return it later
+            instanceOre = oreDisabled.transform.GetChild(0).gameObject;
+
+            //Set the position
+            instanceOre.transform.position = position;
+
+            //Enable that asteroid
+            instanceOre.GetComponent<Ore>().Enable(type, parentVelocity);
+        }
+        else
+        {
+            Debug.LogError("No free ores!");
+            //TODO: later we could either expand the pool or reuse enabled asteroids
+        }
+
+        return instanceOre;
+    }
+
     private void EnemySpawnCluster(int clusterType, Vector3 position, string list)
     {
         //clusterType - an enum of several spawn patterns
@@ -1070,7 +1154,7 @@ public class Generation : MonoBehaviour
             if (amount == 1)
             {
                 //Don't bother calculating offsets if there will only be one bandit spawned
-                EnemySpawn(positionFromPlanet, GetIntFromStringIndex(list, 0));
+                EnemySpawn(positionFromPlanet, control.GetIntFromStringIndex(list, 0));
             }
             else
             {
@@ -1086,20 +1170,10 @@ public class Generation : MonoBehaviour
                     );
 
                     //Spawn the bandit
-                    EnemySpawn(positionFromCluster, GetIntFromStringIndex(list, i));
+                    EnemySpawn(positionFromCluster, control.GetIntFromStringIndex(list, i));
                 }
             }
         }
-    }
-
-    private int GetIntFromStringIndex(string str, int index)
-    {
-        //We are working with ASCII here, so we need to subtract the ASCII value of the first alpha numerical character in the lister
-        //Ex: list[i] = '3':
-        //int strength = (int)list[i] - (int)'0';
-        //int strength = 51 - 48; //'0' is encoded as 48 in ASCII
-        //int strength = 3;
-        return (int)str[index] - (int)'0';
     }
 
     public GameObject EnemySpawn(Vector3 position, int strength)
@@ -1125,187 +1199,190 @@ public class Generation : MonoBehaviour
     #region: Saving and loading
     public void SaveGame()
     {
-        //INIT ARRAYS TO BE USED FOR SAVING
-        //Planets
-        float[,] planetPosition = new float[planetarySystems.Count, 3];
-        string[] planetName = new string[planetarySystems.Count];
-        byte[] planetarySystemMoonQuantity = new byte[planetarySystems.Count];
-        
-        //Moons
-        Moon[] moonArray = FindObjectsOfType<Moon>();
-        float[,] moonPosition = new float[moonArray.Length, 3];
-        string[] moonName = new string[moonArray.Length];
-        bool[] moonHasStation = new bool[moonArray.Length];
-        
-        string[] stationTitle = new string[moonArray.Length];
-        float[] stationPricePlatinoid = new float[moonArray.Length];
-        float[] stationPricePreciousMetal = new float[moonArray.Length];
-        float[] stationPriceWater = new float[moonArray.Length];
-        int[,] stationUpgradeIndex = new int[moonArray.Length, StationDocking.upgradeButtons];
-        
-        //ASSIGN VERSE DATA TO THOSE ARRAYS
-        for (int planetaryIndex = 0; planetaryIndex < planetarySystems.Count; planetaryIndex++)
+        if (false) //false keyword disables this ALWAYS - temporarily disabling saving and loading until it is fixed
         {
-            //PLANETS
-            GameObject instancePlanet = planetarySystems[planetaryIndex][0]; //0 is the planet, the rest of the list is moons
-        
-            //Position
-            planetPosition[planetaryIndex, 0] = instancePlanet.transform.position.x;
-            planetPosition[planetaryIndex, 1] = instancePlanet.transform.position.y;
-            planetPosition[planetaryIndex, 2] = instancePlanet.transform.position.z;
-        
-            //Name
-            planetName[planetaryIndex] = instancePlanet.GetComponent<NameCelestial>().title;
-        
-            //Number of moons
-            planetarySystemMoonQuantity[planetaryIndex] = (byte)planetarySystems[planetaryIndex].Count;
-        
-            //Go until count - 1 because 0 is the planet so we offset everything by +1, and we don't want to go over
-            for (int moonIndex = 0; moonIndex < planetarySystems[planetaryIndex].Count - 1; moonIndex++)
+            //INIT ARRAYS TO BE USED FOR SAVING
+            //Planets
+            float[,] planetPosition = new float[planetarySystems.Count, 3];
+            string[] planetName = new string[planetarySystems.Count];
+            byte[] planetarySystemMoonQuantity = new byte[planetarySystems.Count];
+
+            //Moons
+            Moon[] moonArray = FindObjectsOfType<Moon>();
+            float[,] moonPosition = new float[moonArray.Length, 3];
+            string[] moonName = new string[moonArray.Length];
+            bool[] moonHasStation = new bool[moonArray.Length];
+
+            string[] stationTitle = new string[moonArray.Length];
+            float[] stationPricePlatinoid = new float[moonArray.Length];
+            float[] stationPricePreciousMetal = new float[moonArray.Length];
+            float[] stationPriceWater = new float[moonArray.Length];
+            int[,] stationUpgradeIndex = new int[moonArray.Length, StationDocking.upgradeButtons];
+
+            //ASSIGN VERSE DATA TO THOSE ARRAYS
+            for (int planetaryIndex = 0; planetaryIndex < planetarySystems.Count; planetaryIndex++)
             {
-                //MOONS
-                GameObject instanceMoon = planetarySystems[planetaryIndex][moonIndex + 1]; //add 1 because 0 is the planet
-                Moon instanceMoonScript = instanceMoon.GetComponent<Moon>(); //TODO: sometimes this is null
-        
+                //PLANETS
+                GameObject instancePlanet = planetarySystems[planetaryIndex][0]; //0 is the planet, the rest of the list is moons
+
                 //Position
-                moonPosition[moonIndex, 0] = instanceMoon.transform.position.x;
-                moonPosition[moonIndex, 1] = instanceMoon.transform.position.y;
-                moonPosition[moonIndex, 2] = instanceMoon.transform.position.z;
-        
+                planetPosition[planetaryIndex, 0] = instancePlanet.transform.position.x;
+                planetPosition[planetaryIndex, 1] = instancePlanet.transform.position.y;
+                planetPosition[planetaryIndex, 2] = instancePlanet.transform.position.z;
+
                 //Name
-                moonName[moonIndex] = instanceMoon.GetComponent<NameCelestial>().title;
-        
-                //Station
-                moonHasStation[moonIndex] = instanceMoon.GetComponent<Moon>().hasStation;
-                if (instanceMoonScript.hasStation && instanceMoonScript.instancedStation != null)
+                planetName[planetaryIndex] = instancePlanet.GetComponent<NameCelestial>().title;
+
+                //Number of moons
+                planetarySystemMoonQuantity[planetaryIndex] = (byte)planetarySystems[planetaryIndex].Count;
+
+                //Go until count - 1 because 0 is the planet so we offset everything by +1, and we don't want to go over
+                for (int moonIndex = 0; moonIndex < planetarySystems[planetaryIndex].Count - 1; moonIndex++)
                 {
-                    stationTitle[moonIndex] = instanceMoonScript.instancedStation.GetComponent<NameHuman>().title;
-                    stationPricePlatinoid[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePlatinoid;
-                    stationPricePreciousMetal[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePreciousMetal;
-                    stationPriceWater[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().priceWater;
-        
-                    //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
-                    for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
+                    //MOONS
+                    GameObject instanceMoon = planetarySystems[planetaryIndex][moonIndex + 1]; //add 1 because 0 is the planet
+                    Moon instanceMoonScript = instanceMoon.GetComponent<Moon>(); //TODO: sometimes this is null
+
+                    //Position
+                    moonPosition[moonIndex, 0] = instanceMoon.transform.position.x;
+                    moonPosition[moonIndex, 1] = instanceMoon.transform.position.y;
+                    moonPosition[moonIndex, 2] = instanceMoon.transform.position.z;
+
+                    //Name
+                    moonName[moonIndex] = instanceMoon.GetComponent<NameCelestial>().title;
+
+                    //Station
+                    moonHasStation[moonIndex] = instanceMoon.GetComponent<Moon>().hasStation;
+                    if (instanceMoonScript.hasStation && instanceMoonScript.instancedStation != null)
                     {
-                        stationUpgradeIndex[moonIndex, upgradeButtonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().upgradeIndexAtButton[upgradeButtonIndex];
+                        stationTitle[moonIndex] = instanceMoonScript.instancedStation.GetComponent<NameHuman>().title;
+                        stationPricePlatinoid[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePlatinoid;
+                        stationPricePreciousMetal[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePreciousMetal;
+                        stationPriceWater[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().priceWater;
+
+                        //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
+                        for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
+                        {
+                            stationUpgradeIndex[moonIndex, upgradeButtonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().upgradeIndexAtButton[upgradeButtonIndex];
+                        }
                     }
-                }
-                else
-                {
-                    stationTitle[moonIndex] = null;
-                    stationPricePlatinoid[moonIndex] = 0f;
-                    stationPricePreciousMetal[moonIndex] = 0f;
-                    stationPriceWater[moonIndex] = 0f;
-        
-                    //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
-                    for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
+                    else
                     {
-                        stationUpgradeIndex[moonIndex, upgradeButtonIndex] = control.commerce.UPGRADE_SOLD_OUT;
+                        stationTitle[moonIndex] = null;
+                        stationPricePlatinoid[moonIndex] = 0f;
+                        stationPricePreciousMetal[moonIndex] = 0f;
+                        stationPriceWater[moonIndex] = 0f;
+
+                        //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
+                        for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
+                        {
+                            stationUpgradeIndex[moonIndex, upgradeButtonIndex] = control.commerce.UPGRADE_SOLD_OUT;
+                        }
                     }
                 }
             }
+
+            //Asteroids
+            Asteroid[] asteroidArray = FindObjectsOfType<Asteroid>();
+
+            float[,] asteroidPosition = new float[asteroidArray.Length, 3];
+            float[,] asteroidVelocity = new float[asteroidArray.Length, 3];
+            int[] asteroidSize = new int[asteroidArray.Length];
+            byte[] asteroidType = new byte[asteroidArray.Length];
+            byte[] asteroidHealth = new byte[asteroidArray.Length];
+
+            byte asteroidArrayIndex = 0;
+            foreach (Asteroid asteroid in asteroidArray)
+            {
+                //Position
+                asteroidPosition[asteroidArrayIndex, 0] = asteroid.transform.position.x;
+                asteroidPosition[asteroidArrayIndex, 1] = asteroid.transform.position.y;
+                asteroidPosition[asteroidArrayIndex, 2] = asteroid.transform.position.z;
+
+                //Velocity
+                asteroidVelocity[asteroidArrayIndex, 0] = asteroid.GetComponent<Rigidbody>().velocity.x;
+                asteroidVelocity[asteroidArrayIndex, 1] = asteroid.GetComponent<Rigidbody>().velocity.y;
+                asteroidVelocity[asteroidArrayIndex, 2] = asteroid.GetComponent<Rigidbody>().velocity.z;
+
+                //Size
+                asteroidSize[asteroidArrayIndex] = asteroid.size;
+
+                //Type
+                asteroidType[asteroidArrayIndex] = asteroid.type;
+
+                //Health
+                asteroidHealth[asteroidArrayIndex] = asteroid.health;
+
+                //Increment
+                asteroidArrayIndex++;
+            }
+
+            //Verse
+            float[] verseSpacePosition = new float[3];
+            verseSpacePosition[0] = verseSpace.transform.position.x;
+            verseSpacePosition[1] = verseSpace.transform.position.y;
+            verseSpacePosition[2] = verseSpace.transform.position.z;
+
+            //Player
+            Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+            float[] playerPosition = new float[3];
+            playerPosition[0] = playerScript.transform.position.x;
+            playerPosition[1] = playerScript.transform.position.y;
+            playerPosition[2] = playerScript.transform.position.z;
+
+            //SAVE TO DATA CLASS
+            LevelData.Data data = new LevelData.Data();
+
+            //World properties
+            //Centre star
+            data.starName = instanceStarHome.GetComponent<NameCelestial>().title;
+
+            //Planets
+            data.planetQuantity = (byte)planetarySystems.Count;
+            data.planetPosition = planetPosition;
+            data.planetName = planetName;
+            data.planetarySystemMoonQuantity = planetarySystemMoonQuantity;
+
+            //Moons
+            data.moonQuantity = (byte)moonArray.Length;
+            data.moonPosition = moonPosition;
+            data.moonName = moonName;
+            data.moonHasStation = moonHasStation;
+
+            //Stations
+            data.stationTitle = stationTitle;
+            data.stationPricePlatinoid = stationPricePlatinoid;
+            data.stationPricePreciousMetal = stationPricePreciousMetal;
+            data.stationPriceWater = stationPriceWater;
+            data.stationUpgradeIndex = stationUpgradeIndex;
+
+            //Asteroids
+            data.asteroidQuantity = asteroidArray.Length;
+            data.asteroidPosition = asteroidPosition;
+            data.asteroidVelocity = asteroidVelocity;
+            data.asteroidSize = asteroidSize;
+            data.asteroidType = asteroidType;
+            data.asteroidHealth = asteroidHealth;
+
+            //Verse space
+            data.verseSpacePosition = verseSpacePosition;
+
+            //Player properties
+            data.playerPosition = playerPosition;
+
+            data.playerUpgrades = playerScript.upgradeLevels;
+
+            data.playerVitalsHealth = playerScript.vitalsHealth;
+            data.playerDestroyed = playerScript.isDestroyed;
+
+            data.playerVitalsFuel = playerScript.vitalsFuel;
+
+            data.playerCurrency = playerScript.currency;
+            data.playerOre = playerScript.ore;
+
+            //SAVE THE CLASS/GAME
+            LevelData.SaveGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile, data);
         }
-        
-        //Asteroids
-        Asteroid[] asteroidArray = FindObjectsOfType<Asteroid>();
-        
-        float[,] asteroidPosition = new float[asteroidArray.Length, 3];
-        float[,] asteroidVelocity = new float[asteroidArray.Length, 3];
-        int[] asteroidSize = new int[asteroidArray.Length];
-        byte[] asteroidType = new byte[asteroidArray.Length];
-        byte[] asteroidHealth = new byte[asteroidArray.Length];
-        
-        byte asteroidArrayIndex = 0;
-        foreach (Asteroid asteroid in asteroidArray)
-        {
-            //Position
-            asteroidPosition[asteroidArrayIndex, 0] = asteroid.transform.position.x;
-            asteroidPosition[asteroidArrayIndex, 1] = asteroid.transform.position.y;
-            asteroidPosition[asteroidArrayIndex, 2] = asteroid.transform.position.z;
-        
-            //Velocity
-            asteroidVelocity[asteroidArrayIndex, 0] = asteroid.GetComponent<Rigidbody>().velocity.x;
-            asteroidVelocity[asteroidArrayIndex, 1] = asteroid.GetComponent<Rigidbody>().velocity.y;
-            asteroidVelocity[asteroidArrayIndex, 2] = asteroid.GetComponent<Rigidbody>().velocity.z;
-        
-            //Size
-            asteroidSize[asteroidArrayIndex] = asteroid.size;
-        
-            //Type
-            asteroidType[asteroidArrayIndex] = asteroid.type;
-        
-            //Health
-            asteroidHealth[asteroidArrayIndex] = asteroid.health;
-        
-            //Increment
-            asteroidArrayIndex++;
-        }
-        
-        //Verse
-        float[] verseSpacePosition = new float[3];
-        verseSpacePosition[0] = verseSpace.transform.position.x;
-        verseSpacePosition[1] = verseSpace.transform.position.y;
-        verseSpacePosition[2] = verseSpace.transform.position.z;
-        
-        //Player
-        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
-        float[] playerPosition = new float[3];
-        playerPosition[0] = playerScript.transform.position.x;
-        playerPosition[1] = playerScript.transform.position.y;
-        playerPosition[2] = playerScript.transform.position.z;
-        
-        //SAVE TO DATA CLASS
-        LevelData.Data data = new LevelData.Data();
-        
-        //World properties
-        //Centre star
-        data.starName = instanceStarHome.GetComponent<NameCelestial>().title;
-        
-        //Planets
-        data.planetQuantity = (byte)planetarySystems.Count;
-        data.planetPosition = planetPosition;
-        data.planetName = planetName;
-        data.planetarySystemMoonQuantity = planetarySystemMoonQuantity;
-        
-        //Moons
-        data.moonQuantity = (byte)moonArray.Length;
-        data.moonPosition = moonPosition;
-        data.moonName = moonName;
-        data.moonHasStation = moonHasStation;
-        
-        //Stations
-        data.stationTitle = stationTitle;
-        data.stationPricePlatinoid = stationPricePlatinoid;
-        data.stationPricePreciousMetal = stationPricePreciousMetal;
-        data.stationPriceWater = stationPriceWater;
-        data.stationUpgradeIndex = stationUpgradeIndex;
-        
-        //Asteroids
-        data.asteroidQuantity = asteroidArray.Length;
-        data.asteroidPosition = asteroidPosition;
-        data.asteroidVelocity = asteroidVelocity;
-        data.asteroidSize = asteroidSize;
-        data.asteroidType = asteroidType;
-        data.asteroidHealth = asteroidHealth;
-        
-        //Verse space
-        data.verseSpacePosition = verseSpacePosition;
-        
-        //Player properties
-        data.playerPosition = playerPosition;
-        
-        data.playerUpgrades = playerScript.upgradeLevels;
-        
-        data.playerVitalsHealth = playerScript.vitalsHealth;
-        data.playerDestroyed = playerScript.isDestroyed;
-        
-        data.playerVitalsFuel = playerScript.vitalsFuel;
-        
-        data.playerCurrency = playerScript.currency;
-        data.playerOre = playerScript.ore;
-        
-        //SAVE THE CLASS/GAME
-        LevelData.SaveGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile, data);
     }
 
     private void TryLoadGameElseNewGame()
@@ -1314,7 +1391,7 @@ public class Generation : MonoBehaviour
 
         //Only load if a save file exists. If a save file doesn't exist, generate a new game
         //ALWAYS generate a new game if in editor
-        if (data == null || control.IS_EDITOR || true) //loading temporarily disabled
+        if (data == null || control.IS_EDITOR || true) //the true keyword here disables loading ALWAYS - we want to temporarily disable until it's fixed
         {
             //Debug.Log("No save exists; generating new game");
             GenerateGame(GENERATION_TYPE_NEW_GAME);
@@ -1468,9 +1545,6 @@ public class Generation : MonoBehaviour
                 data.verseSpacePosition[2]
             );
         }
-
-        //Update UI to reflect possibly loaded data
-        control.ui.UpdateAllPlayerResourcesUI();
     }
     #endregion
 }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               

@@ -490,6 +490,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc16bfe794da89047a8e919bb1cc14dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mapLineModelPrefab: {fileID: 5984778881065676649, guid: 858df4b9dc531e943b480c3912e82333, type: 3}
 --- !u!1001 &7602032154626936492
 PrefabInstance:
   m_ObjectHideFlags: 0

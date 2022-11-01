@@ -11,8 +11,8 @@ public class Asteroid : MonoBehaviour
     public SphereCollider targetCollider2;
     public Rigidbody rb;
 
-    [System.NonSerialized] public bool destroying = false;
-    [System.NonSerialized] public bool destroyed = true;
+    [System.NonSerialized] public bool isDestroying = false;
+    [System.NonSerialized] public bool isDestroyed = true;
     private float destroyingTime = 0f;
     [System.NonSerialized] public bool performantMode = false;
     [System.NonSerialized] public static float distanceThresholdGreaterThanPerformantMode = 80f;
@@ -20,7 +20,7 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public readonly static byte HEALTH_MAX = 4;
     [System.NonSerialized] public byte health = HEALTH_MAX;
 
-    [System.NonSerialized] public bool separating = true;
+    [System.NonSerialized] public bool isSeparating = true;
     private readonly float INTERSECTING_REPEL_TELEPORT_STEP_DIST = 0.03f;
 
     [System.NonSerialized] public int size;
@@ -59,14 +59,14 @@ public class Asteroid : MonoBehaviour
     {
         if (!performantMode)
         {
-            //Slow update
-            if (Time.frameCount % 30 == 0)
-            {
-                SlowUpdate();
-            }
+            ////Slow update
+            //if (Time.frameCount % 30 == 0)
+            //{
+            //    SlowUpdate();
+            //}
 
             //Destruction
-            if (!Menu.menuOpenAndGamePaused && !destroyed && destroying)
+            if (!Menu.menuOpenAndGamePaused && !isDestroyed && isDestroying)
             {
                 //Increment timer
                 destroyingTime += Time.deltaTime;
@@ -80,7 +80,7 @@ public class Asteroid : MonoBehaviour
                 if (particlesFadedOut && playerBeyondArbitraryDistance)
                 {
                     //Disable
-                    Disable();
+                    DisableInPool();
                 }
             }
         }
@@ -109,7 +109,7 @@ public class Asteroid : MonoBehaviour
     {
         if (!Menu.menuOpenAndGamePaused)
         {
-            if (!performantMode && !destroyed && separating)
+            if (!performantMode && !isDestroyed && isSeparating)
             {
                 Separate();
             }
@@ -118,14 +118,11 @@ public class Asteroid : MonoBehaviour
 
     private void Separate()
     {
-        //Debug.Log("Checking to separate");
-
         //Ignore all collisions until separated from siblings (this will ignore collisions with player and with weapons, but should only last a few milliseconds)
         Bounds thisAsteroidBounds = modelObject.transform.GetComponent<MeshCollider>().bounds;
         int nActiveAsteroids = control.generation.asteroidsEnabled.transform.childCount;
         if (nActiveAsteroids > 1)
         {
-            Profiler.BeginSample("Check all asteroids");
             for (int asteroidCheckIndex = 0; asteroidCheckIndex < nActiveAsteroids; asteroidCheckIndex++)
             {
                 Transform asteroidToCheck = control.generation.asteroidsEnabled.transform.GetChild(asteroidCheckIndex);
@@ -157,13 +154,12 @@ public class Asteroid : MonoBehaviour
                     }
                 }
             }
-            Profiler.EndSample();
         }
 
         //Once we aren't intersecting anything anymore then we'll get to this point in the code
         SetHitboxEnabledAndChoose(true);
         rb.detectCollisions = true;
-        separating = false;
+        isSeparating = false;
     }
 
     public static int GetRandomSize()
@@ -310,7 +306,7 @@ public class Asteroid : MonoBehaviour
 
     public void BreakApart(bool oreDrop)
     {
-        if (!destroying)
+        if (!isDestroying)
         {
             //Update player tutorial bool
             if (!control.GetPlayerScript().tutorialHasMinedAsteroid && type == TYPE_CLAY_SILICATE)
@@ -322,9 +318,8 @@ public class Asteroid : MonoBehaviour
                 control.GetPlayerScript().tutorialHasMinedAsteroid = true;
             }
 
-            //Disable self
-            destroying = true;
-            DisableModelAndTriggerVolumes();
+            //Destroy
+            BeginDestroying();
 
             //Spawn smaller asteroids
             if (size == SIZE_LARGE)
@@ -369,13 +364,19 @@ public class Asteroid : MonoBehaviour
         }
     }
 
-    private void SetEnabled(bool enabled)
+    public void BeginDestroying()
     {
-        //This method should not be called directly except by Enable() and Disable()
+        isDestroying = true;
+        DisableModelAndTriggerVolumes();
+    }
 
-        //Disable target triggers
-        targetCollider1.enabled = enabled;
-        targetCollider2.enabled = enabled;
+    private void SetPoolStatus(bool enabled)
+    {
+        //Generally Enable() or Disable() should be used instead of calling this directly.
+        //Enable prompts coordinates and other needed data and Disable() is more readable
+
+        //Debug
+        control.generation.callsAsteroidSetPoolStatus++;
 
         //Disable performant mode
         SetPerformant(false);
@@ -385,46 +386,76 @@ public class Asteroid : MonoBehaviour
         {
             modelObject.SetActive(enabled);
         }
-        
-        //Destroy or undestroy
-        destroying = false;
+        else if (enabled)
+        {
+            Debug.LogError("Asteroid has no model object! (Trying to enable)");
+        }
+
+        //Not destroying
+        isDestroying = false;
+
         if (enabled)
         {
+            //Activate
             gameObject.SetActive(true);
+
+            //Debug
+            control.generation.callsAsteroidSetPoolStatusTrue++;
+
+            //Outline
             if (control.generation.playerSpawned)
             {
                 control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, modelObject.GetComponentInChildren<MeshRenderer>().material);
             }
-            separating = true;
-            destroyed = false;
-            targetCollider1.enabled = true;
-            targetCollider2.enabled = true;
+
+            isSeparating = true;
+            isDestroyed = false;
+
+            //Hierarchy
+            if (transform.parent == control.generation.asteroidsEnabled.transform)
+            {
+                Debug.Log("Asteroid we are enabling is already in the enabled tree!");
+            }
             transform.parent = control.generation.asteroidsEnabled.transform;
-            control.generation.asteroidsEnabled.name = "Enabled (" + control.generation.asteroidsEnabled.transform.childCount + ")";
-            control.generation.asteroidsDisabled.name = "Disabled (" + control.generation.asteroidsDisabled.transform.childCount + ")";
+            if (transform.parent == control.generation.asteroidsEnabled.transform)
+            {
+                control.generation.countAsteroidsPutInEnabledTree++;
+            }
+            control.generation.UpdateAsteroidPoolHierarchyCount();
         }
         else
         {
+            //Debug
+            control.generation.callsAsteroidSetPoolStatusFalse++;
+
             destroyingTime = 0f;
-            destroyed = true;
-            targetCollider1.enabled = false;
-            targetCollider2.enabled = false;
+            isDestroyed = true;
+
+            //Hierarchy
             transform.parent = control.generation.asteroidsDisabled.transform;
-            control.generation.asteroidsEnabled.name = "Enabled (" + control.generation.asteroidsEnabled.transform.childCount + ")";
-            control.generation.asteroidsDisabled.name = "Disabled (" + control.generation.asteroidsDisabled.transform.childCount + ")";
+            control.generation.UpdateAsteroidPoolHierarchyCount();
+
             rb.detectCollisions = false;
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.ResetInertiaTensor();
+
+            //Outline
             if (modelObject != null)
             {
                 modelObject.GetComponentInChildren<MeshRenderer>().material.SetFloat("_NightVisionOutline", 0f);
             }
+
+            //Deactivate
             gameObject.SetActive(false);
         }
+
+        //Target colliders
+        targetCollider1.enabled = enabled;
+        targetCollider2.enabled = enabled;
     }
 
-    public void Enable(Vector3 position, int size, byte type)
+    public void EnableInPool(Vector3 position, int size, byte type)
     {
         SetSize(size);
         SetType(type);
@@ -434,12 +465,12 @@ public class Asteroid : MonoBehaviour
             Random.Range(0f, 360f),
             Random.Range(0f, 360f)
         );
-        SetEnabled(true);
+        SetPoolStatus(true);
     }
 
-    public void Disable()
+    public void DisableInPool()
     {
-        SetEnabled(false);
+        SetPoolStatus(false);
     }
 
     public void SpawnClusterFromPoolAndPassRigidbodyValues(int asteroidsSizes, int minCount, int maxCount)
@@ -470,35 +501,33 @@ public class Asteroid : MonoBehaviour
     public void SetPerformant(bool performance)
     {
         //Don't bother with setting to the same value we already are at
-        if (performance == performantMode)
+        if (performance != performantMode)
         {
-            return;
-        }
+            //Disables Update(), rigidbody, mesh collider (to be swapped out for sphere collider), and trigger volumes for improved performance (makes a big difference with 100 asteroids)
+            if (performance)
+            {
+                rbMemVel = rb.velocity;
+                rbMemAngularVel = rb.angularVelocity;
 
-        //Disables Update(), rigidbody, mesh collider (to be swapped out for sphere collider), and trigger volumes for improved performance (makes a big difference with 100 asteroids)
-        if (performance)
-        {
-            rbMemVel = rb.velocity;
-            rbMemAngularVel = rb.angularVelocity;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                rb.isKinematic = true;
+            }
+            else
+            {
+                rb.velocity = rbMemVel;
+                rb.angularVelocity = rbMemAngularVel;
 
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-            rb.isKinematic = true;
-        }
-        else
-        {
-            rb.velocity = rbMemVel;
-            rb.angularVelocity = rbMemAngularVel;
+                rb.isKinematic = false;
+                rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            }
 
-            rb.isKinematic = false;
-            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        }
-
-        performantMode = performance;
-        targetCollider1.enabled = !performance;
-        targetCollider2.enabled = !performance;
-        if (!separating)
-        {
-            SetHitboxEnabledAndChoose(true);
+            performantMode = performance;
+            targetCollider1.enabled = !performance;
+            targetCollider2.enabled = !performance;
+            if (!isSeparating)
+            {
+                SetHitboxEnabledAndChoose(true);
+            }
         }
     }
 

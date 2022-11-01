@@ -140,7 +140,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                             Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                             //Don't bother with already destroyed asteroids
-                            if (!asteroidScript.destroying)
+                            if (!asteroidScript.isDestroying)
                             {
                                 //THIS RUNS FOUR TIMES BECAUSE IT IS HITTING THE TRIGGER COLLIDERS
 
@@ -248,7 +248,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                 Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                 //Break apart asteroid
-                if (!asteroidScript.destroying)
+                if (!asteroidScript.isDestroying)
                 {
                     Vector3 direction = (transform.position - hit.point).normalized;
                     asteroidScript.Damage(1, direction, hit.point, true);

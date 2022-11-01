@@ -146,9 +146,17 @@ public class UI : MonoBehaviour
 
             if (control.IS_EDITOR)
             {
-                systemInfo.text = control.fps.ToString() + "FPS"
-                + "\n Asteroids: " + control.generation.asteroidsEnabled.transform.childCount + " (" + control.generation.asteroidsDetailed + " detailed)"
-                + "\n Ores: " + control.generation.oreEnabled.transform.childCount;
+                systemInfo.text = "test";
+
+
+                string fps = control.fps.ToString() + "FPS";
+                string asteroids = "Asteroids: " + control.generation.asteroidsEnabled.transform.childCount + " (" + control.generation.asteroidsDetailed + " detailed)";
+                string ores = "Ores: " + control.generation.oreEnabled.transform.childCount;
+
+                systemInfo.text = fps + "\n" + asteroids + "\n" + ores;
+                //systemInfo.text = control.fps.ToString() + "FPS"
+                //+ "\n Asteroids: " + control.generation.asteroidsEnabled.transform.childCount + " (" + control.generation.asteroidsDetailed + " detailed)"
+                //+ "\n Ores: " + control.generation.oreEnabled.transform.childCount;
             }
             else
             {
@@ -314,6 +322,28 @@ public class UI : MonoBehaviour
         //Map ship model
         control.GetPlayerScript().transform.parent.Find("Position Mount").Find("Centre Mount").Find("Ship Map Model").gameObject.SetActive(displayMap);
         
+        //Heighliner map lines
+        for (int heighlinerIndex = 0; heighlinerIndex < control.generation.heighlinerList.Count; heighlinerIndex++)
+        {
+            //Refs
+            GameObject heighliner = control.generation.heighlinerList[heighlinerIndex];
+            Transform heighlinerMapLineModel = heighliner.transform.Find("Jump Trigger Volume").Find("HeighlinerMapLineModel(Clone)");
+
+            //Protect against null ref exception
+            if (heighlinerMapLineModel != null)
+            { 
+                //Only display line after discovered
+                if (heighliner.GetComponentInChildren<HeighlinerEntry>().isDiscovered)
+                {
+                    heighlinerMapLineModel.gameObject.SetActive(displayMap);
+                }
+            }
+            else
+            {
+                Debug.Log("Heighliner has no map line model!");
+            }
+        }
+
         if (displayMap)
         {
             //Ship cameras
@@ -478,11 +508,11 @@ public class UI : MonoBehaviour
             targetObj == null
             || (
                 targetObj.name == control.generation.asteroid.name + "(Clone)"
-                && targetObj.GetComponent<Asteroid>().destroying
+                && targetObj.GetComponent<Asteroid>().isDestroying
             )
             || (
                 targetObj.name == control.generation.asteroid.name + "(Clone)"
-                && targetObj.GetComponent<Asteroid>().destroyed
+                && targetObj.GetComponent<Asteroid>().isDestroyed
             )
             || (
                 targetObj.name == control.generation.enemy.name + "(Clone)"
@@ -892,10 +922,10 @@ public class UI : MonoBehaviour
         Player playerScript = control.GetPlayerScript();
 
         //Update values and start animations on a resource if its value changed
-        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F2") + " ICC",                              playerScript.soundSourceCoins);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[playerScript.ORE_PLATINOID].ToString("F2") + " kg",        playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F2") + " kg",   playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[playerScript.ORE_WATER].ToString("F2") + " kg",            playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F0") + " ICC",                              playerScript.soundSourceCoins);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[playerScript.ORE_PLATINOID].ToString("F0") + " kg",        playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F0") + " kg",   playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[playerScript.ORE_WATER].ToString("F0") + " kg",            playerScript.soundSourceOreCollected);
 
         //Update console
         UpdatePlayerConsole();

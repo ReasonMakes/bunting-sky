@@ -44,8 +44,8 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public bool outlineCanUse = true; //Whether the player is able to toggle the outline on
     [System.NonSerialized] public float outlineFade = 1f; //Multiplier for outline intensity - DO NOT EDIT; this changes dynamically
     [System.NonSerialized] public readonly float OUTLINE_PERIOD_FADING = 2f; //Fade out over this period of time, in seconds
-    [System.NonSerialized] public readonly float OUTLINE_PERIOD_ENABLED = 5f; //Time in seconds outlines will show for
-    [System.NonSerialized] public readonly float OUTLINE_PERIOD_COOLDOWN = 3f; //Time in seconds before outlines can be shown again
+    [System.NonSerialized] public readonly float OUTLINE_PERIOD_ENABLED = 3f; //Time in seconds outlines will show for
+    [System.NonSerialized] public readonly float OUTLINE_PERIOD_COOLDOWN = 1.5f; //Time in seconds before outlines can be shown again
     [System.NonSerialized] public float outlineCanUseAgainTime = 0f; //At what time the player can use outlines again (measured against Time.time) - DO NOT EDIT; this changes dynamically
     [System.NonSerialized] public float outlineDisableTime = 0f; //At what time outlines will be disabled - DO NOT EDIT; this changes dynamically
     [System.NonSerialized] public static int CBODY_TYPE_PLANET = 0;
@@ -530,13 +530,56 @@ public class Player : MonoBehaviour
             //    transform.position += transform.forward * 400f;
             //}
 
-            //Eclipse vision upgrade
+            //Spawn asteroid from pool
             if (binds.GetInputDown(binds.bindCheat1))
             {
-                upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
-                tipHasBoughtSeismicCharges = true;
-                weaponSlot1 = weaponSeismicCharges;
+                control.generation.AsteroidPoolSpawn(
+                    transform.position + (transform.forward * 10f),
+                    UnityEngine.Random.Range(0, Asteroid.SIZE_LENGTH),
+                    Asteroid.GetRandomType()
+                );
             }
+
+            //Print out asteroid pool bulk actions and reset counts
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                Debug.Log("------------------------------------------");
+                Debug.Log("Asteroid.SetPoolStatus(): " + control.generation.callsAsteroidSetPoolStatus);
+                Debug.Log("Asteroid.SetPoolStatus(false): " + control.generation.callsAsteroidSetPoolStatusFalse);
+                Debug.Log("Generation.AsteroidPoolSpawnCluster(): " + control.generation.callsAsteroidPoolSpawnCluster);
+                Debug.Log("Generation.AsteroidPoolSpawn(): " + control.generation.callsAsteroidPoolSpawn);
+                Debug.Log("Asteroid.SetPoolStatus(true): " + control.generation.callsAsteroidSetPoolStatusTrue);
+                Debug.Log("Asteroid.SetPoolStatus(true).transform.parent = Generation.asteroidsEnabled: " + control.generation.countAsteroidsPutInEnabledTree);
+                Debug.Log("Generation.asteroidsEnabled.transform.childCount: " + control.generation.asteroidsEnabled.transform.childCount);
+                control.generation.callsAsteroidSetPoolStatus = 0;
+                control.generation.callsAsteroidSetPoolStatusFalse = 0;
+                control.generation.callsAsteroidPoolSpawnCluster = 0;
+                control.generation.callsAsteroidPoolSpawn = 0;
+                control.generation.callsAsteroidSetPoolStatusTrue = 0;
+                control.generation.countAsteroidsPutInEnabledTree = 0;
+            }
+
+            ////Delete all inactive asteroids (really doesn't make much difference in performance at all!)
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    //int inactiveAsteroids = control.generation.asteroidsDetailed - control.generation.asteroidsEnabled.transform.childCount;
+            //    for (int i = 0; i < control.generation.asteroidsEnabled.transform.childCount; i++)
+            //    {
+            //        Transform asteroidToDestroy = control.generation.asteroidsEnabled.transform.GetChild(i);
+            //        if (asteroidToDestroy.GetComponent<Asteroid>().performantMode)
+            //        {
+            //            asteroidToDestroy.GetComponent<Asteroid>().BeginDestroying();
+            //        }
+            //    }
+            //}
+
+            ////Eclipse vision upgrade
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
+            //    tipHasBoughtSeismicCharges = true;
+            //    weaponSlot1 = weaponSeismicCharges;
+            //}
 
             ////Free money
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -551,12 +594,12 @@ public class Player : MonoBehaviour
             //    tutorialLevel = 2;
             //}
 
-            //Unlock seismic charges
-            if (binds.GetInputDown(binds.bindCheat2))
-            {
-                upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-                control.ui.SetTip("Seismic charges unlocked.");
-            }
+            ////Unlock seismic charges
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+            //    control.ui.SetTip("Seismic charges unlocked.");
+            //}
 
             //Spawn ore
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -723,7 +766,7 @@ public class Player : MonoBehaviour
                 Transform mapModel = transform.parent.Find("Position Mount").Find("Centre Mount").Find("Ship Map Model");
 
                 //Map model follows player's position exactly, but renders above everything else
-                mapModel.position = new Vector3(transform.position.x, mapCam.transform.position.y - 100f, transform.position.z);
+                mapModel.position = new Vector3(transform.position.x, mapCam.transform.position.y - 200f, transform.position.z);
             }
 
             //Outlines
@@ -753,150 +796,162 @@ public class Player : MonoBehaviour
                 }
             }
 
+            //DEBUG
+            //Update asteroid count constantly
+            control.generation.UpdateAsteroidPoolHierarchyCount();
+
             //Tutorial
-            if (!isDestroyed && tutorialTime <= Time.time)
+            UpdateTutorial();
+        }
+    }
+
+    private void UpdateTutorial()
+    {
+        //Some of tutorial is in SlowUpdate()
+
+        //Tutorial
+        if (!isDestroyed && control.settings.tips && tutorialTime <= Time.time)
+        {
+            //Show tutorial
+            if (tutorialLevel == 0)
             {
-                //Show tutorial
-                if (tutorialLevel == 0)
-                {
-                    control.ui.SetTip(
-                        "Fly with "
-                        + control.ui.GetBindAsPrettyString(binds.bindThrustForward) + ", "
-                        + control.ui.GetBindAsPrettyString(binds.bindThrustLeft) + ", "
-                        + control.ui.GetBindAsPrettyString(binds.bindThrustBackward) + ", "
-                        + control.ui.GetBindAsPrettyString(binds.bindThrustRight) + ", "
-                        + control.ui.GetBindAsPrettyString(binds.bindThrustDown) + ", and "
-                        + control.ui.GetBindAsPrettyString(binds.bindThrustUp),
-                        0f
-                    );
+                control.ui.SetTip(
+                    "Fly with "
+                    + control.ui.GetBindAsPrettyString(binds.bindThrustForward) + ", "
+                    + control.ui.GetBindAsPrettyString(binds.bindThrustLeft) + ", "
+                    + control.ui.GetBindAsPrettyString(binds.bindThrustBackward) + ", "
+                    + control.ui.GetBindAsPrettyString(binds.bindThrustRight) + ", "
+                    + control.ui.GetBindAsPrettyString(binds.bindThrustDown) + ", and "
+                    + control.ui.GetBindAsPrettyString(binds.bindThrustUp),
+                    0f
+                );
 
-                    //Show this tutorial tip until the player demonstrates understanding
-                    if (binds.GetInput(binds.bindThrustForward))    { tutorialHasPressedForward = true; }
-                    if (binds.GetInput(binds.bindThrustLeft))       { tutorialHasPressedLeft = true; }
-                    if (binds.GetInput(binds.bindThrustBackward))   { tutorialHasPressedBackward = true; }
-                    if (binds.GetInput(binds.bindThrustRight))      { tutorialHasPressedRight = true; }
-                    if (binds.GetInput(binds.bindThrustDown))       { tutorialHasPressedDown = true; }
-                    if (binds.GetInput(binds.bindThrustUp))         { tutorialHasPressedUp = true; }
-                    if (
-                           tutorialHasPressedForward
-                        && tutorialHasPressedLeft
-                        && tutorialHasPressedBackward
-                        && tutorialHasPressedRight
-                        && tutorialHasPressedDown
-                        && tutorialHasPressedUp
-                    )
-                    {
-                        IncrementTutorial(0f);
-                    }
-                }
-                else if (tutorialLevel == 1)
+                //Show this tutorial tip until the player demonstrates understanding
+                if (binds.GetInput(binds.bindThrustForward))    { tutorialHasPressedForward = true; }
+                if (binds.GetInput(binds.bindThrustLeft))       { tutorialHasPressedLeft = true; }
+                if (binds.GetInput(binds.bindThrustBackward))   { tutorialHasPressedBackward = true; }
+                if (binds.GetInput(binds.bindThrustRight))      { tutorialHasPressedRight = true; }
+                if (binds.GetInput(binds.bindThrustDown))       { tutorialHasPressedDown = true; }
+                if (binds.GetInput(binds.bindThrustUp))         { tutorialHasPressedUp = true; }
+                if (
+                       tutorialHasPressedForward
+                    && tutorialHasPressedLeft
+                    && tutorialHasPressedBackward
+                    && tutorialHasPressedRight
+                    && tutorialHasPressedDown
+                    && tutorialHasPressedUp
+                )
                 {
-                    control.ui.SetTip(
-                        "You can always disable tips in Menu > Settings (press [ESC])",
-                        TUTORIAL_TIP_DURATION * 0.5f
-                    );
-                    IncrementTutorial();
+                    IncrementTutorial(0f);
                 }
-                else if (tutorialLevel == 2)
+            }
+            else if (tutorialLevel == 1)
+            {
+                control.ui.SetTip(
+                    "You can always disable tips in Menu > Settings (press [ESC])",
+                    TUTORIAL_TIP_DURATION * 0.5f
+                );
+                IncrementTutorial();
+            }
+            else if (tutorialLevel == 2)
+            {
+                control.ui.SetTip(
+                    "Mine asteroids for valuable materials\nFire your weapon with " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire),
+                    0f
+                );
+
+                //Make the target (forced to the nearest asteroid) glow
+                TargetGlow();
+
+                //Show this tutorial tip until the player demonstrates understanding
+                if (tutorialHasMinedAsteroid)
                 {
-                    control.ui.SetTip(
-                        "Mine asteroids for valuable materials\nFire your weapon with " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire),
-                        0f
-                    );
+                    //Because we forced an outline on the nearest asteroid, we now need to update all outlines before moving on
+                    UpdateOutlines();
+                    //Same for the target image colour
+                    TargetReset();
 
-                    //Make the target (forced to the nearest asteroid) glow
-                    TargetGlow();
-
-                    //Show this tutorial tip until the player demonstrates understanding
-                    if (tutorialHasMinedAsteroid)
-                    {
-                        //Because we forced an outline on the nearest asteroid, we now need to update all outlines before moving on
-                        UpdateOutlines();
-                        //Same for the target image colour
-                        TargetReset();
-
-                        IncrementTutorial(0f);
-                    }
+                    IncrementTutorial(0f);
                 }
-                else if (tutorialLevel == 3)
+            }
+            else if (tutorialLevel == 3)
+            {
+                control.ui.SetTip(
+                    "Sell your cargo at space stations to afford fuel, repairs, and upgrades",
+                    0f
+                );
+
+                //Make the target (forced to the nearest space station) glow
+                TargetGlow();
+
+                //Show this tutorial tip until the player demonstrates understanding
+                if (tutorialHasExitedStationDock)
                 {
-                    control.ui.SetTip(
-                        "Sell your cargo at space stations to afford fuel, repairs, and upgrades",
-                        0f
-                    );
+                    //Reset the colour of the target because we made it glow earlier
+                    TargetReset();
 
-                    //Make the target (forced to the nearest space station) glow
-                    TargetGlow();
+                    IncrementTutorial(0f);
+                }
+            }
+            else if (tutorialLevel == 4)
+            {
+                control.ui.SetTip(
+                    "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
+                    TUTORIAL_TIP_DURATION * 0.5f
+                );
+                IncrementTutorial();
+            }
+            else if (tutorialLevel == 5)
+            {
+                control.ui.SetTip(
+                    "Different asteroid types may be found around other celestial bodies, but beware:\nbandits may be looking to steal your cargo, your ship, and your life",
+                    TUTORIAL_TIP_DURATION + 2f
+                );
+                IncrementTutorial();
+            }
+            else if (tutorialLevel == 6 && !tutorialHasUsedHeighliner && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1)
+            {
+                //Hasn't visited a heighliner, and has visited several moons
+                control.ui.SetTip(
+                    "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap),
+                    0f
+                );
 
-                    //Show this tutorial tip until the player demonstrates understanding
-                    if (tutorialHasExitedStationDock)
-                    {
-                        //Reset the colour of the target because we made it glow earlier
-                        TargetReset();
+                //Show this tutorial tip until the player demonstrates understanding
+                if (binds.GetInput(binds.bindToggleMap))
+                {
+                    IncrementTutorial(0f);
+                }
+            }
+            else if (tutorialLevel == 7)
+            {
+                control.ui.SetTip(
+                    "Zoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomIn) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomOut)
+                    + "\nPan around the map with " + control.ui.GetBindAsPrettyString(binds.bindPanMap)
+                    + "\nYou can use the map to set targets just as you would outside of it, with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget),
+                    TUTORIAL_TIP_DURATION
+                );
 
-                        IncrementTutorial(0f);
-                    }
-                }
-                else if (tutorialLevel == 4)
+                //Show this tutorial tip until the player demonstrates understanding
+                if (binds.GetInput(binds.bindCameraZoomIn))     { tutorialHasPressedZoomIn = true; }
+                if (binds.GetInput(binds.bindCameraZoomOut))    { tutorialHasPressedZoomOut = true; }
+                if (binds.GetInput(binds.bindPanMap))           { tutorialHasPressedPanMap = true; }
+                if (
+                       tutorialHasPressedZoomIn
+                    && tutorialHasPressedZoomOut
+                    && tutorialHasPressedPanMap
+                )
                 {
-                    control.ui.SetTip(
-                        "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
-                        TUTORIAL_TIP_DURATION * 0.5f
-                    );
-                    IncrementTutorial();
+                    IncrementTutorial(TUTORIAL_TIP_DURATION);
                 }
-                else if (tutorialLevel == 5)
-                {
-                    control.ui.SetTip(
-                        "Different asteroid types may be found around other celestial bodies, but beware:\nbandits may be looking to steal your cargo, your ship, and your life",
-                        TUTORIAL_TIP_DURATION + 2f
-                    );
-                    IncrementTutorial();
-                }
-                else if (tutorialLevel == 6 && !tutorialHasUsedHeighliner && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1)
-                {
-                    //Hasn't visited a heighliner, and has visited several moons
-                    control.ui.SetTip(
-                        "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap),
-                        0f
-                    );
-
-                    //Show this tutorial tip until the player demonstrates understanding
-                    if (binds.GetInput(binds.bindToggleMap))
-                    {
-                        IncrementTutorial(0f);
-                    }
-                }
-                else if (tutorialLevel == 7)
-                {
-                    control.ui.SetTip(
-                        "Zoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomIn) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomOut)
-                        + "\nPan around the map with " + control.ui.GetBindAsPrettyString(binds.bindPanMap)
-                        + "\nYou can use the map to set targets just as you would outside of it, with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget),
-                        TUTORIAL_TIP_DURATION
-                    );
-
-                    //Show this tutorial tip until the player demonstrates understanding
-                    if (binds.GetInput(binds.bindCameraZoomIn))     { tutorialHasPressedZoomIn = true; }
-                    if (binds.GetInput(binds.bindCameraZoomOut))    { tutorialHasPressedZoomOut = true; }
-                    if (binds.GetInput(binds.bindPanMap))           { tutorialHasPressedPanMap = true; }
-                    if (
-                           tutorialHasPressedZoomIn
-                        && tutorialHasPressedZoomOut
-                        && tutorialHasPressedPanMap
-                    )
-                    {
-                        IncrementTutorial(TUTORIAL_TIP_DURATION);
-                    }
-                }
-                else if (tutorialLevel == 8)
-                {
-                    control.ui.SetTip(
-                        "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
-                        TUTORIAL_TIP_DURATION + 2f
-                    );
-                    IncrementTutorial();
-                }
+            }
+            else if (tutorialLevel == 8)
+            {
+                control.ui.SetTip(
+                    "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
+                    TUTORIAL_TIP_DURATION + 2f
+                );
+                IncrementTutorial();
             }
         }
     }
@@ -990,24 +1045,27 @@ public class Player : MonoBehaviour
             //Debug.Log(":) " + distToCStar);
         }
 
-        //Highlight nearest asteroid
-        if (tutorialLevel == 2)
+        if (control.settings.tips)
         {
-            HighlightNearestAsteroid();
-        }
-        else if (tutorialLevel == 3)
-        {
-            //Target nearest space station
-            Transform nearestSpaceStation = control.GetClosestSpecificTransformFromHierarchy(
-                control.generation.station.name + "(Clone)",
-                control.generation.moons.transform,
-                transform.position
-            );
+            //Highlight nearest asteroid
+            if (tutorialLevel == 2)
+            {
+                HighlightNearestAsteroid();
+            }
+            else if (tutorialLevel == 3)
+            {
+                //Target nearest space station
+                Transform nearestSpaceStation = control.GetClosestSpecificTransformFromHierarchy(
+                    control.generation.station.name + "(Clone)",
+                    control.generation.moons.transform,
+                    transform.position
+                );
 
-            control.ui.targetImage.gameObject.SetActive(true);
-            control.ui.renderTarget = true;
-            targetObject = nearestSpaceStation.gameObject;
-            control.ui.UpdateTargetConsole();
+                control.ui.targetImage.gameObject.SetActive(true);
+                control.ui.renderTarget = true;
+                targetObject = nearestSpaceStation.gameObject;
+                control.ui.UpdateTargetConsole();
+            }
         }
     }
 
@@ -1086,7 +1144,7 @@ public class Player : MonoBehaviour
         }
 
         //Highlight that asteroid
-        if (!nearestAsteroid.GetComponentInChildren<Asteroid>().destroying)
+        if (!nearestAsteroid.GetComponentInChildren<Asteroid>().isDestroying)
         {
             Material material = nearestAsteroid.GetComponentInChildren<MeshRenderer>().material;
             material.SetFloat("_NightVisionOutline", 5f);
@@ -1137,7 +1195,7 @@ public class Player : MonoBehaviour
                 Transform transformToCheck = hierarchy.GetChild(i);
 
                 //Only accept if not destroyed/destroying
-                if (!transformToCheck.GetComponent<Asteroid>().destroyed && !transformToCheck.GetComponent<Asteroid>().destroying)
+                if (!transformToCheck.GetComponent<Asteroid>().isDestroyed && !transformToCheck.GetComponent<Asteroid>().isDestroying)
                 {
                     //The distance to this particular asteroid from the player position
                     float distanceToTransformToCheck = Vector3.Distance(transform.position, transformToCheck.position);
@@ -1968,7 +2026,7 @@ public class Player : MonoBehaviour
         for (int asteroidIndex = 0; asteroidIndex < nAsteroidsEnabled; asteroidIndex++)
         {
             Transform asteroidTransform = control.generation.asteroidsEnabled.transform.GetChild(asteroidIndex);
-            if (!asteroidTransform.GetComponentInChildren<Asteroid>().destroying)
+            if (!asteroidTransform.GetComponentInChildren<Asteroid>().isDestroying)
             {
                 Material material = asteroidTransform.GetComponentInChildren<MeshRenderer>().material;
                 UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, material);

@@ -143,7 +143,7 @@ public class Menu : MonoBehaviour
         Cursor.lockState = menuOpenAndGamePaused ? CursorLockMode.None : CursorLockMode.Locked;
 
         //Toggle reticle
-        control.ui.cameraReticle.SetActive(!menuOpenAndGamePaused);
+        //control.ui.cameraReticle.SetActive(!menuOpenAndGamePaused);
 
         //Disable map screen
         if (UI.displayMap)

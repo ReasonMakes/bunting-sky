@@ -73,11 +73,14 @@ public class Control : MonoBehaviour
         if (binds.GetInputDown(binds.bindSaveScreenshot)) SaveScreenshot();
 
         //Origin looping (maybe this could go in LateUpdate() to avoid the UI shaking)
-        if (generation.instancePlayer.transform.Find("Body").position.magnitude > ORIGIN_LOOP_RADIUS)
+        if (generation.playerSpawned)
         {
-            LoopWorldOrigin();
+            if (GetPlayerTransform().position.magnitude > ORIGIN_LOOP_RADIUS)
+            {
+                LoopWorldOrigin();
+            }
         }
-
+        
         //Map camera follows player
         //generation.instancePlayer.transform.Find("Position Mount").Find("Map Camera").position -= new Vector3(
         //    generation.instancePlayer.transform.Find("Body").position.x,
@@ -88,12 +91,28 @@ public class Control : MonoBehaviour
 
     public Transform GetPlayerTransform()
     {
-        return generation.instancePlayer.transform.Find("Body");
+        if (generation.playerSpawned)
+        {
+            return generation.instancePlayer.transform.Find("Body");
+        }
+        else
+        {
+            //The player hasn't spawned yet!
+            return null;
+        }
     }
 
     public Player GetPlayerScript()
     {
-        return generation.instancePlayer.transform.Find("Body").GetComponent<Player>();
+        if (generation.playerSpawned)
+        {
+            return generation.instancePlayer.transform.Find("Body").GetComponent<Player>();
+        }
+        else
+        {
+            //The player hasn't spawned yet!
+            return null;
+        }
     }
 
     private void LoopWorldOrigin()
@@ -334,6 +353,16 @@ public class Control : MonoBehaviour
 
         //RETURN CLOSEST TRANSFORM
         return closestTransform;
+    }
+
+    public int GetIntFromStringIndex(string str, int index)
+    {
+        //We are working with ASCII here, so we need to subtract the ASCII value of the first alpha numerical character in the lister
+        //Ex: list[i] = '3':
+        //int strength = (int)list[i] - (int)'0';
+        //int strength = 51 - 48; //'0' is encoded as 48 in ASCII
+        //int strength = 3;
+        return (int)str[index] - (int)'0';
     }
     #endregion
 }

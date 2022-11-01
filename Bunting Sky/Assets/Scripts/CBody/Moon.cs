@@ -36,28 +36,29 @@ public class Moon : MonoBehaviour
     {
         //Debug.DrawLine(transform.position, transform.position + (Vector3.up * 100f), Color.green);
 
-        DestroySelfIfPlanned();
+        //Moons are no longer destructible, so this code is just bloat
+        //DestroySelfIfPlanned();
     }
 
-    private void OnCollisionEnter(Collision collision)
-    {
-        //Fatal collisions
-        if 
-        (
-            !disabled
-            && (
-                collision.collider.gameObject.name == control.generation.moon.name + "(Clone)"
-                || collision.collider.gameObject.name == control.generation.planet.name + "(Clone)"
-            )
-        )
-        {
-            //Get other planetoid to destroy itself
-            //collision.collider.gameObject.GetComponent<CBodyPlanetoid>().DestroySelf();
-
-            //Destroy self
-            DisableSelfAndPlanDestroy();
-        }
-    }
+    //private void OnCollisionEnter(Collision collision)
+    //{
+    //    //Fatal collisions
+    //    if 
+    //    (
+    //        !disabled
+    //        && (
+    //            collision.collider.gameObject.name == control.generation.moon.name + "(Clone)"
+    //            || collision.collider.gameObject.name == control.generation.planet.name + "(Clone)"
+    //        )
+    //    )
+    //    {
+    //        //Get other planetoid to destroy itself
+    //        //collision.collider.gameObject.GetComponent<CBodyPlanetoid>().DestroySelf();
+    //
+    //        //Destroy self
+    //        DisableSelfAndPlanDestroy();
+    //    }
+    //}
 
     public void DisableSelfAndPlanDestroy()
     {
@@ -82,13 +83,6 @@ public class Moon : MonoBehaviour
         {
             //Spawn asteroids
             GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(transform.position, Asteroid.GetRandomSize(), type);
-            //GameObject asteroid = control.generation.SpawnAsteroid(
-            //    transform.position,
-            //    rb.velocity,
-            //    Asteroid.SIZE_LARGE, //"Large", //Asteroid.GetRandomSize(),
-            //    type,
-            //    Asteroid.HEALTH_MAX
-            //);
 
             //Spread out
             instanceAsteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);
@@ -110,11 +104,11 @@ public class Moon : MonoBehaviour
         {
             bool particlesFadedOut = timeSpentDisabled >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
 
-            Transform playerTransform = control.generation.instancePlayer.transform.Find("Body").transform;
-            bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, playerTransform.position) >= playerTransform.GetComponent<Player>().ORBITAL_DRAG_MODE_THRESHOLD;
+            bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, control.GetPlayerTransform().position) >= control.GetPlayerScript().ORBITAL_DRAG_MODE_THRESHOLD;
 
             if (disabled && particlesFadedOut && playerBeyondArbitraryDistance)
             {
+                Debug.Log("Moon destroying");
                 Destroy(gameObject, 0f);
             }
 
@@ -134,11 +128,6 @@ public class Moon : MonoBehaviour
             transform.position + new Vector3(10f, 10f, 10f),
             Quaternion.Euler(270f, 0f, 270f)
         );
-
-        //Set orbit
-        //instancedStation.GetComponent<StationOrbit>().planetoidToOrbit = gameObject;
-        //instancedStation.GetComponent<Rigidbody>().velocity = rb.velocity;
-        //instancedStation.GetComponent<Gravity>().SetVelocityToOrbit(instancedStation.GetComponent<StationOrbit>().planetoidToOrbit, 0f);
 
         //Set parent
         instancedStation.transform.parent = transform.parent;
@@ -200,6 +189,9 @@ public class Moon : MonoBehaviour
         //Pass control reference
         instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().control = control;
 
+        //Add to control list
+        control.generation.heighlinerList.Add(instancedHeighliner);
+
         //Set exit node
         if (control.generation.heighlinerCount == 0)
         {
@@ -214,10 +206,6 @@ public class Moon : MonoBehaviour
             }
             else
             {
-                //Debug.Log("Is null?: " + (control.generation.heighlinerOpenLinker == null));
-                //Debug.Log("Is null?: " + (instancedHeighliner == null));
-                //Debug.Log("Is null?: " + (instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode == null));
-
                 //Set this heighliner's exit node, and connect its sister's exit node to it
                 instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = control.generation.heighlinerOpenLinker;
                 control.generation.heighlinerOpenLinker.GetComponentInChildren<HeighlinerEntry>().exitNode = instancedHeighliner;

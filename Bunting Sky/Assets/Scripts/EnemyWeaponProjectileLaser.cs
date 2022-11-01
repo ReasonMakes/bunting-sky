@@ -81,7 +81,7 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
                 Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
 
                 //Break apart asteroid
-                if (!asteroidScript.destroying)
+                if (!asteroidScript.isDestroying)
                 {
                     if (canDamage)
                     {
