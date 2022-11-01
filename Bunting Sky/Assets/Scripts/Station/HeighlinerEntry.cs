@@ -43,6 +43,8 @@ public class HeighlinerEntry : MonoBehaviour
 
                     //Is discoverd
                     isDiscovered = true;
+                    //Set exit node as discovered too
+                    exitNode.GetComponentInChildren<HeighlinerEntry>().isDiscovered = true;
 
                     //Remember recent teleport
                     control.GetPlayerScript().recentTeleport = true;

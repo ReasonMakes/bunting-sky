@@ -150,7 +150,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
                                 //Explosion damage
                                 Vector3 directionHitFrom = (transform.position - hit.point).normalized;
-                                asteroidScript.Damage(2, directionHitFrom, hit.point, true);
+                                asteroidScript.Damage((byte)(1 + GetDamageAmount(hit.transform.position)), directionHitFrom, hit.point, true);
                             }
                         }
                         else if (hit.transform.name == control.generation.enemy.name + "(Clone)")
@@ -160,7 +160,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
                             //Damage
                             Enemy enemyScript = hit.transform.GetComponent<Enemy>();
-                            enemyScript.Damage(1, direction, hit.point, true, true);
+                            enemyScript.Damage((byte)GetDamageAmount(hit.transform.position), direction, hit.point, true, true);
                         }
                         else if (hit.transform.name == "Body")
                         {
@@ -169,16 +169,28 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
                             //Damage
                             control.GetPlayerScript().DamagePlayer(
-                                control.GetPlayerScript().vitalsHealth - 1.0d,
+                                control.GetPlayerScript().vitalsHealth - GetDamageAmount(control.GetPlayerTransform().position),
                                 "seismic charge explosion",
                                 1.0f,
-                                (transform.position - control.GetPlayerTransform().position).normalized
+                                (transform.position - control.GetPlayerTransform().position).normalized,
+                                true
                             );
                         }
                     }
                 }
             }
         }
+    }
+
+    private double GetDamageAmount(Vector3 positionOfVictim)
+    {
+        double distanceToVictim = Vector3.Distance(transform.position, positionOfVictim);
+
+        double baseDamage = 1.0d;
+        double splashFactor = (EXPLOSION_RADIUS - distanceToVictim) / EXPLOSION_RADIUS;
+        double splashDamage = 5.0d * splashFactor;
+
+        return baseDamage + splashDamage;
     }
 
     private bool StringIsAnAsteroidModel(string name)

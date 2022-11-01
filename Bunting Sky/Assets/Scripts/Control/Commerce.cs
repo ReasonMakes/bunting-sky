@@ -153,7 +153,7 @@ public class Commerce : MonoBehaviour
         Cursor.lockState = menuOpen ? CursorLockMode.None : CursorLockMode.Locked;
 
         //Toggle reticle
-        control.ui.cameraReticle.SetActive(!menuOpen);
+        //control.ui.cameraReticle.SetActive(!menuOpen);
     }
 
     private void UpdatePlayerResourcesAndCommerceMenuUI()

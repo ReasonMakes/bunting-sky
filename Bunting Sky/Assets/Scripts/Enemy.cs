@@ -437,21 +437,21 @@ public class Enemy : MonoBehaviour
             {
                 if (strength == STRENGTH_ELITE)
                 {
-                    for (int i = 0; i < Random.Range(20, 30 + 1); i++)
+                    for (int i = 0; i < Random.Range(40, 50 + 1); i++)
                     {
                         SpawnOre(Asteroid.TYPE_PRECIOUS_METAL);
                     }
                 }
                 else if (strength == STRENGTH_MAJOR)
                 {
-                    for (int i = 0; i < Random.Range(20, 30 + 1); i++)
+                    for (int i = 0; i < Random.Range(40, 50 + 1); i++)
                     {
                         SpawnOre(Asteroid.TYPE_PLATINOID);
                     }
                 }
                 else if (strength == STRENGTH_MINOR)
                 {
-                    for (int i = 0; i < Random.Range(10, 20 + 1); i++)
+                    for (int i = 0; i < Random.Range(15, 25 + 1); i++)
                     {
                         SpawnOre(Asteroid.TYPE_PLATINOID);
                     }

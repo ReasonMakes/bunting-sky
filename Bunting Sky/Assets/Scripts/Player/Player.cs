@@ -524,40 +524,47 @@ public class Player : MonoBehaviour
         //Cheats enabled only while in editor
         if (control.IS_EDITOR)
         {
-            ////Teleport forward
-            //if (binds.GetInputDown(binds.bindCheat1))
-            //{
-            //    transform.position += transform.forward * 400f;
-            //}
-
-            //Spawn asteroid from pool
+            //Teleport forward
             if (binds.GetInputDown(binds.bindCheat1))
             {
-                control.generation.AsteroidPoolSpawn(
-                    transform.position + (transform.forward * 10f),
-                    UnityEngine.Random.Range(0, Asteroid.SIZE_LENGTH),
-                    Asteroid.GetRandomType()
-                );
+                transform.position += transform.forward * 400f;
             }
 
-            //Print out asteroid pool bulk actions and reset counts
+            //Unlock seismic charges
             if (binds.GetInputDown(binds.bindCheat2))
             {
-                Debug.Log("------------------------------------------");
-                Debug.Log("Asteroid.SetPoolStatus(): " + control.generation.callsAsteroidSetPoolStatus);
-                Debug.Log("Asteroid.SetPoolStatus(false): " + control.generation.callsAsteroidSetPoolStatusFalse);
-                Debug.Log("Generation.AsteroidPoolSpawnCluster(): " + control.generation.callsAsteroidPoolSpawnCluster);
-                Debug.Log("Generation.AsteroidPoolSpawn(): " + control.generation.callsAsteroidPoolSpawn);
-                Debug.Log("Asteroid.SetPoolStatus(true): " + control.generation.callsAsteroidSetPoolStatusTrue);
-                Debug.Log("Asteroid.SetPoolStatus(true).transform.parent = Generation.asteroidsEnabled: " + control.generation.countAsteroidsPutInEnabledTree);
-                Debug.Log("Generation.asteroidsEnabled.transform.childCount: " + control.generation.asteroidsEnabled.transform.childCount);
-                control.generation.callsAsteroidSetPoolStatus = 0;
-                control.generation.callsAsteroidSetPoolStatusFalse = 0;
-                control.generation.callsAsteroidPoolSpawnCluster = 0;
-                control.generation.callsAsteroidPoolSpawn = 0;
-                control.generation.callsAsteroidSetPoolStatusTrue = 0;
-                control.generation.countAsteroidsPutInEnabledTree = 0;
+                upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+                weaponSlot1 = weaponSeismicCharges;
             }
+
+            ////Spawn asteroid from pool
+            //if (binds.GetInputDown(binds.bindCheat1))
+            //{
+            //    control.generation.AsteroidPoolSpawn(
+            //        transform.position + (transform.forward * 10f),
+            //        UnityEngine.Random.Range(0, Asteroid.SIZE_LENGTH),
+            //        Asteroid.GetRandomType()
+            //    );
+            //}
+
+            ////Print out asteroid pool bulk actions and reset counts
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    Debug.Log("------------------------------------------");
+            //    Debug.Log("Asteroid.SetPoolStatus(): " + control.generation.callsAsteroidSetPoolStatus);
+            //    Debug.Log("Asteroid.SetPoolStatus(false): " + control.generation.callsAsteroidSetPoolStatusFalse);
+            //    Debug.Log("Generation.AsteroidPoolSpawnCluster(): " + control.generation.callsAsteroidPoolSpawnCluster);
+            //    Debug.Log("Generation.AsteroidPoolSpawn(): " + control.generation.callsAsteroidPoolSpawn);
+            //    Debug.Log("Asteroid.SetPoolStatus(true): " + control.generation.callsAsteroidSetPoolStatusTrue);
+            //    Debug.Log("Asteroid.SetPoolStatus(true).transform.parent = Generation.asteroidsEnabled: " + control.generation.countAsteroidsPutInEnabledTree);
+            //    Debug.Log("Generation.asteroidsEnabled.transform.childCount: " + control.generation.asteroidsEnabled.transform.childCount);
+            //    control.generation.callsAsteroidSetPoolStatus = 0;
+            //    control.generation.callsAsteroidSetPoolStatusFalse = 0;
+            //    control.generation.callsAsteroidPoolSpawnCluster = 0;
+            //    control.generation.callsAsteroidPoolSpawn = 0;
+            //    control.generation.callsAsteroidSetPoolStatusTrue = 0;
+            //    control.generation.countAsteroidsPutInEnabledTree = 0;
+            //}
 
             ////Delete all inactive asteroids (really doesn't make much difference in performance at all!)
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -592,13 +599,6 @@ public class Player : MonoBehaviour
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
             //    tutorialLevel = 2;
-            //}
-
-            ////Unlock seismic charges
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-            //    control.ui.SetTip("Seismic charges unlocked.");
             //}
 
             //Spawn ore
@@ -890,6 +890,12 @@ public class Player : MonoBehaviour
                     //Reset the colour of the target because we made it glow earlier
                     TargetReset();
 
+                    //Reset target to null
+                    control.ui.SetPlayerTargetObject(targetObject);
+
+                    //Console
+                    control.ui.UpdateTargetConsole();
+
                     IncrementTutorial(0f);
                 }
             }
@@ -1028,21 +1034,24 @@ public class Player : MonoBehaviour
         float maxBaseDPS = 7f; //max BASE dps BEFORE adding 1 and raising to power
         if (distToCStar < maxDist)
         {
-            //Debug.Log("Too close to the sun: " + distToCStar);
+            //Emit particles once per second
+            bool emitParticles = false;
+            if (Time.frameCount % control.settings.targetFPS == 0)
+            {
+                emitParticles = true;
+            }
+
+            //Damage
             DamagePlayer(
                 Math.Max(
                     0d,
-                    //vitalsHealth - (Math.Pow(1d + (((maxDist - distToCStar)/maxDist) * maxBaseDPS), 2d) * Time.deltaTime)
                     vitalsHealth - (Math.Pow(((maxDist - distToCStar)/maxDist) * maxBaseDPS, 2d) * Time.deltaTime)
                 ),
                 "overheat",
                 0f,
-                (control.generation.instanceStarHome.transform.position - transform.position).normalized
+                (control.generation.instanceStarHome.transform.position - transform.position).normalized,
+                emitParticles
             );
-        }
-        else
-        {
-            //Debug.Log(":) " + distToCStar);
         }
 
         if (control.settings.tips)
@@ -1351,6 +1360,8 @@ public class Player : MonoBehaviour
             if (
                 tempEngineDisable <= 0f
                 && !binds.GetInput(binds.bindCameraFreeLook)
+                && !Menu.menuOpenAndGamePaused
+                && !Commerce.menuOpen
                 && (
                     canAndIsMoving
                     || binds.GetInput(binds.bindAlignShipToReticle)
@@ -2159,7 +2170,8 @@ public class Player : MonoBehaviour
                 newHealthAmount,
                 cause,
                 (float)damageToDeal,
-                (collision.collider.transform.position - transform.position).normalized
+                (collision.collider.transform.position - transform.position).normalized,
+                true
             );
         }
         else
@@ -2190,7 +2202,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void DamagePlayer(double newHealthAmount, string cause, float tempEngineDisableDuration, Vector3 directionDamageCameFrom)
+    public void DamagePlayer(double newHealthAmount, string cause, float tempEngineDisableDuration, Vector3 directionDamageCameFrom, bool emitParticles)
     {
         if (!isDestroyed)
         {
@@ -2203,7 +2215,10 @@ public class Player : MonoBehaviour
             lastDamageCause = cause;
 
             //Emit particles
-            EmitParticles(1, directionDamageCameFrom, false);
+            if (emitParticles)
+            {
+                EmitParticles(1, directionDamageCameFrom, false);
+            }
 
             if (vitalsHealth <= 0f)
             {

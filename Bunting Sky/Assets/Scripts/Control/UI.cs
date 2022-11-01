@@ -711,10 +711,17 @@ public class UI : MonoBehaviour
                 //Waypoint
                 waypointTextType.text = "Heighliner";
                 Transform heighlinerTransform = hit.collider.transform;
-                string heighlinerTitle = heighlinerTransform.GetComponent<NameHuman>().title;
                 Transform moonTransform = heighlinerTransform.parent.GetChild(heighlinerTransform.GetSiblingIndex() - 1);
                 string moonName = moonTransform.GetComponent<NameCelestial>().title;
-                waypointTextTitle.text = heighlinerTitle + " of " + moonName;
+                string finalTitle = "Interplanetary. Orbiting " + moonName;
+                if (heighlinerTransform.GetComponentInChildren<HeighlinerEntry>().isDiscovered)
+                {
+                    Transform exitNodeHeighliner = heighlinerTransform.GetComponentInChildren<HeighlinerEntry>().exitNode.transform;
+                    Transform exitNodeHeighlinerMoon = exitNodeHeighliner.parent.GetChild(exitNodeHeighliner.GetSiblingIndex() - 1);
+                    string exitNodeHeighlinerMoonTitle = exitNodeHeighlinerMoon.GetComponent<NameCelestial>().title;
+                    finalTitle = "Interplanetary. " + moonName + " to " + exitNodeHeighlinerMoonTitle;
+                }
+                waypointTextTitle.text = finalTitle;
                 //waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameHuman>().title;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
 
