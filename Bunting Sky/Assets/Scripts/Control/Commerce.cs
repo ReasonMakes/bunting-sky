@@ -54,8 +54,8 @@ public class Commerce : MonoBehaviour
 
     public Button menuButtonRepair;
     public Button menuButtonRefuel;
-    private readonly float PRICE_REPAIR = 50f;
-    private readonly float PRICE_REFUEL = 10f;
+    [System.NonSerialized] public readonly float PRICE_REPAIR = 50f;
+    [System.NonSerialized] public readonly float PRICE_REFUEL = 10f;
 
     private void Awake()
     {
@@ -175,15 +175,15 @@ public class Commerce : MonoBehaviour
         TextMeshProUGUI sellAllWaterPrice           = menuButtonSellAllWater.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>();
 
         //Interactable
-        menuButtonSellAllPlatinoid.interactable     = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0;
-        menuButtonSellAllPreciousMetal.interactable = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0;
-        menuButtonSellAllWater.interactable         = playerScript.ore[playerScript.ORE_WATER] > 0.0;
+        menuButtonSellAllPlatinoid.interactable     = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0;
+        menuButtonSellAllPreciousMetal.interactable = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0;
+        menuButtonSellAllWater.interactable         = playerScript.ore[Asteroid.TYPE_WATER] > 0.0;
 
         //Display
         //Text
-        sellAllPlatinoidText.text       = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
-        sellAllPreciousMetalText.text   = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
-        sellAllWaterText.text           = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllPlatinoidText.text       = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllPreciousMetalText.text   = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllWaterText.text           = playerScript.ore[Asteroid.TYPE_WATER] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
 
         //Price
         sellAllPlatinoidPrice.text      = "$" + pricePlatinoid + " / kg";
@@ -191,14 +191,14 @@ public class Commerce : MonoBehaviour
         sellAllWaterPrice.text          = "$" + priceWater + " / kg";
 
         //Colour
-        sellAllPlatinoidText.color      = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
-        sellAllPlatinoidPrice.color     = playerScript.ore[playerScript.ORE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPlatinoidText.color      = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPlatinoidPrice.color     = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
-        sellAllPreciousMetalText.color  = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
-        sellAllPreciousMetalPrice.color = playerScript.ore[playerScript.ORE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPreciousMetalText.color  = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPreciousMetalPrice.color = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
-        sellAllWaterText.color          = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
-        sellAllWaterPrice.color         = playerScript.ore[playerScript.ORE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllWaterText.color          = playerScript.ore[Asteroid.TYPE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllWaterPrice.color         = playerScript.ore[Asteroid.TYPE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
         //UPGRADE
         //Interactable
@@ -453,10 +453,12 @@ public class Commerce : MonoBehaviour
 
     public void SellAllPlatinoid()
     {
-        Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
+        Player playerScript = control.GetPlayerScript();
 
-        playerScript.currency += playerScript.ore[playerScript.ORE_PLATINOID] * pricePlatinoid;
-        playerScript.ore[playerScript.ORE_PLATINOID] = 0.0;
+        playerScript.currency += playerScript.ore[Asteroid.TYPE_PLATINOID] * pricePlatinoid;
+        playerScript.ore[Asteroid.TYPE_PLATINOID] = 0.0;
+
+        playerScript.tutorialHasUsedStation = true;
 
         UpdatePlayerResourcesAndCommerceMenuUI();
     }
@@ -465,8 +467,10 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        playerScript.currency += playerScript.ore[playerScript.ORE_PRECIOUS_METAL] * pricePreciousMetal;
-        playerScript.ore[playerScript.ORE_PRECIOUS_METAL] = 0.0;
+        playerScript.currency += playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] * pricePreciousMetal;
+        playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] = 0.0;
+
+        playerScript.tutorialHasUsedStation = true;
 
         UpdatePlayerResourcesAndCommerceMenuUI();
     }
@@ -475,8 +479,10 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        playerScript.currency += playerScript.ore[playerScript.ORE_WATER] * priceWater;
-        playerScript.ore[playerScript.ORE_WATER] = 0.0;
+        playerScript.currency += playerScript.ore[Asteroid.TYPE_WATER] * priceWater;
+        playerScript.ore[Asteroid.TYPE_WATER] = 0.0;
+
+        playerScript.tutorialHasUsedStation = true;
 
         UpdatePlayerResourcesAndCommerceMenuUI();
     }
@@ -503,10 +509,6 @@ public class Commerce : MonoBehaviour
             //Display tip if eclipse vision
             if (upgradeIndex == UPGRADE_OUTLINE && !control.GetPlayerScript().tipHasBoughtOutline)
             {
-                //Display tip
-                control.ui.SetTip(
-                    "Toggle eclipse vision with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleOutline)
-                );
                 control.GetPlayerScript().tipHasBoughtOutline = true;
             }
 
@@ -519,9 +521,6 @@ public class Commerce : MonoBehaviour
                 //Display tip
                 if (!control.GetPlayerScript().tipHasBoughtSeismicCharges)
                 {
-                    control.ui.SetTip(
-                        "Select seismic charges with " + control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1)
-                    );
                     control.GetPlayerScript().tipHasBoughtSeismicCharges = true;
                 }
             }

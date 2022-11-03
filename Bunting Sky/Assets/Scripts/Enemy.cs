@@ -30,17 +30,18 @@ public class Enemy : MonoBehaviour
     [System.NonSerialized] public Vector3 spawnPointRaw = Vector3.zero;
     private Vector3 destination = Vector3.zero;
     private bool aggro = false;
-    private float lastShotTime = 0f;
+    private float lastShotTime = -100f; //default to negative values so that we don't think we were just shot when we spawn!
     private readonly float LAST_SHOT_MEMORY_PERIOD = 10f; //How long in seconds the bandit remembers that they were recently shot for
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO = 140f;
     private readonly float DISTANCE_THRESHOLD_GREATER_THAN_TO_MOVE_FORWARD = 16f;
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE = 30f;
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE = 70f;
     [System.NonSerialized] public static readonly float DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE = 300f;
-    private bool strafeRight = true;
-    private float strafeDirectionChangeTimer = 2f;
+    private bool strafeHorizontalRight = true;
+    private float strafeHorizontalDirectionChangeTimer = 2f;
+    private bool strafeVerticalUp = true;
+    private float strafeVerticalDirectionChangeTimer = 2f;
     private readonly float STRAFE_PERIOD_MAX = 2f;
-    private bool canStrafe = true;
     private readonly float MANUAL_LEAD_MULTIPLIER = 1.5f; //Add offset to account for how slow the torque is
     private float destinationRandomOffsetMultiplier = 0.25f;   //"Inaccuracy" (which in actuality actually helps the aim a little bit
     public GameObject playerGhost;                             //by creating a larger area-of-denial, and therefore a higher random
@@ -73,6 +74,7 @@ public class Enemy : MonoBehaviour
     [System.NonSerialized] public MeshRenderer meshRenderer;
 
     public GameObject ore;
+    private readonly float ORE_POSITION_OFFSET_RANDOM_MAGNITUDE = 5f;
 
     private void Start()
     {
@@ -110,15 +112,33 @@ public class Enemy : MonoBehaviour
                     //BEHAVIOUR (moving and shooting)
                     if (control.GetPlayerScript().isDestroyed)
                     {
-                        aggro = false;
+                        if (aggro)
+                        {
+                            control.GetPlayerScript().nEnemiesAggrod--;
+                            aggro = false;
+                        }
                     }
                     else if (Time.time <= lastShotTime + LAST_SHOT_MEMORY_PERIOD)
                     {
-                        aggro = true;
+                        if (!aggro)
+                        {
+                            control.GetPlayerScript().nEnemiesAggrod++;
+                            aggro = true;
+                        }
                     }
                     else
                     {
-                        aggro = (Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO);
+                        bool willAggroDueToProximity = (Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO);
+                        if (!aggro && willAggroDueToProximity)
+                        {
+                            control.GetPlayerScript().nEnemiesAggrod++;
+                            aggro = true;
+                        }
+                        else if (aggro && !willAggroDueToProximity)
+                        {
+                            control.GetPlayerScript().nEnemiesAggrod--;
+                            aggro = false;
+                        }
                     }
 
                     if (aggro)
@@ -173,6 +193,12 @@ public class Enemy : MonoBehaviour
                     UpdateEnemyWeaponsUse(); 
                 }
             }
+        }
+
+        //Keep track of last aggro time to detect when in combat!
+        if (aggro)
+        {
+            control.GetPlayerScript().combatLastAggroTime = Time.time;
         }
     }
 
@@ -249,48 +275,66 @@ public class Enemy : MonoBehaviour
 
         //Strafe direction
         Vector3 strafeVector = Vector3.zero;
-        //Change left/right periodically
-        strafeDirectionChangeTimer = Mathf.Max(0f, strafeDirectionChangeTimer - Time.deltaTime); //decrement 1f per second
-        if (strafeDirectionChangeTimer <= 0f)
+        //Change left/right & up/down periodically
+        strafeHorizontalDirectionChangeTimer = Mathf.Max(0f, strafeHorizontalDirectionChangeTimer - Time.deltaTime); //decrement 1f per second
+        strafeVerticalDirectionChangeTimer = Mathf.Max(0f, strafeVerticalDirectionChangeTimer - Time.deltaTime); //decrement 1f per second
+        if (strafeHorizontalDirectionChangeTimer <= 0f)
         {
             //Reset timer
-            strafeDirectionChangeTimer = Random.value * STRAFE_PERIOD_MAX;
+            strafeHorizontalDirectionChangeTimer = Random.value * STRAFE_PERIOD_MAX;
 
             //Change strafe direction
-            strafeRight = !strafeRight;
+            strafeHorizontalRight = !strafeHorizontalRight;
+        }
+        if (strafeVerticalDirectionChangeTimer <= 0f)
+        {
+            //Reset timer
+            strafeVerticalDirectionChangeTimer = Random.value * STRAFE_PERIOD_MAX;
+
+            //Change strafe direction
+            strafeVerticalUp = !strafeVerticalUp;
         }
         //Strafe if aggro'd and within distance threshold
         if (aggro) // && Vector3.Magnitude(destination - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)
         {
-            if (strafeRight)
+            if (strafeHorizontalRight)
             {
                 //Right
-                strafeVector = transform.right * dot;
+                strafeVector = transform.right;
             }
             else
             {
                 //Left
-                strafeVector = -transform.right * dot;
+                strafeVector = -transform.right;
             }
+
+            if (strafeVerticalUp)
+            {
+                //Right
+                strafeVector += transform.up;
+            }
+            else
+            {
+                //Left
+                strafeVector += -transform.up;
+            }
+            //Normalize because we just added the horizontal and vertical strafe elements together
+            strafeVector = strafeVector.normalized;
+
+            //Factor in how accurately aiming at the player (strafe more when aiming at the player and less when trying to torque toward them)
+            strafeVector *= dot;
         }
         
         //COMBINING AND APPLYING
         //Add forward and strafe vectors together with weights
-        if (canStrafe)
+        float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
+        float strafeWeight = 0f; //weight approaches 1f as the distance from the enemy to the player approaches DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE
+        if (control.GetPlayerScript().weaponUsedRecently > 0f && distToPlayer < DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO)
         {
-            float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
-            float weight = 0f; //weight approaches 1f as the distance from the enemy to the player approaches DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE
-            if (control.GetPlayerScript().weaponUsedRecently > 0f && distToPlayer < DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO)
-            {
-                float aggroDistMinusStrafeDist = DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE;
-                weight = (aggroDistMinusStrafeDist - (distToPlayer - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)) / aggroDistMinusStrafeDist;
-            }
-            thrustVector = (forwardVector * (1f - weight)) + (strafeVector * (weight));
+            float aggroDistMinusStrafeDist = DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE;
+            strafeWeight = (aggroDistMinusStrafeDist - (distToPlayer - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)) / aggroDistMinusStrafeDist;
         }
-        else
-        {
-            thrustVector = forwardVector;
-        }
+        thrustVector = (forwardVector * (1f - strafeWeight)) + (strafeVector * (strafeWeight));
 
         //Thrust
         rb.AddForce(thrustVector.normalized * thrust * Time.deltaTime);
@@ -348,7 +392,7 @@ public class Enemy : MonoBehaviour
             
             //Difficulty
             health = 3;
-            thrust = 4e3f;
+            thrust = 2500f; //4e3f;
             torque = 600f;
             destinationRandomOffsetMultiplier = 2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
@@ -362,7 +406,7 @@ public class Enemy : MonoBehaviour
             modelGroup = modelGroupStrengthWeak;
 
             //Difficulty
-            health = 6; //same as player's default
+            health = 6;
             thrust = 8e3f;
             torque = 10e3f;
             destinationRandomOffsetMultiplier = 0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
@@ -377,14 +421,14 @@ public class Enemy : MonoBehaviour
             modelGroup = modelGroupStrengthWeak;
 
             //Difficulty
-            health = 10; //20hp is player max health after upgrading hull strength
+            health = 10; //10hp is player default; 20hp is player max health after upgrading hull strength
             thrust = 10e3f;
-            torque = 12e3f;
+            torque = 25e3f; //18e3f; //16e3f; //12e3f;
             destinationRandomOffsetMultiplier = 0.4f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 1f; //Time in seconds between bursts
-            weaponInternalBurstCooldown = 0.05f; //Time in seconds between shots within the burst
-            weaponBurstLength = 18; //Total shots per burst
+            weaponInternalBurstCooldown = 0.03f; //0.05f //Time in seconds between shots within the burst
+            weaponBurstLength = 15; //Total shots per burst
 }
         else
         {
@@ -419,7 +463,6 @@ public class Enemy : MonoBehaviour
         else
         {
             health = 0;
-            GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, position, true);
             BreakApart(oreDrop);
         }
     }
@@ -430,30 +473,44 @@ public class Enemy : MonoBehaviour
         {
             //Disable self
             destroying = true;
+            GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, transform.position, true);
+            control.GetPlayerScript().nEnemiesAggrod--;
             DisableModelAndTriggerVolumes();
 
-            //Spawn goodies
+            //Spawn drops
             if (oreDrop)
             {
                 if (strength == STRENGTH_ELITE)
                 {
                     for (int i = 0; i < Random.Range(40, 50 + 1); i++)
                     {
-                        SpawnOre(Asteroid.TYPE_PRECIOUS_METAL);
+                        control.generation.OrePoolSpawnWithTraits(
+                            transform.position + (ORE_POSITION_OFFSET_RANDOM_MAGNITUDE * new Vector3(Random.value, Random.value, Random.value)),
+                            rb,
+                            Asteroid.TYPE_PRECIOUS_METAL
+                        );
                     }
                 }
                 else if (strength == STRENGTH_MAJOR)
                 {
                     for (int i = 0; i < Random.Range(40, 50 + 1); i++)
                     {
-                        SpawnOre(Asteroid.TYPE_PLATINOID);
+                        control.generation.OrePoolSpawnWithTraits(
+                            transform.position + (ORE_POSITION_OFFSET_RANDOM_MAGNITUDE * new Vector3(Random.value, Random.value, Random.value)),
+                            rb,
+                            Asteroid.TYPE_PLATINOID
+                        );
                     }
                 }
                 else if (strength == STRENGTH_MINOR)
                 {
                     for (int i = 0; i < Random.Range(15, 25 + 1); i++)
                     {
-                        SpawnOre(Asteroid.TYPE_PLATINOID);
+                        control.generation.OrePoolSpawnWithTraits(
+                            transform.position + (ORE_POSITION_OFFSET_RANDOM_MAGNITUDE * new Vector3(Random.value, Random.value, Random.value)),
+                            rb,
+                            Asteroid.TYPE_PLATINOID
+                        );
                     }
                 }
             }
@@ -573,30 +630,5 @@ public class Enemy : MonoBehaviour
             modelGroup.GetComponent<SphereCollider>().enabled = false;
             modelObject.GetComponent<MeshCollider>().enabled = false;
         }
-    }
-
-    private void SpawnOre(byte type)
-    {
-        float positionOffsetMagnitude = 5f;
-
-        //Pool spawning
-        GameObject instanceOre = control.generation.OrePoolSpawn(
-            transform.position + (positionOffsetMagnitude * new Vector3(Random.value, Random.value, Random.value)),
-            type,
-            rb.velocity
-        );
-
-        //Pass rigidbody values
-        Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();
-        instanceOreRb.velocity = rb.velocity;
-        instanceOreRb.angularVelocity = rb.angularVelocity;
-        instanceOreRb.inertiaTensor = rb.inertiaTensor;
-        instanceOreRb.inertiaTensorRotation = rb.inertiaTensorRotation;
-        instanceOreRb.AddForce(1000f * new Vector3(
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value)
-        ));
-        instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
     }
 }

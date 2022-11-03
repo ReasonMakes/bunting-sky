@@ -44,6 +44,7 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool refine;
     [System.NonSerialized] public bool music;
     [System.NonSerialized] public bool tips;
+    [System.NonSerialized] public bool tutorial;
     [System.NonSerialized] public bool fullscreen;
     [System.NonSerialized] public bool matchVelocity;
     [System.NonSerialized] public bool spinStabilizers;
@@ -68,7 +69,7 @@ public class Settings : MonoBehaviour
     {
         //Defaults
         ioBuffer = new IOBuffer();
-        ioBuffer.mouseSensitivity = 3f;
+        ioBuffer.mouseSensitivity = 0.9f; //3f;
         ioBuffer.hFieldOfView = 103f;
         ioBuffer.cameraFollowDistance = CAMERA_DISTANCE_MIN; //0.025 increments from scroll wheel
         ioBuffer.cameraFollowHeight = 0.2f;
@@ -80,6 +81,7 @@ public class Settings : MonoBehaviour
         ioBuffer.refine = true;
         ioBuffer.music = true;
         ioBuffer.tips = true;
+        ioBuffer.tutorial = true;
         ioBuffer.fullscreen = true;
         ioBuffer.matchVelocity = true;
         ioBuffer.spinStabilizers = true;
@@ -102,6 +104,7 @@ public class Settings : MonoBehaviour
         ioBuffer.refine = refine;
         ioBuffer.music = music;
         ioBuffer.tips = tips;
+        ioBuffer.tutorial = tutorial;
         ioBuffer.fullscreen = fullscreen;
         ioBuffer.matchVelocity = matchVelocity;
         ioBuffer.spinStabilizers = spinStabilizers;
@@ -124,6 +127,7 @@ public class Settings : MonoBehaviour
         refine = ioBuffer.refine;
         music = ioBuffer.music;
         tips = ioBuffer.tips;
+        tutorial = ioBuffer.tutorial;
         fullscreen = ioBuffer.fullscreen;
         matchVelocity = ioBuffer.matchVelocity;
         spinStabilizers = ioBuffer.spinStabilizers;
@@ -147,6 +151,7 @@ public class Settings : MonoBehaviour
         public bool refine;
         public bool music;
         public bool tips;
+        public bool tutorial;
         public bool fullscreen;
         public bool matchVelocity;
         public bool spinStabilizers;

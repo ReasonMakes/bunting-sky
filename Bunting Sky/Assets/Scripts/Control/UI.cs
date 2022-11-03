@@ -55,8 +55,6 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public TextMeshProUGUI weaponSelectedClipSizeText;
     [System.NonSerialized] public TextMeshProUGUI weaponSelectedTitleText;
     [System.NonSerialized] public TextMeshProUGUI weaponAlternateTitleText;
-    [System.NonSerialized] public string weaponMiningLaserTitle = "Mining Laser";
-    private string selectedWeaponTitle = "Laser";
     public Image weaponSelectedIcon;
     public Sprite weaponSelectedIconLaser;
     public Sprite weaponSelectedIconSeismicCharge;
@@ -77,12 +75,17 @@ public class UI : MonoBehaviour
     //Tips
     [System.NonSerialized] public TextMeshProUGUI tipText;
     [System.NonSerialized] public float tipAimNeedsHelpCertainty = 0f;
-    private readonly float TIP_CERTAINTY_DECAY = 0.003f;
-    private readonly float TIP_AIM_THRESHOLD_CERTAINTY = 4f;
+    private readonly float TIP_CERTAINTY_DECAY = 0.003f; //0.3f; //0.003f;
+    private readonly float TIP_AIM_THRESHOLD_CERTAINTY = 2f; //4f;
     [System.NonSerialized] public readonly float TIP_AIM_THRESHOLD_ACCURACY = 0.995f;
     public string tipAimText;
     private float tipTextAlphaDecrementDelay = 0f;
     private readonly float TIP_TEXT_ALPHA_DECREMENT_RATE = 0.01f;
+
+    //Colours
+    private readonly Color COLOR_UI_TRANSLUCENT_WHITE = new Color(1f, 1f, 1f, 0.5f);
+    private readonly Color COLOR_UI_TRANSLUCENT_AMBER = new Color(1f, 0.75f, 0f, 0.5f); //new Color(1f, 0.34f, 0.2f, 0.5f);
+    private readonly Color COLOR_UI_TRANSLUCENT_RED = new Color(1f, 0f, 0f, 0.5f);
 
     private void Awake()
     {
@@ -115,8 +118,6 @@ public class UI : MonoBehaviour
         weaponAlternateTitleText = weaponsFolder.Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
 
         tipText = canvas.transform.Find("HUD Bottom").Find("Tips").Find("Tip Text").GetComponent<TextMeshProUGUI>();
-
-        UpdateTipBinds();
     }
 
     private void Start()
@@ -211,20 +212,25 @@ public class UI : MonoBehaviour
     {
         //Provide a tip if a player repeatedly demonstrates a lack of understanding about that game feature
 
-        ////AUTO TORQUING
-        //if (tipAimNeedsHelpCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
-        //{
-        //    SetTip(tipAimText, ref tipAimNeedsHelpCertainty);
-        //}
-        //
-        ////Don't recommend auto torquing if firing when fuel is empty
-        //if (playerScript.vitalsFuel <= 0d)
-        //{
-        //    tipAimNeedsHelpCertainty = 0f;
-        //}
-        //
-        ////Decay
-        //tipAimNeedsHelpCertainty = Mathf.Max(0f, tipAimNeedsHelpCertainty - TIP_CERTAINTY_DECAY);
+        if (control.generation.playerSpawned)
+        {
+            //AUTO TORQUING
+            //Don't recommend auto torquing if firing when fuel is empty OR if player is auto torquing
+            if (control.GetPlayerScript().vitalsFuel <= 0d || binds.GetInputDown(binds.bindAlignShipToReticle))
+            {
+                tipAimNeedsHelpCertainty = 0f;
+            }
+
+            if (tipAimNeedsHelpCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
+            {
+                SetTip(
+                    "Hold " + GetBindAsPrettyString(control.binds.bindAlignShipToReticle) + " to torque your ship in the direction you're looking!",
+                    ref tipAimNeedsHelpCertainty
+                );
+            }
+
+            tipAimNeedsHelpCertainty = Mathf.Max(0f, tipAimNeedsHelpCertainty - (TIP_CERTAINTY_DECAY * Time.deltaTime));
+        }
     }
 
     public void SetTip(string text)
@@ -256,11 +262,6 @@ public class UI : MonoBehaviour
 
             certainty = 0f;
         }
-    }
-
-    public void UpdateTipBinds()
-    {
-        tipAimText = "Hold " + GetBindAsPrettyString(control.binds.bindAlignShipToReticle) + " to torque your starship in the direction you're looking!";
     }
 
     public string GetBindAsPrettyString(short bind)
@@ -910,10 +911,37 @@ public class UI : MonoBehaviour
     public void UpdatePlayerVitalsDisplay()
     {
         Player playerScript = control.GetPlayerScript();
-
-        playerScript.vitalsHealthUI.GetComponent<Image>().fillAmount = (float)(playerScript.vitalsHealth / playerScript.vitalsHealthMax);
+        
+        float healthUnitInterval = (float)(playerScript.vitalsHealth / playerScript.vitalsHealthMax);
+        playerScript.vitalsHealthUI.GetComponent<Image>().fillAmount = healthUnitInterval;
+        if (healthUnitInterval > 0.5f)
+        {
+            playerScript.vitalsHealthUI.GetComponent<Image>().color = COLOR_UI_TRANSLUCENT_WHITE;
+        }
+        else if (healthUnitInterval > 0.25f)
+        {
+            playerScript.vitalsHealthUI.GetComponent<Image>().color = COLOR_UI_TRANSLUCENT_AMBER;
+        }
+        else
+        {
+            playerScript.vitalsHealthUI.GetComponent<Image>().color = COLOR_UI_TRANSLUCENT_RED;
+        }
         playerScript.vitalsHealthUIText.text = playerScript.vitalsHealth.ToString("F2");
-        playerScript.vitalsFuelUI.GetComponent<Image>().fillAmount = (float)(playerScript.vitalsFuel / playerScript.vitalsFuelMax);
+        
+        float fuelUnitInterval = (float)(playerScript.vitalsFuel / playerScript.vitalsFuelMax);
+        playerScript.vitalsFuelUI.GetComponent<Image>().fillAmount = fuelUnitInterval;
+        if (fuelUnitInterval > 0.5f)
+        {
+            playerScript.vitalsFuelUI.GetComponent<Image>().color = COLOR_UI_TRANSLUCENT_WHITE;
+        }
+        else if (fuelUnitInterval > 0.25f)
+        {
+            playerScript.vitalsFuelUI.GetComponent<Image>().color = COLOR_UI_TRANSLUCENT_AMBER;
+        }
+        else
+        {
+            playerScript.vitalsFuelUI.GetComponent<Image>().color = COLOR_UI_TRANSLUCENT_RED;
+        }
         playerScript.vitalsFuelUIText.text = playerScript.vitalsFuel.ToString("F2");
 
         UpdatePlayerConsole();
@@ -921,7 +949,7 @@ public class UI : MonoBehaviour
 
     public void UpdatePlayerOreWaterText()
     {
-        resourcesTextWater.text = control.GetPlayerScript().ore[control.GetPlayerScript().ORE_WATER].ToString("F2") + " kg";
+        resourcesTextWater.text = control.GetPlayerScript().ore[Asteroid.TYPE_WATER].ToString("F2") + " kg";
     }
 
     public void UpdateAllPlayerResourcesUI()
@@ -929,10 +957,10 @@ public class UI : MonoBehaviour
         Player playerScript = control.GetPlayerScript();
 
         //Update values and start animations on a resource if its value changed
-        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F0") + " ICC",                              playerScript.soundSourceCoins);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[playerScript.ORE_PLATINOID].ToString("F0") + " kg",        playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[playerScript.ORE_PRECIOUS_METAL].ToString("F0") + " kg",   playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[playerScript.ORE_WATER].ToString("F0") + " kg",            playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F0") + " ICC",                           playerScript.soundSourceCoins);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[Asteroid.TYPE_PLATINOID].ToString("F0") + " kg",        playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL].ToString("F0") + " kg",   playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[Asteroid.TYPE_WATER].ToString("F0") + " kg",            playerScript.soundSourceOreCollected);
 
         //Update console
         UpdatePlayerConsole();
@@ -958,6 +986,42 @@ public class UI : MonoBehaviour
                 (image.sprite.rect.width / 2) * growAmount,
                 (image.sprite.rect.height / 2) * growAmount
             );
+        }
+
+        //Update colour relative to limit
+        //Currency
+        if (textMeshCurrent == resourcesTextCurrency)
+        {
+            float resourceValueUnitInterval = (float)control.GetPlayerScript().currency / Mathf.Max(control.commerce.PRICE_REFUEL, control.commerce.PRICE_REPAIR);
+            if (resourceValueUnitInterval >= 3f)
+            {
+                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_WHITE;
+            }
+            else if (resourceValueUnitInterval >= 1f)
+            {
+                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_AMBER;
+            }
+            else
+            {
+                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_RED;
+            }
+        }
+        //Ore
+        if (textMeshCurrent == resourcesTextPlatinoid || textMeshCurrent == resourcesTextPreciousMetal || textMeshCurrent == resourcesTextWater)
+        {
+            float resourceValueUnitInterval = (float)(control.GetPlayerScript().GetTotalOre() / control.GetPlayerScript().oreMax);
+            if (resourceValueUnitInterval < 0.5f)
+            {
+                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_WHITE;
+            }
+            else if (resourceValueUnitInterval < 0.75f)
+            {
+                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_AMBER;
+            }
+            else
+            {
+                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_RED;
+            }
         }
     }
 

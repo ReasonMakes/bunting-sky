@@ -103,7 +103,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                     }
 
                     //Reset tooltip certainty
-                    control.ui.tipAimNeedsHelpCertainty = 0f;
+                    //control.ui.tipAimNeedsHelpCertainty = 0f;
                 }
             }
             else if (hit.transform.name == control.generation.enemy.name + "(Clone)")
@@ -117,7 +117,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
                 }
 
                 //Reset tooltip certainty
-                control.ui.tipAimNeedsHelpCertainty = 0f;
+                //control.ui.tipAimNeedsHelpCertainty = 0f;
                 
             }
 

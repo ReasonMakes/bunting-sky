@@ -5796,6 +5796,7 @@ MonoBehaviour:
   songLifeSupportFailure: {fileID: 8300000, guid: 2205e9fc66f677d448653ccd63dd46dc, type: 3}
   songHoghmanTransfer: {fileID: 8300000, guid: 64344961918733b4a87ce24930b7f908, type: 3}
   songWeWereHere: {fileID: 8300000, guid: 31255de277e1f704b8862485d8639584, type: 3}
+  songCombat: {fileID: 8300000, guid: 93f854d38d1db124f81a75d7d4c6a966, type: 3}
   soundSourceRocket: {fileID: 8005251437821510104}
   soundClipRocket: {fileID: 8300000, guid: db9d7ea5aca06984abbf5579e3ee1aa9, type: 3}
   soundSourceLaser0: {fileID: 1144995686266427876}

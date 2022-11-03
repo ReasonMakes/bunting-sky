@@ -24,10 +24,10 @@ public class Menu : MonoBehaviour
     public Toggle menuSettingsToggleDisplayHUD;
     public Toggle menuSettingsToggleDisplayFPS;
     public Toggle menuSettingsToggleSpotlight;
-    public Toggle menuSettingsToggleOutline;
     public Toggle menuSettingsToggleRefine;
     public Toggle menuSettingsToggleMusic;
     public Toggle menuSettingsToggleTips;
+    public Toggle menuSettingsToggleTutorial;
     public Toggle menuSettingsToggleFullscreen;
     public Toggle menuSettingsToggleMatchVelocity;
     public Toggle menuSettingsToggleSpinStabilizers;
@@ -220,10 +220,10 @@ public class Menu : MonoBehaviour
         if (menuSettingsToggleMatchVelocity.isOn    != control.settings.matchVelocity)      { menuSettingsToggleMatchVelocity.isOn      = control.settings.matchVelocity;   MenuSettingsMatchVelocityToggle();      }
         if (menuSettingsToggleSpinStabilizers.isOn  != control.settings.spinStabilizers)    { menuSettingsToggleSpinStabilizers.isOn    = control.settings.spinStabilizers; MenuSettingsSpinStabilizersToggle();    }
         if (menuSettingsToggleSpotlight.isOn        != control.settings.spotlight)          { menuSettingsToggleSpotlight.isOn          = control.settings.spotlight;       MenuSettingsSpotlightToggle();          }
-        if (menuSettingsToggleOutline.isOn          != control.settings.outline)            { menuSettingsToggleOutline.isOn            = control.settings.outline;         MenuSettingsOutlineToggle();            }
         if (menuSettingsToggleRefine.isOn           != control.settings.refine)             { menuSettingsToggleRefine.isOn             = control.settings.refine;          MenuSettingsRefineToggle();             }
         if (menuSettingsToggleMusic.isOn            != control.settings.music)              { menuSettingsToggleMusic.isOn              = control.settings.music;           MenuSettingsMusicToggle();              }
         if (menuSettingsToggleTips.isOn             != control.settings.tips)               { menuSettingsToggleTips.isOn               = control.settings.tips;            MenuSettingsTipsToggle();               }
+        if (menuSettingsToggleTutorial.isOn         != control.settings.tutorial)           { menuSettingsToggleTutorial.isOn           = control.settings.tutorial;        MenuSettingsTutorialToggle();           }
     }
 
     public void MenuSettingsMouseSensitivitySet()
@@ -397,44 +397,44 @@ public class Menu : MonoBehaviour
         control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
     }
 
-    public void MenuSettingsOutlineToggle()
-    {
-        //Can only turn on when cooldown allows it, but can turn off at any time
-        if (control.GetPlayerScript().outlineCanUse || control.GetPlayerScript().isOutlinesVisible)
-        {
-            //Update cooldowns
-            if (control.GetPlayerScript().outlineCanUse && !control.GetPlayerScript().isOutlinesVisible)
-            {
-                control.GetPlayerScript().outlineCanUse = false;
-
-                //Time at which the outlines themselves become disabled
-                control.GetPlayerScript().outlineDisableTime = Time.time + control.GetPlayerScript().OUTLINE_PERIOD_ENABLED;
-
-                //Time at which the player can use outlines again
-                control.GetPlayerScript().outlineCanUseAgainTime = Time.time
-                    + control.GetPlayerScript().OUTLINE_PERIOD_ENABLED       //period enabled for
-                    + control.GetPlayerScript().OUTLINE_PERIOD_FADING        //period animating from enabled to disabled for
-                    + control.GetPlayerScript().OUTLINE_PERIOD_COOLDOWN;     //period disabled for
-            }
-            
-            //Rectify toggle button being out-of-phase with actual setting boolean
-            //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
-            if (menuSettingsToggleOutline.isOn == control.settings.outline)
-            {
-                //Rectifying this also calls the method again, causing the outline to still be updated from just one button toggle
-                menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
-            }
-            else
-            {
-                //Toggle outline setting
-                control.settings.outline = !control.settings.outline;
-                control.settings.Save();
-            }
-
-            //Update outlines
-            control.GetPlayerScript().ToggleOutline();
-        }
-    }
+    //public void MenuSettingsOutlineToggle()
+    //{
+    //    //Can only turn on when cooldown allows it, but can turn off at any time
+    //    if (control.GetPlayerScript().outlineCanUse || control.GetPlayerScript().isOutlinesVisible)
+    //    {
+    //        //Update cooldowns
+    //        if (control.GetPlayerScript().outlineCanUse && !control.GetPlayerScript().isOutlinesVisible)
+    //        {
+    //            control.GetPlayerScript().outlineCanUse = false;
+    //
+    //            //Time at which the outlines themselves become disabled
+    //            control.GetPlayerScript().outlineDisableTime = Time.time + control.GetPlayerScript().OUTLINE_PERIOD_ENABLED;
+    //
+    //            //Time at which the player can use outlines again
+    //            control.GetPlayerScript().outlineCanUseAgainTime = Time.time
+    //                + control.GetPlayerScript().OUTLINE_PERIOD_ENABLED       //period enabled for
+    //                + control.GetPlayerScript().OUTLINE_PERIOD_FADING        //period animating from enabled to disabled for
+    //                + control.GetPlayerScript().OUTLINE_PERIOD_COOLDOWN;     //period disabled for
+    //        }
+    //        
+    //        //Rectify toggle button being out-of-phase with actual setting boolean
+    //        //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
+    //        if (menuSettingsToggleOutline.isOn == control.settings.outline)
+    //        {
+    //            //Rectifying this also calls the method again, causing the outline to still be updated from just one button toggle
+    //            menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
+    //        }
+    //        else
+    //        {
+    //            //Toggle outline setting
+    //            control.settings.outline = !control.settings.outline;
+    //            control.settings.Save();
+    //        }
+    //
+    //        //Update outlines
+    //        control.GetPlayerScript().ToggleOutline();
+    //    }
+    //}
 
     public void MenuSettingsRefineToggle()
     {
@@ -486,6 +486,13 @@ public class Menu : MonoBehaviour
         control.settings.Save();
 
         control.ui.tipText.gameObject.SetActive(control.settings.tips);
+    }
+
+    public void MenuSettingsTutorialToggle()
+    {
+        //Toggle music setting and save
+        control.settings.tutorial = !control.settings.tutorial;
+        control.settings.Save();
     }
 
     public void MenuSettingsAsteroidsMinSet()
@@ -667,16 +674,16 @@ public class Menu : MonoBehaviour
                 control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
             }
 
-            //Outline toggle
-            if (control.binds.GetInputDown(control.binds.bindToggleOutline))
-            {
-                //Update the settings menu and toggle the actual outline
-                //(Changing isOn also calls the method attached to that toggle button.)
-                menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
-
-                //Update outline in code
-                //control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
-            }
+            ////Outline toggle
+            //if (control.binds.GetInputDown(control.binds.bindToggleOutline))
+            //{
+            //    //Update the settings menu and toggle the actual outline
+            //    //(Changing isOn also calls the method attached to that toggle button.)
+            //    menuSettingsToggleOutline.isOn = !menuSettingsToggleOutline.isOn;
+            //
+            //    //Update outline in code
+            //    //control.generation.instancePlayer.GetComponentInChildren<Player>().ToggleOutline();
+            //}
 
             //Refine toggle
             if (control.binds.GetInputDown(control.binds.bindToggleRefine))

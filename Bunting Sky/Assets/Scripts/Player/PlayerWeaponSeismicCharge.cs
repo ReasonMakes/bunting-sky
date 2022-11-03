@@ -160,5 +160,8 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
         //if (player.soundSourceSeismicChargeArrayIndex > player.soundSourceSeismicChargeArrayLength - 1) player.soundSourceSeismicChargeArrayIndex = 0;
         //value = (value + 1) % limitInclusive
         player.soundSourceSeismicChargeArrayIndex = (player.soundSourceSeismicChargeArrayIndex + 1) % player.soundSourceSeismicChargeArrayLength;
+
+        //Camera shake
+        player.CameraShakeAdd(player.CAMERA_SHAKE_WEAPON);
     }
 }

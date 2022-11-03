@@ -181,9 +181,6 @@ public class KeyBinds : MonoBehaviour
         bindSaveScreenshot = ioBuffer.bindSaveScreenshot;
 
         bindToggleMenu = ioBuffer.bindToggleMenu;
-
-        //Update game
-        control.ui.UpdateTipBinds();
     }
 
     //This entire object is what we save/load. It must contain duplicates for all binds definitions that its parent class has

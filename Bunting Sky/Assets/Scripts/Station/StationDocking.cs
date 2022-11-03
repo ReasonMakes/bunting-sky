@@ -96,14 +96,14 @@ public class StationDocking : MonoBehaviour
         }
     }
 
-    private void OnTriggerExit(Collider other)
-    {
-        if (initialized && other.gameObject.name == "Player Collider")
-        {
-            //Update tutorial bool
-            control.GetPlayerScript().tutorialHasExitedStationDock = true;
-        }
-    }
+    //private void OnTriggerExit(Collider other)
+    //{
+    //    if (initialized && other.gameObject.name == "Player Collider")
+    //    {
+    //        //Update tutorial bool
+    //        control.GetPlayerScript().tutorialHasExitedStationDock = true;
+    //    }
+    //}
 
     /*
     private void OnTriggerEXit(Collider other)

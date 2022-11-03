@@ -1129,6 +1129,46 @@ public class Generation : MonoBehaviour
         return instanceOre;
     }
 
+    public void OrePoolSpawnWithTraits(Vector3 position, Rigidbody rbInherit, byte type)
+    {
+        //Clay silicate asteroids drop a mixture
+        byte typeToSpawn = type;
+        if (type == Asteroid.TYPE_CLAY_SILICATE)
+        {
+            if (Random.value <= 0.75f)
+            {
+                typeToSpawn = Asteroid.TYPE_PLATINOID;
+            }
+            else
+            {
+                typeToSpawn = Asteroid.TYPE_WATER;
+            }
+        }
+
+        //Pool spawning
+        GameObject instanceOre = control.generation.OrePoolSpawn(
+            position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
+            typeToSpawn,
+            rbInherit.velocity
+        );
+
+        //Pass rigidbody values
+        Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();
+        instanceOreRb.velocity = rbInherit.velocity;
+        instanceOreRb.angularVelocity = rbInherit.angularVelocity;
+        instanceOreRb.inertiaTensor = rbInherit.inertiaTensor;
+        instanceOreRb.inertiaTensorRotation = rbInherit.inertiaTensorRotation;
+
+        //Add random forces
+        float ejectionForce = 2e3f;
+        instanceOreRb.AddForce(ejectionForce * new Vector3(
+            0.5f + (0.5f * Random.value),
+            0.5f + (0.5f * Random.value),
+            0.5f + (0.5f * Random.value)
+        ));
+        instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
+    }
+
     private void EnemySpawnCluster(int clusterType, Vector3 position, string list)
     {
         //clusterType - an enum of several spawn patterns

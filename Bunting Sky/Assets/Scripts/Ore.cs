@@ -14,7 +14,7 @@ public class Ore : MonoBehaviour
     public byte type; //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
 
     //Auto-death & pooling
-    private float deathTime; //when to automatically absorb into the player and set as inactive, so that we don't have ore floating around forever
+    //private float deathTime; //when to automatically absorb into the player and set as inactive, so that we don't have ore floating around forever
     private readonly float DEATH_DELAY = 20f;
     private readonly float DEATH_DELAY_ANIMATION_PORTION = 0.2f;
     public bool active = false;
@@ -23,10 +23,12 @@ public class Ore : MonoBehaviour
     public Rigidbody rb;
     public Vector3 parentVelocity = Vector3.zero;
     private readonly float DRAG = 3f;
-    private readonly float ATTRACT_STRENGTH = 150000f;
+    private readonly float ATTRACT_STRENGTH = 20e4f; //150000f;
     private readonly float ABSORB_DIST = 0.15f;
     private float nextSlowUpdateCall = 0f;
     private readonly float SLOW_UPDATE_PERIOD = 2f; //how often to call a slow update, in seconds
+    private float attractionTime;
+    private readonly float ATTRACTION_DELAY_PERIOD = 1f;
 
     public void Enable(byte type, Vector3 parentVelocity)
     {
@@ -57,8 +59,9 @@ public class Ore : MonoBehaviour
         }
 
         //Setup timers
-        deathTime = Time.time + DEATH_DELAY + Random.Range(0f, 2f);
+        //deathTime = Time.time + DEATH_DELAY + Random.Range(0f, 2f);
         nextSlowUpdateCall = Time.time + 0.25f + Random.Range(0f, SLOW_UPDATE_PERIOD);
+        attractionTime = Time.time + ATTRACTION_DELAY_PERIOD;
     }
 
     public void Disable()
@@ -86,22 +89,34 @@ public class Ore : MonoBehaviour
             float distanceBetweenOreAndPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position);
 
             //Forces (gravitate toward player, repel away from other ore, drag relative)
-            AttractToPlayer(distanceBetweenOreAndPlayer);
             DragOreRelative();
-            if (Time.time >= nextSlowUpdateCall)
+            if (control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d) //if there is room for one more
             {
-                RepelFromOtherOre();
-                nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;
+                if (Time.time >= attractionTime)
+                {
+                    AttractToPlayer(distanceBetweenOreAndPlayer);
+                }
+                if (Time.time >= nextSlowUpdateCall)
+                {
+                    RepelFromOtherOre();
+                    nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;
+                }
             }
-
+            
             //Scale down as the ore gets closer to the player (to look like it's being absorbed) or as ore gets closer to deathTime
             Scale(distanceBetweenOreAndPlayer);
 
             //When close enough to player, absorb into and increment ore counter
-            if (distanceBetweenOreAndPlayer <= ABSORB_DIST) AbsorbIntoPlayer();
+            if (
+                distanceBetweenOreAndPlayer <= ABSORB_DIST
+                && control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d //if there is room for one more
+            )
+            {
+                AbsorbIntoPlayer();
+            }
 
             //If can't find way to player, absorb automagically
-            if (Time.time >= deathTime) AbsorbIntoPlayer();
+            //if (Time.time >= deathTime) AbsorbIntoPlayer();
         }
     }
 
@@ -112,10 +127,11 @@ public class Ore : MonoBehaviour
         //Calculate scale for each type
         //Scale relative to limited player distance
         float scaleByPlayerDist = Mathf.Min(0.05f, 0.0025f + (0.025f * Mathf.Max(0f, distanceToPlayer - ABSORB_DIST)));
-        float scaleByDeathTime = Mathf.Min(1f, ((deathTime - Time.time) / DEATH_DELAY) * DEATH_DELAY_ANIMATION_PORTION);
+        //float scaleByDeathTime = Mathf.Min(1f, ((deathTime - Time.time) / DEATH_DELAY) * DEATH_DELAY_ANIMATION_PORTION);
         
         //Choose the scale type
-        float scale = Mathf.Max(minimumScale, Mathf.Min(scaleByPlayerDist, scaleByDeathTime));
+        //float scale = Mathf.Max(minimumScale, Mathf.Min(scaleByPlayerDist, scaleByDeathTime));
+        float scale = Mathf.Max(minimumScale, scaleByPlayerDist);
 
         //Scale
         transform.localScale = new Vector3(
@@ -188,18 +204,22 @@ public class Ore : MonoBehaviour
 
     private void AbsorbIntoPlayer()
     {
-        //Only add to player inventory if player isn't in the middle of nowhere
-        if (Vector3.Distance(transform.position, control.GetPlayerTransform().position) < 600f)
-        {
-            //Add ore type to player inventory
-            control.GetPlayerScript().ore[type]++;
+        //Tutorial has collected ore
+        control.GetPlayerScript().tutorialHasCollectedOre = true;
 
-            //Update resources display
-            control.ui.UpdateAllPlayerResourcesUI();
+        //Increment ore cargo
+        control.GetPlayerScript().ore[type] += 1.0d;
+
+        //Show tip if cargo full
+        if (control.GetPlayerScript().GetTotalOre() > control.GetPlayerScript().oreMax - 1.0d) //no room for any more ore
+        {
+            control.ui.SetTip("Cargo bay full");
         }
+
+        //Update resources display
+        control.ui.UpdateAllPlayerResourcesUI();
 
         //Destroy if it hasn't been already
         Disable();
-        //if (gameObject != null) Destroy(gameObject, 0f);
     }
 }

@@ -55,6 +55,9 @@ public class Asteroid : MonoBehaviour
     public AudioSource soundHit;
     public AudioSource soundExplosion;
 
+    [System.NonSerialized] public float timeDraggableRelative;
+    private readonly float TIME_DRAGGABLE_RELATIVE_DELAY_PERIOD = 2f; //how long until the player ship will automatically begins dragging relative
+
     private void Update()
     {
         if (!performantMode)
@@ -210,7 +213,7 @@ public class Asteroid : MonoBehaviour
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
             rb.mass = 10.0f;
-            health = (byte)Random.Range(4, 8);
+            health = (byte)Random.Range(8, 12);
         }
         else
         {
@@ -311,7 +314,7 @@ public class Asteroid : MonoBehaviour
             //Update player tutorial bool
             if (!control.GetPlayerScript().tutorialHasMinedAsteroid && type == TYPE_CLAY_SILICATE)
             {
-                control.ui.SetTip("Clay-silicate asteroids are worthless - look for differently coloured asteroids", 2f);
+                control.ui.SetTip("Clay-silicate asteroids contain little ore - look for differently coloured asteroids", 2f);
             }
             else
             {
@@ -328,7 +331,7 @@ public class Asteroid : MonoBehaviour
                 {
                     for (int i = 0; i < Random.Range(5, 9 + 1); i++)
                     {
-                        SpawnOre();
+                        control.generation.OrePoolSpawnWithTraits(transform.position, rb, type);
                     }
                 }
 
@@ -342,7 +345,7 @@ public class Asteroid : MonoBehaviour
                 {
                     for (int i = 0; i < Random.Range(3, 6 + 1); i++)
                     {
-                        SpawnOre();
+                        control.generation.OrePoolSpawnWithTraits(transform.position, rb, type);
                     }
                 }
 
@@ -353,8 +356,8 @@ public class Asteroid : MonoBehaviour
                 if (oreDrop && type != TYPE_CLAY_SILICATE)
                 {
                     for (int i = 0; i < Random.Range(1, 2 + 1); i++)
-                    { 
-                        SpawnOre();
+                    {
+                        control.generation.OrePoolSpawnWithTraits(transform.position, rb, type);
                     }
                 }
             }
@@ -366,7 +369,7 @@ public class Asteroid : MonoBehaviour
                 {
                     for (int i = 0; i < Random.Range(1, 2 + 1); i++)
                     {
-                        SpawnOre();
+                        control.generation.OrePoolSpawnWithTraits(transform.position, rb, type);
                     }
                 }
             }
@@ -411,35 +414,24 @@ public class Asteroid : MonoBehaviour
             //Activate
             gameObject.SetActive(true);
 
-            //Debug
-            control.generation.callsAsteroidSetPoolStatusTrue++;
-
             //Outline
             if (control.generation.playerSpawned)
             {
                 control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, modelObject.GetComponentInChildren<MeshRenderer>().material);
             }
 
+            //Flags
             isSeparating = true;
             isDestroyed = false;
+            timeDraggableRelative = Time.time + TIME_DRAGGABLE_RELATIVE_DELAY_PERIOD;
 
             //Hierarchy
-            if (transform.parent == control.generation.asteroidsEnabled.transform)
-            {
-                Debug.Log("Asteroid we are enabling is already in the enabled tree!");
-            }
             transform.parent = control.generation.asteroidsEnabled.transform;
-            if (transform.parent == control.generation.asteroidsEnabled.transform)
-            {
-                control.generation.countAsteroidsPutInEnabledTree++;
-            }
             control.generation.UpdateAsteroidPoolHierarchyCount();
         }
         else
         {
-            //Debug
-            control.generation.callsAsteroidSetPoolStatusFalse++;
-
+            //Flags
             destroyingTime = 0f;
             isDestroyed = true;
 
@@ -447,6 +439,7 @@ public class Asteroid : MonoBehaviour
             transform.parent = control.generation.asteroidsDisabled.transform;
             control.generation.UpdateAsteroidPoolHierarchyCount();
 
+            //Physics
             rb.detectCollisions = false;
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
@@ -572,52 +565,47 @@ public class Asteroid : MonoBehaviour
         rb.inertiaTensorRotation = inertiaTensorRotation;
 
         //Add random force
-        rb.AddForce(25f * new Vector3(
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value)
-        ));
+        float roll = Random.value;
+        float rollFast = 0.1f;
+        float rollMedium = 0.2f;
+        if (roll <= rollFast)
+        {
+            //Chance for very fast asteroid
+            float magnitude = Random.Range(2e3f, 3e3f);
+            Vector3 direction = new Vector3(
+                0.5f + (0.5f * Random.value),
+                0.5f + (0.5f * Random.value),
+                0.5f + (0.5f * Random.value)
+            ).normalized;
+            rb.AddForce(direction * magnitude);
+
+            //Debug.Log("Rogue!");
+        }
+        else if (roll <= rollMedium)
+        {
+            //Chance for very fast asteroid
+            float magnitude = Random.Range(200f, 300f);
+            Vector3 direction = new Vector3(
+                0.5f + (0.5f * Random.value),
+                0.5f + (0.5f * Random.value),
+                0.5f + (0.5f * Random.value)
+            ).normalized;
+            rb.AddForce(direction * magnitude);
+        }
+        else
+        {
+            //Regular force
+            rb.AddForce(25f * new Vector3(
+                0.5f + (0.5f * Random.value),
+                0.5f + (0.5f * Random.value),
+                0.5f + (0.5f * Random.value)
+            ));
+        }
+        
         rb.AddTorque(100f * new Vector3(
             Random.value,
             Random.value,
             Random.value
         ));
-    }
-
-    private void SpawnOre()
-    {
-        //Clay silicate asteroids drop a mixture
-        byte typeToSpawn = type;
-        if (type == TYPE_CLAY_SILICATE)
-        {
-            if (Random.value <= 0.75f)
-            {
-                typeToSpawn = TYPE_PLATINOID;
-            }
-            else
-            {
-                typeToSpawn = TYPE_WATER;
-            }
-        }
-
-        //Pool spawning
-        GameObject instanceOre = control.generation.OrePoolSpawn(
-            transform.position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
-            typeToSpawn,
-            rb.velocity
-        );
-
-        //Pass rigidbody values
-        Rigidbody instanceOreRb = instanceOre.GetComponent<Rigidbody>();
-        instanceOreRb.velocity = rb.velocity;
-        instanceOreRb.angularVelocity = rb.angularVelocity;
-        instanceOreRb.inertiaTensor = rb.inertiaTensor;
-        instanceOreRb.inertiaTensorRotation = rb.inertiaTensorRotation;
-        instanceOreRb.AddForce(1000f * new Vector3(
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value)
-        ));
-        instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
     }
 }
