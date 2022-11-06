@@ -368,7 +368,8 @@ public class Control : MonoBehaviour
     #endregion
 
     public Vector3 GetPredictedTrajectoryWithProjectileLeading(
-        Vector3 shooterPosition, Vector3 shooterVelocity, float shooterProjectileSpeed, float shooterProjectileManualLeadMultiplier,
+        Vector3 shooterPosition, Vector3 shooterVelocity, float shooterProjectileSpeed,
+        float manualLeadMultiplier,
         Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetLastForceAdded, float targetMass
     )
     {
@@ -382,8 +383,8 @@ public class Control : MonoBehaviour
         //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
         float timeToTarget = Vector3.Magnitude(targetPosition - shooterPosition) / shooterProjectileSpeed;
 
-        //Lead speed
-        predictedTrajectory += (deltaV * (timeToTarget * shooterProjectileManualLeadMultiplier));
+        //Lead speed + manual modification
+        predictedTrajectory += (deltaV * (timeToTarget * manualLeadMultiplier));
 
         //Lead acceleration
         //F = ma -> a = F/m

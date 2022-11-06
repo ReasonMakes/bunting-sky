@@ -10,7 +10,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
     private readonly float DISTANCE_THRESHOLD_MIN_TO_GLOW = 4f; //2f; //1.0f;
-    private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
+    private readonly float COLLISION_ASTEROID_FORCE = 2e3f; //500f;
 
     [System.NonSerialized] public bool canDamage = true;
 

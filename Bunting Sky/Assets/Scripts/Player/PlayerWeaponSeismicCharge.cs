@@ -100,18 +100,16 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
             player.rb.velocity + (PROJECTILE_SPEED * transform.forward)
         );
 
-        /*
-        POOL[poolIndex].transform.position = transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f);
-        POOL[poolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
-        POOL[poolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
-        POOL[poolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+        //POOL[poolIndex].transform.position = transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f);
+        //POOL[poolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
+        //POOL[poolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
+        //POOL[poolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         POOL[poolIndex].GetComponent<Rigidbody>().velocity = player.rb.velocity + (PROJECTILE_SPEED * transform.forward);
-        POOL[poolIndex].GetComponent<Rigidbody>().AddTorque(1000 * new Vector3(Random.value, Random.value, Random.value));
-        POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().timeAtWhichThisSelfDestructs = PROJECTILE_LIFETIME_DURATION;
-        POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().timeSpentAlive = 0f;
-        POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().startVelocity = control.generation.instancePlayer.GetComponentInChildren<Rigidbody>().velocity;
-        POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().exploded = false;
-        */
+        //POOL[poolIndex].GetComponent<Rigidbody>().AddTorque(1000 * new Vector3(Random.value, Random.value, Random.value));
+        //POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().timeAtWhichThisSelfDestructs = PROJECTILE_LIFETIME_DURATION;
+        //POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().timeSpentAlive = 0f;
+        //POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().startVelocity = control.generation.instancePlayer.GetComponentInChildren<Rigidbody>().velocity;
+        //POOL[poolIndex].GetComponent<PlayerWeaponProjectileSeismicCharge>().exploded = false;
 
         //Iterate through list
         if (poolIndex < POOL_LENGTH - 1)

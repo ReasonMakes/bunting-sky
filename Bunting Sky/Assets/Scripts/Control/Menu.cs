@@ -447,18 +447,29 @@ public class Menu : MonoBehaviour
 
         if (!menuOpenAndGamePaused)
         {
-            if (control.settings.refine)
-            {
-                control.ui.SetTip("In-situ fuel refinery active");
-
-            }
-            else
-            {
-                control.ui.SetTip("In-situ fuel refinery inactive");
-            }
+            SetTipRefineState();
         }
 
         control.settings.Save();
+    }
+
+    public void SetTipRefineState()
+    {
+        if (control.settings.refine)
+        {
+            if (control.GetPlayerScript().ore[Asteroid.TYPE_WATER] >= control.GetPlayerScript().REFINERY_FUEL_OUT_RATE)
+            {
+                control.ui.SetTip("In-situ fuel refinery activated");
+            }
+            else
+            {
+                control.ui.SetTip("In-situ fuel refinery activated\nNot enough water ice in cargo bay to output fuel");
+            }
+        }
+        else
+        {
+            control.ui.SetTip("In-situ fuel refinery deactivated");
+        }
     }
 
     public void MenuSettingsTargetFPSSet()

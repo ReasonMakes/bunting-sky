@@ -60,7 +60,7 @@ public class PlayerWeaponLaser : MonoBehaviour
         //Single
         if (singleCooldownCurrent > 0f)
         {
-            singleCooldownCurrent -= Time.deltaTime;
+            singleCooldownCurrent -= Time.deltaTime * Mathf.Max(1f, 2f * control.GetPlayerScript().upgradeLevels[control.commerce.UPGRADE_FIRERATE]);
         }
 
         //Clip

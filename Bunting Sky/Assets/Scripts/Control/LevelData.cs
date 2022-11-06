@@ -18,11 +18,13 @@ public static class LevelData
         [SerializeField] public byte[] planetarySystemMoonQuantity;
         [SerializeField] public float[,] planetPosition;
         [SerializeField] public string[] planetName;
+        [SerializeField] public Color[] planetColor;
 
         //Moons
         [SerializeField] public byte moonQuantity;
         [SerializeField] public byte moonIndex;
         [SerializeField] public float[,] moonPosition;
+        [SerializeField] public Color[] moonTint;
         [SerializeField] public string[] moonName;
         [SerializeField] public bool[] moonHasStation;
 

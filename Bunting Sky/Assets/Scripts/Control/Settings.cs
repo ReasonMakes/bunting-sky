@@ -82,7 +82,7 @@ public class Settings : MonoBehaviour
         ioBuffer.targetFPS = 300;
         ioBuffer.spotlightOn = true;
         ioBuffer.outlineOn = true;
-        ioBuffer.refine = true;
+        ioBuffer.refine = false;
         ioBuffer.volumeAll = 0.75f;
         ioBuffer.volumeMusic = 0.75f;
         ioBuffer.music = true;

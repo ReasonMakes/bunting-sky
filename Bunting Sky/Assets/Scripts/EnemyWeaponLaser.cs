@@ -5,11 +5,13 @@ using UnityEngine;
 public class EnemyWeaponLaser : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    
+
+    public Rigidbody parentEnemyRb;
+
     //This
     public GameObject enemyWeaponProjectileLaserPrefab;
     private readonly List<GameObject> POOL = new List<GameObject>();
-    private readonly short POOL_LENGTH = 16;
+    private readonly short POOL_LENGTH = 96;
     private short poolIndex = 0;
 
     [System.NonSerialized] public static readonly float PROJECTILE_SPEED = 50f; //80f; //120f;
@@ -47,7 +49,11 @@ public class EnemyWeaponLaser : MonoBehaviour
         POOL[poolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         POOL[poolIndex].transform.rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
         POOL[poolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-        POOL[poolIndex].GetComponent<Rigidbody>().velocity = PROJECTILE_SPEED * transform.forward;
+
+        //Carry on velocity parent had
+        POOL[poolIndex].GetComponent<Rigidbody>().velocity = parentEnemyRb.velocity + (PROJECTILE_SPEED * transform.forward);
+        //POOL[poolIndex].GetComponent<Rigidbody>().velocity = PROJECTILE_SPEED * transform.forward;
+
         POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().timeAtWhichThisSelfDestructs = projectileLifetimeDuration;
         POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().timeSpentAlive = 0f;
         POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().canDamage = true;

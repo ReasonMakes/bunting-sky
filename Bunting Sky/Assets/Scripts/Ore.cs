@@ -15,8 +15,9 @@ public class Ore : MonoBehaviour
 
     //Auto-death & pooling
     //private float deathTime; //when to automatically absorb into the player and set as inactive, so that we don't have ore floating around forever
-    private readonly float DEATH_DELAY = 20f;
-    private readonly float DEATH_DELAY_ANIMATION_PORTION = 0.2f;
+    private float stopRepellingTime; //when to stop repelling from other ore
+    private readonly float STOP_REPELLING_DELAY = 10f; //time in seconds after spawning from pool before this ore instance stops repelling from other ore instances
+    //private readonly float DEATH_DELAY_ANIMATION_PORTION = 0.2f;
     public bool active = false;
 
     //Forces
@@ -27,7 +28,7 @@ public class Ore : MonoBehaviour
     private readonly float ABSORB_DIST = 0.15f;
     private readonly float ATTRACT_DISTANCE_MAX = 50f; //70f; //200f;
     private float nextSlowUpdateCall = 0f;
-    private readonly float SLOW_UPDATE_PERIOD = 2f; //how often to call a slow update, in seconds
+    private readonly float SLOW_UPDATE_PERIOD = 1f; //how often to call a slow update, in seconds
     private float attractionTime;
     private readonly float ATTRACTION_DELAY_PERIOD = 1f;
 
@@ -63,8 +64,8 @@ public class Ore : MonoBehaviour
         }
 
         //Setup timers
-        //deathTime = Time.time + DEATH_DELAY + Random.Range(0f, 2f);
-        nextSlowUpdateCall = Time.time + 0.25f + Random.Range(0f, SLOW_UPDATE_PERIOD);
+        stopRepellingTime = Time.time + STOP_REPELLING_DELAY + Random.Range(0f, 2f);
+        nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD + Random.Range(0f, SLOW_UPDATE_PERIOD); //random offset for the next slow update call
         attractionTime = Time.time + ATTRACTION_DELAY_PERIOD;
     }
 
@@ -108,6 +109,11 @@ public class Ore : MonoBehaviour
                 tractorBeam.transform.localScale = new Vector3(1f, 1f, stretchAmount);
                 //tractorBeam.transform.position = transform.position + (tractorBeam.transform.forward * (distanceBetweenOreAndPlayer/ 2f));
             }
+            else
+            {
+                //Hide tractor beam
+                tractorBeam.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
+            }
 
             if (!Menu.menuOpenAndGamePaused)
             {
@@ -115,19 +121,22 @@ public class Ore : MonoBehaviour
                 DragOreRelative();
                 if (control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d) //if there is room for one more
                 {
-                    if (Time.time >= attractionTime && distanceBetweenOreAndPlayer <= ATTRACT_DISTANCE_MAX)
+                    if (distanceBetweenOreAndPlayer <= ATTRACT_DISTANCE_MAX)
                     {
-                        //Tractor beam active
-                        AttractToPlayerCargoBay(distanceBetweenOreAndPlayer);
-                    }
-                    if (Time.time >= nextSlowUpdateCall)
-                    {
-                        RepelFromOtherOre();
-                        nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;
+                        if (Time.time >= attractionTime)
+                        {
+                            //Tractor beam active
+                            AttractToPlayerCargoBay(distanceBetweenOreAndPlayer);
+                        }
+                        if (Time.time >= nextSlowUpdateCall && Time.time < stopRepellingTime)
+                        {
+                            RepelFromOtherOre();
+                            nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;
+                        }
                     }
                 }
 
-                //Scale down as the ore gets closer to the player (to look like it's being absorbed) or as ore gets closer to deathTime
+                //Scale down as the ore gets closer to the player (to look like it's being absorbed)
                 Scale(distanceBetweenOreAndPlayer);
 
                 //When close enough to player, absorb into and increment ore counter
@@ -173,23 +182,42 @@ public class Ore : MonoBehaviour
 
     private void RepelFromOtherOre()
     {
-        Ore[] oreArray = FindObjectsOfType<Ore>();
-        foreach (Ore ore in oreArray)
+        int ourIndex = transform.GetSiblingIndex();
+        for(int i = 0; i < control.generation.oreEnabled.transform.childCount; i++)
         {
-            if (ore != this)
+            Transform oreTransform = control.generation.oreEnabled.transform.GetChild(i);
+            if (i != ourIndex && Time.time < oreTransform.GetComponent<Ore>().stopRepellingTime)
             {
                 float repelStrength = ATTRACT_STRENGTH * 0.25f; //0.008f;
-                
+
                 float inverseDistanceMax = 0.1f;
                 float inverseDistanceMin = 0.001f;
-                float distanceBetweenOre = Vector3.Distance(transform.position, ore.transform.position);
+                float distanceBetweenOre = Vector3.Distance(transform.position, oreTransform.position);
                 float limitedInverseDistanceBetweenOre = Mathf.Max(inverseDistanceMin, Mathf.Min(inverseDistanceMax, 1f / distanceBetweenOre)) - inverseDistanceMin;
 
-                Vector3 directionFromOre = (transform.position - ore.transform.position).normalized;
+                Vector3 directionFromOre = (transform.position - oreTransform.position).normalized;
 
                 rb.AddForce(directionFromOre * repelStrength * limitedInverseDistanceBetweenOre * Time.deltaTime);
             }
         }
+
+        //Ore[] oreArray = FindObjectsOfType<Ore>();
+        //foreach (Ore ore in oreArray)
+        //{
+        //    if (ore != this)
+        //    {
+        //        float repelStrength = ATTRACT_STRENGTH * 0.25f; //0.008f;
+        //        
+        //        float inverseDistanceMax = 0.1f;
+        //        float inverseDistanceMin = 0.001f;
+        //        float distanceBetweenOre = Vector3.Distance(transform.position, ore.transform.position);
+        //        float limitedInverseDistanceBetweenOre = Mathf.Max(inverseDistanceMin, Mathf.Min(inverseDistanceMax, 1f / distanceBetweenOre)) - inverseDistanceMin;
+        //
+        //        Vector3 directionFromOre = (transform.position - ore.transform.position).normalized;
+        //
+        //        rb.AddForce(directionFromOre * repelStrength * limitedInverseDistanceBetweenOre * Time.deltaTime);
+        //    }
+        //}
     }
 
     private void AttractToPlayerCargoBay(float distanceBetweenOreAndPlayer)

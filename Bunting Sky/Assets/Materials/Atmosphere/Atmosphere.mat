@@ -38,5 +38,5 @@ Material:
     m_Colors:
     - Color_58D26B04: {r: 0.7529412, g: 1.9764706, b: 2.9960785, a: 1}
     - _Color: {r: 0.19215685, g: 0.7647059, b: 1, a: 0}
-    - _Tint: {r: 1, g: 1, b: 1, a: 0}
+    - _Tint: {r: 1, g: 0, b: 0.019607844, a: 0}
   m_BuildTextureStacks: []

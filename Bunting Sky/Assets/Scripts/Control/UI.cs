@@ -854,16 +854,16 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Bandit";
-                int strength = hit.collider.gameObject.GetComponent<Enemy>().strength;
-                if (strength == Enemy.STRENGTH_MINOR)
+                Enemy.Strength strength = hit.collider.gameObject.GetComponent<Enemy>().strength;
+                if (strength == Enemy.Strength.minor)
                 {
                     waypointTextTitle.text = "Minor";
                 }
-                else if (strength == Enemy.STRENGTH_MAJOR)
+                else if (strength == Enemy.Strength.major)
                 {
                     waypointTextTitle.text = "Major";
                 }
-                else if (strength == Enemy.STRENGTH_ELITE)
+                else if (strength == Enemy.Strength.elite)
                 {
                     waypointTextTitle.text = "Elite";
                 }
@@ -1041,7 +1041,7 @@ public class UI : MonoBehaviour
 
     public void UpdatePlayerOreWaterText()
     {
-        resourcesTextWater.text = control.GetPlayerScript().ore[Asteroid.TYPE_WATER].ToString("F2") + " kg";
+        resourcesTextWater.text = control.GetPlayerScript().ore[Asteroid.TYPE_WATER].ToString("F0") + " kg / " + control.GetPlayerScript().oreMax;
     }
 
     public void UpdateAllPlayerResourcesUI()

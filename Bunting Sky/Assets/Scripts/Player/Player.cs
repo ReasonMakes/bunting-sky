@@ -74,7 +74,7 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 13e3f; //10e3f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
+    [System.NonSerialized] public readonly float THRUST = 13e3f; //10e3f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
     private readonly float THRUST_REDUCTION_TO_COMPENSATE_NO_DRAG_MULTIPLIER = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
@@ -177,7 +177,7 @@ public class Player : MonoBehaviour
     public AudioClip soundClipOreCollected;
 
     public AudioSource soundSourceCurrencyChange;
-    [System.NonSerialized] public readonly float SOUND_CURRENCY_CHANGE_VOLUME = 0.067f;
+    [System.NonSerialized] public readonly float SOUND_CURRENCY_CHANGE_VOLUME = 0.04f; //0.067f;
 
     public AudioSource soundSourceCollision;
     public AudioClip soundClipCollision;
@@ -187,6 +187,7 @@ public class Player : MonoBehaviour
     //Vitals
     [System.NonSerialized] public double vitalsHealth = 10.0d; //hull integrity (10), fuel (30L), (deprecated) oxygen (840g)
     [System.NonSerialized] public double vitalsHealthMax = 10.0d;
+    private bool healthInfiniteCheat = false;
     private readonly double VITALS_HEALTH_MAX_STARTER = 10.0d;
     private string lastDamageCause = "[no damage event detected]";
     [System.NonSerialized] public bool isDestroyed = false;
@@ -263,7 +264,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public int[] upgradeLevels;
     private bool upgradesInitialized = false;
     private readonly double REFINERY_ORE_WATER_IN_RATE = 1.0d; //0.1d;
-    private readonly double REFINERY_FUEL_OUT_RATE = 0.75d; //0.075d;
+    [System.NonSerialized] public readonly double REFINERY_FUEL_OUT_RATE = 0.1d; //0.75d; //0.075d;
     private readonly float REFINERY_TIME_BETWEEN_REFINES = 1.0f; //10.0f;
     private float refineryTimeAtLastRefine = 0f;
     private readonly float UPGRADE_ACCELERATION_MULTIPLIER = 2f; //how many times more thrust (and half as much more drag) we get per upgrade level - this DOES speed the player up
@@ -314,6 +315,9 @@ public class Player : MonoBehaviour
     //Skybox stars
     public ParticleSystem skyboxStarsParticleSystem;
     [System.NonSerialized] public readonly int SKYBOX_STARS_COUNT = 400;
+
+    //Debug
+    private Enemy.Strength enemyStengthToSpawn = Enemy.Strength.minor;
     #endregion
 
     #region Start
@@ -573,14 +577,25 @@ public class Player : MonoBehaviour
             //Teleport forward
             if (binds.GetInputDown(binds.bindCheat1))
             {
-                transform.position += transform.forward * 400f;
+                transform.position += transform.forward * 150f;
             }
+
+            ////Unlock double blowback
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_FIRERATE]++;
+            //}
+
+            ////Unlock refinery
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_REFINERY]++;
+            //}
 
             ////Unlock thrust acceleration
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
             //    upgradeLevels[control.commerce.UPGRADE_ACCELERATION]++;
-            //    Debug.Log(upgradeLevels[control.commerce.UPGRADE_ACCELERATION]);
             //}
 
             ////Give currency
@@ -590,11 +605,13 @@ public class Player : MonoBehaviour
             //    control.ui.UpdateAllPlayerResourcesUI();
             //}
 
-            ////Spawn bandit
-            //if (binds.GetInputDown(binds.bindCheat1))
-            //{
-            //    control.generation.EnemySpawn(transform.position + (transform.forward * 10f), Enemy.STRENGTH_ELITE);
-            //}
+            //Spawn bandit
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                healthInfiniteCheat = true;
+                control.generation.EnemySpawn(transform.position + (transform.forward * 20f), enemyStengthToSpawn);
+                enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Enum.GetNames(typeof(Enemy.Strength)).Length);
+            }
 
             ////Unlock seismic charges
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -774,7 +791,7 @@ public class Player : MonoBehaviour
             //Fuel increment (in-situ refinery)
             bool missingEnoughFuel = vitalsFuel < vitalsFuelMax - REFINERY_FUEL_OUT_RATE;
             bool hasUpgrade = upgradeLevels[control.commerce.UPGRADE_REFINERY] >= 1;
-            bool hasEnoughOre = ore[Asteroid.TYPE_WATER] > REFINERY_ORE_WATER_IN_RATE;
+            bool hasEnoughOre = ore[Asteroid.TYPE_WATER] >= REFINERY_ORE_WATER_IN_RATE;
             bool enoughTimeHasPassed = Time.time > refineryTimeAtLastRefine + REFINERY_TIME_BETWEEN_REFINES;
             if (missingEnoughFuel && hasUpgrade && hasEnoughOre && enoughTimeHasPassed && control.settings.refine)
             {
@@ -902,13 +919,14 @@ public class Player : MonoBehaviour
             {
                 control.ui.SetTip(
                     "The in-situ fuel refinery processes water ice from your cargo bay directly into usable fuel"
-                    + "You must have water ice in your cargo bay and the refinery toggled on for it to work"
+                    + "\nYou must have water ice in your cargo bay and the refinery toggled on for it to work"
                     + "\nToggle refinery with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleRefine, true)
                 );
 
                 if (binds.GetInputDown(binds.bindToggleRefine))
                 {
-                    tipHasUsedOutline = true;
+                    tipHasUsedRefinery = true;
+                    control.menu.SetTipRefineState();
                 }
             }
 
@@ -1241,6 +1259,15 @@ public class Player : MonoBehaviour
                         0f
                     );
 
+                    if (binds.GetInputDown(binds.bindCameraZoomFollowDistIn))
+                    {
+                        tutorialHasZoomedIn = true;
+                    }
+                    if (binds.GetInputDown(binds.bindCameraZoomFollowDistOut))
+                    {
+                        tutorialHasZoomedOut = true;
+                    }
+
                     if (tutorialHasZoomedIn && tutorialHasZoomedOut)
                     {
                         IncrementTutorial(0f);
@@ -1254,22 +1281,14 @@ public class Player : MonoBehaviour
             }
             else if (tutorialLevel == 9)
             {
-                if (!tutorialHasZoomedIn && !tutorialHasZoomedOut)
-                {
-                    control.ui.SetTip(
-                        "Third-person can be useful in combinationg with free-look " + control.ui.GetBindAsPrettyString(binds.bindCameraFreeLook, true) + "\nThis allows you to see beside & behind your ship while travelling through the void\nBut first-person is best for mining and for combat",
-                        TUTORIAL_TIP_DURATION
-                    );
+                control.ui.SetTip(
+                    "Third-person can be useful in combinationg with free-look " + control.ui.GetBindAsPrettyString(binds.bindCameraFreeLook, true) + "\nThis allows you to see beside & behind your ship while travelling through the void\nBut first-person is best for mining and for combat",
+                    TUTORIAL_TIP_DURATION
+                );
 
-                    if (tutorialHasZoomedIn && tutorialHasZoomedOut)
-                    {
-                        IncrementTutorial(TUTORIAL_TIP_DURATION);
-                    }
-                }
-                else
+                if (binds.GetInputDown(binds.bindCameraFreeLook))
                 {
-                    //Instant increment if the player already knows how to do it
-                    tutorialLevel++;
+                    IncrementTutorial(TUTORIAL_TIP_DURATION);
                 }
             }
             else if (tutorialLevel == 10 && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1) //visited 3 moons
@@ -1608,6 +1627,7 @@ public class Player : MonoBehaviour
                 if (
                     !transformToCheck.GetComponent<Asteroid>().isDestroyed
                     && !transformToCheck.GetComponent<Asteroid>().isDestroying
+                    && transformToCheck.GetComponent<Asteroid>().size != Asteroid.SIZE_SMALL //never drag relative to small asteroids
                     && Time.time >= transformToCheck.GetComponent<Asteroid>().timeDraggableRelative
                 )
                 {
@@ -1838,6 +1858,7 @@ public class Player : MonoBehaviour
         //Reset
         thrustVector = Vector3.zero;
         thrustMultiplier = 1f;
+        lastForceAdded = Vector3.zero;
 
         //Move if fuel
         if ((tempEngineDisable <= 0f || tempEngineDisableButFlickering) && vitalsFuel > 0.0d)
@@ -2677,7 +2698,7 @@ public class Player : MonoBehaviour
                 0.0,
                 vitalsHealth - damageToDeal
             );
-
+            
             //Damage event cause
             string cause;
             if (isBanditLaser)
@@ -2731,8 +2752,11 @@ public class Player : MonoBehaviour
         if (!isDestroyed)
         {
             //Damage
-            vitalsHealth = newHealthAmount;
-
+            if (!healthInfiniteCheat)
+            {
+                vitalsHealth = newHealthAmount;
+            }
+            
             //UI warning
             control.ui.UpdatePlayerVitalsDisplay(); //force a vitals update so that you can immediately see your health change
             FlashWarning("WARNING: " + cause + "\nHull integrity compromised"); //⚠

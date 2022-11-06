@@ -477,8 +477,36 @@ public class Generation : MonoBehaviour
         bool spawnAsteroids
         )
     {
+        //Colour scheme
+        float mainColor = Random.Range(0.8f, 1f);
+        float r;
+        float g;
+        float b;
+
+        float colorToBeMain = Random.value;
+        if (colorToBeMain <= 0.3333f)
+        {
+            r = mainColor;
+            g = Random.value;
+            b = Random.value;
+        }
+        else if (colorToBeMain <= 0.6666f)
+        {
+            r = Random.value;
+            g = mainColor;
+            b = Random.value;
+        }
+        else
+        {
+            r = Random.value;
+            g = Random.value;
+            b = mainColor;
+        }
+
+        Color tint = new Color(r, g, b);
+
         //PLANET
-        GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride);
+        GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride, tint);
 
         //PLANETARY SYSTEM BODIES
         if (generationType != GENERATION_TYPE_LOADED_GAME)
@@ -499,7 +527,8 @@ public class Generation : MonoBehaviour
                 nMoons,
                 planetarySystemIndex,
                 position,
-                spawnAsteroids
+                spawnAsteroids,
+                tint
             );
             //Instance heighliner map connection pieces after all moons and their heighliners have been generated
             for (int heighlinerIndex = 0; heighlinerIndex < heighlinerList.Count; heighlinerIndex++)
@@ -621,7 +650,7 @@ public class Generation : MonoBehaviour
         return instancePlanet;
     }
 
-    private GameObject PlanetSpawn(Vector3 position, int planetarySystemIndex, string titleOverride)
+    private GameObject PlanetSpawn(Vector3 position, int planetarySystemIndex, string titleOverride, Color tint)
     {
         //Instantiate
         GameObject instancePlanet = Instantiate(
@@ -671,12 +700,16 @@ public class Generation : MonoBehaviour
             planetScript.asteroidType2 = Asteroid.GetRandomTypeExcluding(planetScript.asteroidType1);
         }
 
+        //Set color/tint
+        instancePlanet.transform.Find("Model").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
+        instancePlanet.transform.Find("AtmosphereOutside").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
+
         return instancePlanet;
     }
     #endregion
 
     #region Moons
-    private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition, bool spawnAsteroids)
+    private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition, bool spawnAsteroids, Color tint)
     {
         //At the end we will return the last generated moon
         GameObject instanceMoon = null;
@@ -705,7 +738,7 @@ public class Generation : MonoBehaviour
                 instanceMoon = MoonSpawn(
                     false,
                     planetIndex, moonIndex,
-                    instanceMoonPosition,
+                    instanceMoonPosition, tint,
                     true,
                     null, false,
                     null, false, 0f, 0f, 0f, null
@@ -717,7 +750,7 @@ public class Generation : MonoBehaviour
                 instanceMoon = MoonSpawn(
                     false,
                     planetIndex, moonIndex,
-                    instanceMoonPosition,
+                    instanceMoonPosition, tint,
                     true,
                     null, false,
                     null, false, 0f, 0f, 0f, null
@@ -785,7 +818,7 @@ public class Generation : MonoBehaviour
         return instanceMoon;
     }
 
-    public GameObject MoonSpawn(bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position,
+    public GameObject MoonSpawn(bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position, Color tint,
         bool forceStation, string titleOverride, bool ifLoadingIsStation, string stationTitleOverride,
         bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
     {
@@ -817,6 +850,10 @@ public class Generation : MonoBehaviour
 
         //Update outline
         //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_MOON, instanceMoon.GetComponentInChildren<MeshRenderer>().material);
+
+        //Set colour/tint
+        instanceMoon.transform.Find("Model").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
+        instanceMoon.transform.Find("Map Model").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
 
         //Generate (or load) name
         if (titleOverride == null)
@@ -978,7 +1015,7 @@ public class Generation : MonoBehaviour
             //float torqueMagnitudeRangeMax = 500f;
             //float torqueMagnitude = Random.Range(0f, torqueMagnitudeRangeMax) * ((0.5f * Mathf.Sin(((control.TAU / 2f) * Random.value) - (control.TAU / 4f))) + 0.5f); //biased toward middle of range
             //float torqueMagnitude = Mathf.Pow(30f, 2f) * Mathf.Sqrt(Random.value);
-            float torqueMagnitude = 60f * Mathf.Pow(Random.value, 1f / 4f);
+            float torqueMagnitude = Mathf.Pow(Random.value, 1f / 4f) * (150f * instanceAsteroid.GetComponent<Asteroid>().rb.mass); //120f; //60f;
             Vector3 torqueDirection = new Vector3(
                 Random.value,
                 Random.value,
@@ -1147,7 +1184,7 @@ public class Generation : MonoBehaviour
 
     public void OrePoolSpawnWithTraits(Vector3 position, Rigidbody rbInherit, byte type)
     {
-        //Clay silicate asteroids drop a mixture
+        //Clay-silicate asteroids drop a mixture
         byte typeToSpawn = type;
         if (type == Asteroid.TYPE_CLAY_SILICATE)
         {
@@ -1182,7 +1219,10 @@ public class Generation : MonoBehaviour
             0.5f + (0.5f * Random.value),
             0.5f + (0.5f * Random.value)
         ));
-        instanceOreRb.AddTorque(5000f * new Vector3(Random.value, Random.value, Random.value));
+        instanceOreRb.AddTorque(
+            Random.Range(0f, 7000f) //Random.Range(3000f, 7000f) //5000f
+            * new Vector3(Random.value, Random.value, Random.value
+        ));
     }
 
     private void EnemySpawnCluster(int clusterType, Vector3 position, string list)
@@ -1203,14 +1243,14 @@ public class Generation : MonoBehaviour
             float angleFromPlanet = Random.value * 360f;
             Vector3 positionFromPlanet = position + new Vector3(
                 Mathf.Cos(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet,
-                position.y + 30f,
+                position.y,
                 Mathf.Sin(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet
             );
 
             if (amount == 1)
             {
                 //Don't bother calculating offsets if there will only be one bandit spawned
-                EnemySpawn(positionFromPlanet, control.GetIntFromStringIndex(list, 0));
+                EnemySpawn(positionFromPlanet, (Enemy.Strength)control.GetIntFromStringIndex(list, 0));
             }
             else
             {
@@ -1221,18 +1261,18 @@ public class Generation : MonoBehaviour
                     float angleFromCluster = Random.value * 360f;
                     Vector3 positionFromCluster = positionFromPlanet + new Vector3(
                         Mathf.Cos(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster,
-                        positionFromPlanet.y + Random.Range(-10f, 10f),
+                        positionFromPlanet.y + Random.Range(5f, 15f),
                         Mathf.Sin(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster
                     );
 
                     //Spawn the bandit
-                    EnemySpawn(positionFromCluster, control.GetIntFromStringIndex(list, i));
+                    EnemySpawn(positionFromCluster, (Enemy.Strength)control.GetIntFromStringIndex(list, i));
                 }
             }
         }
     }
 
-    public GameObject EnemySpawn(Vector3 position, int strength)
+    public GameObject EnemySpawn(Vector3 position, Enemy.Strength strength)
     {
         GameObject instanceEnemy = Instantiate(
             enemy,
@@ -1469,7 +1509,8 @@ public class Generation : MonoBehaviour
                         data.planetPosition[planetIndex, 2]
                     ),
                     planetIndex,
-                    data.planetName[planetIndex]
+                    data.planetName[planetIndex],
+                    data.planetColor[planetIndex]
                 );
 
                 //GameObject instancePlanet = PlanetarySystemSpawnAndPlayerSpawn(
@@ -1512,6 +1553,7 @@ public class Generation : MonoBehaviour
                                 data.moonPosition[moonIndex, 1],
                                 data.moonPosition[moonIndex, 2]
                             ),
+                            data.moonTint[moonIndex],
                             data.moonHasStation[moonIndex],
                             data.moonName[moonIndex],
                             data.moonHasStation[moonIndex],
@@ -1534,6 +1576,7 @@ public class Generation : MonoBehaviour
                                 data.moonPosition[moonIndex, 1],
                                 data.moonPosition[moonIndex, 2]
                             ),
+                            data.moonTint[moonIndex],
                             data.moonHasStation[moonIndex],
                             data.moonName[moonIndex],
                             data.moonHasStation[moonIndex],

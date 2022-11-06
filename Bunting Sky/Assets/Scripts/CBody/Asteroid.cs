@@ -195,7 +195,7 @@ public class Asteroid : MonoBehaviour
         if (this.size == SIZE_SMALL)
         {
             modelGroup = modelGroupSizeSmall;
-            rb.mass = 0.2f;
+            rb.mass = 2f; //0.2f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 50;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 0.2f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1f;
@@ -207,8 +207,8 @@ public class Asteroid : MonoBehaviour
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 1.3f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1.2f;
-            rb.mass = 1.0f;
-            health = (byte)Random.Range(2, 5);
+            rb.mass = 14f; //1.0f;
+            health = (byte)Random.Range(3, 5); //Random.Range(2, 5);
         }
         else if (this.size == SIZE_LARGE)
         {
@@ -216,8 +216,8 @@ public class Asteroid : MonoBehaviour
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 3.2f;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 2f;
-            rb.mass = 10.0f;
-            health = (byte)Random.Range(8, 12);
+            rb.mass = 25f; //10.0f;
+            health = (byte)Random.Range(7, 10);  //Random.Range(8, 12);
         }
         else
         {
@@ -333,7 +333,11 @@ public class Asteroid : MonoBehaviour
         if (!isDestroying)
         {
             //Update player tutorial bool
-            if (!control.GetPlayerScript().tutorialHasMinedAsteroid && type == TYPE_CLAY_SILICATE)
+            if (
+                !control.GetPlayerScript().tutorialHasMinedAsteroid
+                && type == TYPE_CLAY_SILICATE
+                && control.GetPlayerScript().upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] <= 0 //hasn't unlocked seismic charges yet (as those deal splash damage, often to clay-silicates)
+            )
             {
                 control.ui.SetTip("Clay-silicate asteroids contain little to no ore\nLook for differently coloured asteroids", 2f);
             }
@@ -547,7 +551,7 @@ public class Asteroid : MonoBehaviour
             iaRb.inertiaTensorRotation = rb.inertiaTensorRotation;
 
             //Add force in direction of hit
-            float magnitude = Random.Range(800f, 2000f); //force strength
+            float magnitude = Random.Range(8000f, 20000f); //Random.Range(800f, 2000f); //force strength
 
             float frustumScale = 2f; //width and height of frustum to offset asteroid direction
             Vector3 randomFrustumOffset = new Vector3( //generate world-space frustum

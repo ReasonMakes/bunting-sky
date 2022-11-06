@@ -39,13 +39,15 @@ public class Enemy : MonoBehaviour
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE = 30f;
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE = 70f;
     [System.NonSerialized] public static readonly float DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE = 300f;
+    private bool canStrafeHorizontally = true; //true;
     private bool strafeHorizontalRight = true;
     private float strafeHorizontalDirectionChangeTimer = 2f;
+    private bool canStrafeVertically = false; //true;
     private bool strafeVerticalUp = true;
     private float strafeVerticalDirectionChangeTimer = 2f;
-    private readonly float STRAFE_PERIOD_MAX = 2f;
-    private readonly float MANUAL_LEAD_MULTIPLIER = 1.5f; //Add offset to account for how slow the torque is
-    private float destinationRandomOffsetMultiplier = 0.25f;   //"Inaccuracy" (which in actuality actually helps the aim a little bit
+    private readonly float STRAFE_PERIOD_MIN = 0.5f; //3f;
+    private readonly float STRAFE_PERIOD_MAX = 2.5f; //6f;
+    public float destinationRandomOffsetMultiplier = 0.25f;   //"Inaccuracy" (which in actuality actually helps the aim a little bit
     public GameObject playerGhost;                             //by creating a larger area-of-denial, and therefore a higher random
                                                                //chance of hitting the player despite their impossible-to-hit movement speed)
                                                                //OVERRRIDDEN BY DIFFICULTY
@@ -62,15 +64,21 @@ public class Enemy : MonoBehaviour
     [System.NonSerialized] public byte health = 1; //overridden by difficulty
 
     //Type
-    [System.NonSerialized] public int strength = 0;
+    public enum Strength {
+        minor,
+        major,
+        elite
+    };
+    [System.NonSerialized] public Strength strength = Strength.minor;
+
     [System.NonSerialized] public readonly static int STRENGTH_MINOR = 0;
     [System.NonSerialized] public readonly static int STRENGTH_MAJOR = 1;
     [System.NonSerialized] public readonly static int STRENGTH_ELITE = 2;
     private GameObject modelGroup;
     [System.NonSerialized] public GameObject modelObject;
-    public GameObject modelGroupStrengthWeak;
-    public GameObject modelGroupStrengthMedium;
-    public GameObject modelGroupStrengthLarge;
+    public GameObject modelGroup0;
+    public GameObject modelGroup1;
+    public GameObject modelGroup2;
     public Material matEnemy;
     
     [System.NonSerialized] public MeshRenderer meshRenderer;
@@ -151,8 +159,9 @@ public class Enemy : MonoBehaviour
                     {
                         //Lead, so that weapons fire is more likely to connect
                         destination = control.GetPredictedTrajectoryWithProjectileLeading(
-                            transform.position, rb.velocity, EnemyWeaponLaser.PROJECTILE_SPEED, MANUAL_LEAD_MULTIPLIER,
-                            control.GetPlayerTransform().position, control.GetPlayerScript().rb.velocity, control.GetPlayerScript().lastForceAdded, control.GetPlayerScript().rb.mass
+                            transform.position, rb.velocity * 1f, EnemyWeaponLaser.PROJECTILE_SPEED, 1.1f, //modifier to account for torque time 0.9 1.1
+                            control.GetPlayerTransform().position, control.GetPlayerScript().rb.velocity * 1.1f, //modifier to account for player acceleration //1.1
+                            control.GetPlayerScript().lastForceAdded, control.GetPlayerScript().rb.mass
                         );
 
                         ////Target position
@@ -175,13 +184,15 @@ public class Enemy : MonoBehaviour
                         //Display target destination (before randomness)
                         playerGhost.transform.position = destination;
 
-                        //Add random offset IF FIRING
-                        float distanceThresholdMoreThanAddRandomOffset = 0f;
+                        //Add random offset IF FIRING and player moving
                         float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
-                        float playerSpeedMaxRough = 22f;
-                        float playerSpeedWeight = Mathf.Min(1f, control.GetPlayerScript().rb.velocity.magnitude / playerSpeedMaxRough);
-                        float destinationOffsetMagnitude = distToPlayer * destinationRandomOffsetMultiplier * playerSpeedWeight;
-                        if (distToPlayer >= distanceThresholdMoreThanAddRandomOffset && weaponBurstIndex < weaponBurstLength && control.GetPlayerScript().rb.velocity.magnitude > 1f)
+                        //float playerSpeedMaxRough = 22f;
+                        float playerSpeedWeight = 1f; //Mathf.Min(1f, control.GetPlayerScript().rb.velocity.magnitude / playerSpeedMaxRough);
+                        float destinationOffsetMagnitude = Mathf.Max(1f, distToPlayer) * destinationRandomOffsetMultiplier * playerSpeedWeight;
+                        if (
+                            GetIfAimingAtPlayer()
+                            && (strength != Strength.elite || control.GetPlayerScript().rb.velocity.magnitude > 1f) //elites don't vary their aim when the player stands still
+                        )
                         {
                             destination += new Vector3(
                                 (Random.value - 0.5f) * destinationOffsetMagnitude,
@@ -282,49 +293,67 @@ public class Enemy : MonoBehaviour
 
         //Strafe direction
         Vector3 strafeVector = Vector3.zero;
+
         //Change left/right & up/down periodically
         strafeHorizontalDirectionChangeTimer = Mathf.Max(0f, strafeHorizontalDirectionChangeTimer - Time.deltaTime); //decrement 1f per second
         strafeVerticalDirectionChangeTimer = Mathf.Max(0f, strafeVerticalDirectionChangeTimer - Time.deltaTime); //decrement 1f per second
-        if (strafeHorizontalDirectionChangeTimer <= 0f)
-        {
-            //Reset timer
-            strafeHorizontalDirectionChangeTimer = Random.value * STRAFE_PERIOD_MAX;
 
-            //Change strafe direction
-            strafeHorizontalRight = !strafeHorizontalRight;
+        //Only change strafe direction when not firing/about to fire and when aiming at the player (so we don't get stuck in an infinite strafe loop)
+        if (
+            weaponCooldown > weaponInternalBurstCooldown * weaponBurstLength
+            && GetIfAimingAtPlayer()
+        )
+        {
+            if (strafeHorizontalDirectionChangeTimer <= 0f)
+            {
+                //Reset timer
+                strafeHorizontalDirectionChangeTimer = Random.Range(STRAFE_PERIOD_MIN, STRAFE_PERIOD_MAX);
+
+                //Change strafe direction
+                strafeHorizontalRight = !strafeHorizontalRight;
+            }
+            if (strafeVerticalDirectionChangeTimer <= 0f)
+            {
+                //Reset timer
+                strafeVerticalDirectionChangeTimer = Random.Range(STRAFE_PERIOD_MIN, STRAFE_PERIOD_MAX);
+
+                //Change strafe direction
+                strafeVerticalUp = !strafeVerticalUp;
+            }
         }
-        if (strafeVerticalDirectionChangeTimer <= 0f)
+        
+        //Strafe?
+        if (aggro && GetIfAimingAtPlayer()) // && Vector3.Magnitude(destination - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)
         {
-            //Reset timer
-            strafeVerticalDirectionChangeTimer = Random.value * STRAFE_PERIOD_MAX;
-
-            //Change strafe direction
-            strafeVerticalUp = !strafeVerticalUp;
-        }
-        //Strafe if aggro'd and within distance threshold
-        if (aggro) // && Vector3.Magnitude(destination - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)
-        {
-            if (strafeHorizontalRight)
+            //Don't change strafe direction right before firing
+            if (canStrafeHorizontally)
             {
-                //Right
-                strafeVector = transform.right;
-            }
-            else
-            {
-                //Left
-                strafeVector = -transform.right;
+                if (strafeHorizontalRight)
+                {
+                    //Right
+                    strafeVector = transform.right;
+                }
+                else
+                {
+                    //Left
+                    strafeVector = -transform.right;
+                }
             }
 
-            if (strafeVerticalUp)
+            if (canStrafeVertically)
             {
-                //Right
-                strafeVector += transform.up;
+                if (strafeVerticalUp)
+                {
+                    //Up
+                    strafeVector += transform.up;
+                }
+                else
+                {
+                    //Down
+                    strafeVector += -transform.up;
+                }
             }
-            else
-            {
-                //Left
-                strafeVector += -transform.up;
-            }
+            
             //Normalize because we just added the horizontal and vertical strafe elements together
             strafeVector = strafeVector.normalized;
 
@@ -337,7 +366,7 @@ public class Enemy : MonoBehaviour
         float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
         float strafeWeight = 0f; //weight approaches 1f as the distance from the enemy to the player approaches DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE
         if (
-            strength == STRENGTH_ELITE || strength == STRENGTH_MAJOR
+            strength == Strength.elite || strength == Strength.major
             || (control.GetPlayerScript().weaponUsedRecently > 0f && distToPlayer < DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO) //minors don't strafe until they are shot at
         )
         {
@@ -364,9 +393,7 @@ public class Enemy : MonoBehaviour
         //Can fire?
         if (weaponCooldown <= 0f && Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) <= DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE)
         {
-            //Fire only if aiming in the general direction of the player
-            float aimLinedUp = (Vector3.Dot(Vector3.Normalize(control.GetPlayerTransform().position - transform.position), transform.forward) + 1f) / 2f; //0 to 1 depending on how accurately facing the player
-            if (aimLinedUp >= 0.95f || weaponBurstIndex < weaponBurstLength) //How close to aiming at target before willing to attempt firing
+            if (GetIfWillingToFire())
             {
                 //Fire
                 GetComponent<EnemyWeaponLaser>().Fire();
@@ -385,7 +412,30 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public void SetStrength(int strength)
+    private bool GetIfAimingAtPlayer()
+    {
+        //0 to 1 depending on how accurately facing the player
+        float aimLinedUp = (Vector3.Dot(Vector3.Normalize(control.GetPlayerTransform().position - transform.position), transform.forward) + 1f) / 2f;
+        //How close to aiming at target before willing to attempt firing
+        float aimTolerance = 0.95f;
+        bool aimingAtPlayer = aimLinedUp >= aimTolerance;
+
+        return aimingAtPlayer;
+    }
+
+    private bool GetIfWillingToFire()
+    {
+        bool inTheMiddleOfABurst = weaponBurstIndex < weaponBurstLength;
+
+        bool willingToFire = (
+            GetIfAimingAtPlayer()
+            || inTheMiddleOfABurst
+        );
+
+        return willingToFire;
+    }
+
+    public void SetStrength(Strength strength)
     {
         //Set the internal field for size
         this.strength = strength;
@@ -396,51 +446,57 @@ public class Enemy : MonoBehaviour
         rb.mass = 0.5f;
 
         //Modify attributes based on size
-        if (this.strength == STRENGTH_MINOR)
+        if (this.strength == Strength.minor)
         {
             //Physical size
-            modelGroup = modelGroupStrengthWeak;
+            modelGroup = modelGroup0;
             
             //Difficulty
             health = 3;
             thrust = 2500f; //4e3f;
             torque = 600f;
-            destinationRandomOffsetMultiplier = 2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+            destinationRandomOffsetMultiplier = 1f; //2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 2f; //Time in seconds between bursts
             weaponInternalBurstCooldown = 0.25f; //Time in seconds between shots within the burst
             weaponBurstLength = 4; //Total shots per burst
         }
-        else if (this.strength == STRENGTH_MAJOR)
+        else if (this.strength == Strength.major)
         {
             //Physical size
-            modelGroup = modelGroupStrengthWeak;
+            modelGroup = modelGroup1;
 
             //Difficulty
             health = 6;
             thrust = 8e3f;
-            torque = 10e3f;
-            destinationRandomOffsetMultiplier = 0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+            torque = 16e3f; //10e3f;
+            destinationRandomOffsetMultiplier = 0.1f; //0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 2f; //Time in seconds between bursts
             weaponInternalBurstCooldown = 0.1f; //Time in seconds between shots within the burst
             weaponBurstLength = 12; //Total shots per burst
         }
-        else if (this.strength == STRENGTH_ELITE)
+        else if (this.strength == Strength.elite)
         {
             //Physical size
-            modelGroup = modelGroupStrengthWeak;
+            modelGroup = modelGroup2;
 
             //Difficulty
             health = 10; //10hp is player default; 20hp is player max health after upgrading hull strength
-            thrust = 10e3f;
-            torque = 25e3f; //18e3f; //16e3f; //12e3f;
-            destinationRandomOffsetMultiplier = 0.4f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+            //thrust = 10e3f;
+            thrust = control.GetPlayerScript().THRUST;
+            torque = 30e3f; //25e3f; //18e3f; //16e3f; //12e3f;
+            destinationRandomOffsetMultiplier = 0.1f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
-            weaponReloadPeriod = 1f; //Time in seconds between bursts
-            weaponInternalBurstCooldown = 0.03f; //0.05f //Time in seconds between shots within the burst
-            weaponBurstLength = 15; //Total shots per burst
-}
+            //weaponReloadPeriod = 1f; //Time in seconds between bursts
+            //weaponReloadPeriod = control.GetPlayerScript().playerWeaponLaser.CLIP_COOLDOWN_DURATION; //Time in seconds between bursts
+            weaponReloadPeriod = 0.7f; //Time in seconds between bursts
+            //weaponInternalBurstCooldown = 0.03f; //0.05f //Time in seconds between shots within the burst
+            //weaponInternalBurstCooldown = 1f - Mathf.Max(1f, 2f * control.GetPlayerScript().upgradeLevels[control.commerce.UPGRADE_FIRERATE]);
+            weaponInternalBurstCooldown = 0.01f;
+            //weaponBurstLength = 15; //Total shots per burst
+            weaponBurstLength = 2 * (control.GetPlayerScript().playerWeaponLaser.CLIP_SIZE_STARTER * int.Parse(control.commerce.upgradeDictionary[control.commerce.UPGRADE_DUAL_BATTERIES, control.commerce.UPGRADE_MAX_LEVEL]));
+        }
         else
         {
             Debug.LogError("Unrecognized code: " + this.strength);
@@ -451,7 +507,8 @@ public class Enemy : MonoBehaviour
         //Randomly pick a number from 0 to that length (we don't have to subtract one to format for the index which counts from zero because Random.Range max is exclusive when working with ints)
         //Select the child of that randomly selected number
         //Set that game object to active
-        modelObject = modelGroup.transform.GetChild(Random.Range(0, modelGroup.transform.childCount)).gameObject;
+        //modelObject = modelGroup.transform.GetChild(Random.Range(0, modelGroup.transform.childCount)).gameObject;
+        modelObject = modelGroup;
         modelObject.SetActive(true);
 
         //Assign material and update particle system
@@ -491,7 +548,7 @@ public class Enemy : MonoBehaviour
             //Spawn drops
             if (oreDrop)
             {
-                if (strength == STRENGTH_ELITE)
+                if (strength == Strength.elite)
                 {
                     for (int i = 0; i < Random.Range(40, 50 + 1); i++)
                     {
@@ -502,7 +559,7 @@ public class Enemy : MonoBehaviour
                         );
                     }
                 }
-                else if (strength == STRENGTH_MAJOR)
+                else if (strength == Strength.major)
                 {
                     for (int i = 0; i < Random.Range(40, 50 + 1); i++)
                     {
@@ -513,7 +570,7 @@ public class Enemy : MonoBehaviour
                         );
                     }
                 }
-                else if (strength == STRENGTH_MINOR)
+                else if (strength == Strength.minor)
                 {
                     for (int i = 0; i < Random.Range(15, 25 + 1); i++)
                     {
@@ -573,7 +630,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public void Enable(Vector3 position, int strength)
+    public void Enable(Vector3 position, Strength strength)
     {
         SetStrength(strength);
         transform.position = position;

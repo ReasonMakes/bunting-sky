@@ -43,8 +43,8 @@ public class Commerce : MonoBehaviour
     [System.NonSerialized] public readonly int UPGRADE_CARGO_SPACE = 9;
     [System.NonSerialized] public readonly int UPGRADE_ACCELERATION = 10;
     [System.NonSerialized] public readonly int UPGRADE_TORQUE_FORCE = 11;
-
-    [System.NonSerialized] public readonly int UPGRADE_ARRAY_LENGTH = 11;
+    [System.NonSerialized] public readonly int UPGRADE_FIRERATE = 12;
+    [System.NonSerialized] public readonly int UPGRADE_ARRAY_LENGTH = 12;
 
     [System.NonSerialized] public int[] upgradeIndexAtButton;
     public Button menuButtonUpgrade0;
@@ -102,6 +102,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_NAME] = "Cargo compressor";
         upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_NAME] = "Spliced engines";
         upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_NAME] = "Overcharged RCS";
+        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_NAME] = "Double blowback";
         //upgradeDictionary[7, UPGRADE_NAME] = "Warp drive";
 
         //Price
@@ -112,11 +113,12 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_PRICE] = "1000";
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_PRICE] = "2000";
         upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_PRICE] = "4000";;
-        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_PRICE] = "6000";
+        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_PRICE] = "5000";
         upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_PRICE] = "1000";
         upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_PRICE] = "500";
         upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_PRICE] = "2000";
         upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_PRICE] = "2000";
+        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_PRICE] = "4000";
 
         //Description
         upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_DESCRIPTION] = "Item is out of stock";
@@ -131,6 +133,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_DESCRIPTION] = "Improves cargo capacity by compressing ore with quantum field technology";
         upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_DESCRIPTION] = "Doubles handling by splicing with engine fuel lines";
         upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_DESCRIPTION] = "Doubles torque from overcharged RCS pressures";
+        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_DESCRIPTION] = "Improves Nariman 40mm firerate by buffering blowback from previous rounds";
         //upgradeDictionary[7, UPGRADE_DESCRIPTION] = "Enables extra-dimensional interstellar travel through the bulk";
 
         //Max level
@@ -143,9 +146,10 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_MAX_LEVEL] = "6";
+        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_MAX_LEVEL] = "10";
         upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_MAX_LEVEL] = "3";
+        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_MAX_LEVEL] = "2";
+        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_MAX_LEVEL] = "2";
     }
 
     //MENU
