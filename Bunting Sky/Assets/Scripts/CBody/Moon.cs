@@ -13,6 +13,7 @@ public class Moon : MonoBehaviour
     //Properties
     [System.NonSerialized] public bool disabled = false;
     private float timeSpentDisabled = 0f;
+    [System.NonSerialized] public bool isDiscovered = false;
 
     //Children
     public GameObject station;
@@ -60,61 +61,61 @@ public class Moon : MonoBehaviour
     //    }
     //}
 
-    public void DisableSelfAndPlanDestroy()
-    {
-        //Emit particles
-        GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, transform.position, true);
+    //public void DisableSelfAndPlanDestroy()
+    //{
+    //    //Emit particles
+    //    GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, transform.position, true);
+    //
+    //    //Disable self
+    //    GetComponent<SphereCollider>().enabled = false; //Disable waypoint trigger
+    //    rb.detectCollisions = false;
+    //    model.SetActive(false);
+    //    transform.Find("Map Model").gameObject.SetActive(false);
+    //
+    //    //Disable Station
+    //    if (hasStation)
+    //    {
+    //        Destroy(instancedStation, 0f);
+    //    }
+    //
+    //    //Spawn regular asteroids
+    //    byte type = Asteroid.GetRandomType();
+    //    for (int i = 0; i < 7; i++)
+    //    {
+    //        //Spawn asteroids
+    //        GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(transform.position, Asteroid.GetRandomSize(), type);
+    //
+    //        //Spread out
+    //        instanceAsteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);
+    //    }
+    //
+    //    //Play explosion sound if player is close enough
+    //    if (Vector3.Distance(control.generation.instancePlayer.GetComponentInChildren<Player>().transform.position, transform.position) <= 750f)
+    //    {
+    //        GetComponent<AudioSource>().Play();
+    //    }
+    //    
+    //    //Remember is disabled
+    //    disabled = true;
+    //}
 
-        //Disable self
-        GetComponent<SphereCollider>().enabled = false; //Disable waypoint trigger
-        rb.detectCollisions = false;
-        model.SetActive(false);
-        transform.Find("Map Model").gameObject.SetActive(false);
-
-        //Disable Station
-        if (hasStation)
-        {
-            Destroy(instancedStation, 0f);
-        }
-
-        //Spawn regular asteroids
-        byte type = Asteroid.GetRandomType();
-        for (int i = 0; i < 7; i++)
-        {
-            //Spawn asteroids
-            GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(transform.position, Asteroid.GetRandomSize(), type);
-
-            //Spread out
-            instanceAsteroid.transform.position += 16f * new Vector3(Random.value, Random.value, Random.value);
-        }
-
-        //Play explosion sound if player is close enough
-        if (Vector3.Distance(control.generation.instancePlayer.GetComponentInChildren<Player>().transform.position, transform.position) <= 750f)
-        {
-            GetComponent<AudioSource>().Play();
-        }
-        
-        //Remember is disabled
-        disabled = true;
-    }
-
-    private void DestroySelfIfPlanned()
-    {
-        if (!Menu.menuOpenAndGamePaused)
-        {
-            bool particlesFadedOut = timeSpentDisabled >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
-
-            bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, control.GetPlayerTransform().position) >= control.GetPlayerScript().ORBITAL_DRAG_MODE_THRESHOLD;
-
-            if (disabled && particlesFadedOut && playerBeyondArbitraryDistance)
-            {
-                Debug.Log("Moon destroying");
-                Destroy(gameObject, 0f);
-            }
-
-            timeSpentDisabled += Time.deltaTime;
-        }
-    }
+    //private void DestroySelfIfPlanned()
+    //{
+    //    if (!Menu.menuOpenAndGamePaused)
+    //    {
+    //        bool particlesFadedOut = timeSpentDisabled >= GetComponent<ParticlesDamageRock>().particlesDamageRock.emission.rateOverTime.constant;
+    //
+    //        bool playerBeyondArbitraryDistance = Vector3.Distance(transform.position, control.GetPlayerTransform().position) >= control.GetPlayerScript().ORBITAL_DRAG_MODE_THRESHOLD;
+    //
+    //        if (disabled && particlesFadedOut && playerBeyondArbitraryDistance)
+    //        {
+    //            Debug.Log("Moon destroying");
+    //            Destroy(gameObject, 0f);
+    //        }
+    //
+    //        timeSpentDisabled += Time.deltaTime;
+    //    }
+    //}
 
     public GameObject SpawnStation(string titleOverride, bool generateOffers, float pricePlatinoid, float pricePreciousMetal, float priceWater, int[] upgradeIndex)
     {

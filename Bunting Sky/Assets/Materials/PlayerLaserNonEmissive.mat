@@ -101,6 +101,7 @@ Material:
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 0
+    - _NightVisionOutline: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _QueueOffset: 0
@@ -122,6 +123,6 @@ Material:
     - _ShadowColor: {r: 0.09411765, g: 0.09411765, b: 0.28627452, a: 1}
     - _ShadowTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
-    - _Tint: {r: 0.75, g: 0.17250001, b: 0.19174999, a: 1}
+    - _Tint: {r: 0.31132078, g: 0.31132078, b: 0.31132078, a: 1}
     - _TintColor: {r: 0.09411765, g: 0.09411765, b: 0.28627452, a: 1}
   m_BuildTextureStacks: []

@@ -68,6 +68,15 @@ public class HeighlinerEntry : MonoBehaviour
         return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<NameCelestial>().title;
     }
 
+    public Moon GetParentMoonScript()
+    {
+        //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
+        int siblingIndex = transform.parent.GetSiblingIndex();
+
+        //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
+        return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<Moon>();
+    }
+
     public void SpawnMapLineModel()
     {
         if (exitNode != null)

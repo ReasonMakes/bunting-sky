@@ -37,9 +37,14 @@ public class Commerce : MonoBehaviour
     [System.NonSerialized] public readonly int UPGRADE_REINFORCED_HULL = 3;
     [System.NonSerialized] public readonly int UPGRADE_RAPTOR_ENGINES = 4;
     [System.NonSerialized] public readonly int UPGRADE_DUAL_BATTERIES = 5;
-    [System.NonSerialized] public readonly int UPGRADE_IN_SITU_FUEL_REFINERY = 6;
+    [System.NonSerialized] public readonly int UPGRADE_REFINERY = 6;
     [System.NonSerialized] public readonly int UPGRADE_SEISMIC_CHARGES = 7;
     [System.NonSerialized] public readonly int UPGRADE_OUTLINE = 8;
+    [System.NonSerialized] public readonly int UPGRADE_CARGO_SPACE = 9;
+    [System.NonSerialized] public readonly int UPGRADE_ACCELERATION = 10;
+    [System.NonSerialized] public readonly int UPGRADE_TORQUE_FORCE = 11;
+
+    [System.NonSerialized] public readonly int UPGRADE_ARRAY_LENGTH = 11;
 
     [System.NonSerialized] public int[] upgradeIndexAtButton;
     public Button menuButtonUpgrade0;
@@ -80,7 +85,7 @@ public class Commerce : MonoBehaviour
     private void DefineUpgrades()
     {
         //Initializations
-        upgradeDictionary = new string[UPGRADE_OUTLINE + 1, 4];
+        upgradeDictionary = new string[UPGRADE_ARRAY_LENGTH + 1, 4];
         upgradeIndexAtButton = new int[upgradeDictionary.GetLength(0)];
 
         //Definitions
@@ -91,9 +96,12 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_NAME] = "Reinforced hull";
         upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_NAME] = "Raptor engines";
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_NAME] = "Dual batteries";
-        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_NAME] = "In-situ fuel refinery";
+        upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_NAME] = "In-situ fuel refinery";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_NAME] = "Seismic charges";
         upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_NAME] = "Eclipse vision";
+        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_NAME] = "Cargo compressor";
+        upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_NAME] = "Spliced engines";
+        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_NAME] = "Overcharged RCS";
         //upgradeDictionary[7, UPGRADE_NAME] = "Warp drive";
 
         //Price
@@ -103,9 +111,12 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_PRICE] = "750";
         upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_PRICE] = "1000";
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_PRICE] = "2000";
-        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_PRICE] = "4000";;
+        upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_PRICE] = "4000";;
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_PRICE] = "6000";
         upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_PRICE] = "1000";
+        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_PRICE] = "500";
+        upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_PRICE] = "2000";
+        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_PRICE] = "2000";
 
         //Description
         upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_DESCRIPTION] = "Item is out of stock";
@@ -114,9 +125,12 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_DESCRIPTION] = "Doubles outer hull integrity";
         upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_DESCRIPTION] = "Increases maximum forward thrust output by 1.5x";
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_DESCRIPTION] = "Doubles the mining laser's maximum ammunition per cycle";
-        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_DESCRIPTION] = "Automatically processes water ice cargo into usable jet fuel (toggle in settings)";
+        upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_DESCRIPTION] = "Automatically processes water ice cargo into usable jet fuel";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_DESCRIPTION] = "Explosive weapon. Useful for mining clusters of small asteroids";
-        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_DESCRIPTION] = "Highlights natural celestial bodies, making them visible even in shadow of eclipse";
+        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_DESCRIPTION] = "Highlights natural celestial bodies, creating visibility even in eclipse";
+        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_DESCRIPTION] = "Improves cargo capacity by compressing ore with quantum field technology";
+        upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_DESCRIPTION] = "Doubles handling by splicing with engine fuel lines";
+        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_DESCRIPTION] = "Doubles torque from overcharged RCS pressures";
         //upgradeDictionary[7, UPGRADE_DESCRIPTION] = "Enables extra-dimensional interstellar travel through the bulk";
 
         //Max level
@@ -126,9 +140,12 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_MAX_LEVEL] = "1";
-        upgradeDictionary[UPGRADE_IN_SITU_FUEL_REFINERY,    UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_MAX_LEVEL] = "6";
+        upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_MAX_LEVEL] = "1";
+        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_MAX_LEVEL] = "3";
     }
 
     //MENU
@@ -502,28 +519,9 @@ public class Commerce : MonoBehaviour
             //Decrement currency by price of upgrade
             playerScript.currency -= int.Parse(upgradeDictionary[upgradeIndex, UPGRADE_PRICE]);
 
-            //Update UI
+            //Update UI and apply effects
             playerScript.UpdateUpgrades();
             UpdatePlayerResourcesAndCommerceMenuUI();
-
-            //Display tip if eclipse vision
-            if (upgradeIndex == UPGRADE_OUTLINE && !control.GetPlayerScript().tipHasBoughtOutline)
-            {
-                control.GetPlayerScript().tipHasBoughtOutline = true;
-            }
-
-            //Update weapons if seismic charges
-            if (upgradeIndex == UPGRADE_SEISMIC_CHARGES)
-            {
-                //Slot 0 is always the mining laser
-                control.GetPlayerScript().weaponSlot1 = Player.weaponSeismicCharges;
-
-                //Display tip
-                if (!control.GetPlayerScript().tipHasBoughtSeismicCharges)
-                {
-                    control.GetPlayerScript().tipHasBoughtSeismicCharges = true;
-                }
-            }
         }
     }
 

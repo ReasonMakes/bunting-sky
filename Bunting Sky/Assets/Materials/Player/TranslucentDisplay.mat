@@ -24,8 +24,8 @@ Material:
     - Vector1_3E60F132: 0.06
     - Vector1_CEB6DF8E: 0.01
     - Vector1_D7C84CB5: 0.63
-    - _MaxTranslucency: 0.01
-    - _MinTranslucency: 0.02
+    - _MaxTranslucency: 0.02
+    - _MinTranslucency: 0.01
     - _Translucency: 45.1
     m_Colors:
     - Color_58D26B04: {r: 0.7529412, g: 1.9764706, b: 2.9960785, a: 1}

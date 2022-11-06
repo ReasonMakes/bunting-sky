@@ -30,6 +30,8 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public readonly int ASTEROIDS_MIN_MAX = 1000;
     [System.NonSerialized] public readonly int ASTEROIDS_MAX_MIN = 1;
     [System.NonSerialized] public readonly int ASTEROIDS_MAX_MAX = 1000;
+    [System.NonSerialized] public readonly float VOLUME_MUSIC_MULTIPLIER = 0.01f;
+    [System.NonSerialized] public readonly float VOLUME_ALL_MULTIPLIER = 0.05f;
 
     //Settings initializations
     [System.NonSerialized] public float mouseSensitivity;
@@ -43,6 +45,8 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool outline;
     [System.NonSerialized] public bool refine;
     [System.NonSerialized] public bool music;
+    [System.NonSerialized] public float volumeAll;
+    [System.NonSerialized] public float volumeMusic;
     [System.NonSerialized] public bool tips;
     [System.NonSerialized] public bool tutorial;
     [System.NonSerialized] public bool fullscreen;
@@ -79,6 +83,8 @@ public class Settings : MonoBehaviour
         ioBuffer.spotlightOn = true;
         ioBuffer.outlineOn = true;
         ioBuffer.refine = true;
+        ioBuffer.volumeAll = 0.75f;
+        ioBuffer.volumeMusic = 0.75f;
         ioBuffer.music = true;
         ioBuffer.tips = true;
         ioBuffer.tutorial = true;
@@ -102,6 +108,8 @@ public class Settings : MonoBehaviour
         ioBuffer.spotlightOn = spotlight;
         ioBuffer.outlineOn = outline;
         ioBuffer.refine = refine;
+        ioBuffer.volumeAll = volumeAll;
+        ioBuffer.volumeMusic = volumeMusic;
         ioBuffer.music = music;
         ioBuffer.tips = tips;
         ioBuffer.tutorial = tutorial;
@@ -125,6 +133,8 @@ public class Settings : MonoBehaviour
         spotlight = ioBuffer.spotlightOn;
         outline = ioBuffer.outlineOn;
         refine = ioBuffer.refine;
+        volumeAll = ioBuffer.volumeAll;
+        volumeMusic = ioBuffer.volumeMusic;
         music = ioBuffer.music;
         tips = ioBuffer.tips;
         tutorial = ioBuffer.tutorial;
@@ -149,6 +159,8 @@ public class Settings : MonoBehaviour
         public bool spotlightOn;
         public bool outlineOn;
         public bool refine;
+        public float volumeAll;
+        public float volumeMusic;
         public bool music;
         public bool tips;
         public bool tutorial;

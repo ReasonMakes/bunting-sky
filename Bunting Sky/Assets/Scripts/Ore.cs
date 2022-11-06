@@ -23,12 +23,16 @@ public class Ore : MonoBehaviour
     public Rigidbody rb;
     public Vector3 parentVelocity = Vector3.zero;
     private readonly float DRAG = 3f;
-    private readonly float ATTRACT_STRENGTH = 20e4f; //150000f;
+    private readonly float ATTRACT_STRENGTH = 30e4f; //20e4f; //150000f;
     private readonly float ABSORB_DIST = 0.15f;
+    private readonly float ATTRACT_DISTANCE_MAX = 50f; //70f; //200f;
     private float nextSlowUpdateCall = 0f;
     private readonly float SLOW_UPDATE_PERIOD = 2f; //how often to call a slow update, in seconds
     private float attractionTime;
     private readonly float ATTRACTION_DELAY_PERIOD = 1f;
+
+    //Tractor beam
+    public GameObject tractorBeam;
 
     public void Enable(byte type, Vector3 parentVelocity)
     {
@@ -83,41 +87,67 @@ public class Ore : MonoBehaviour
 
     void Update()
     {
-        if (!Menu.menuOpenAndGamePaused && active)
+        if (active)
         {
             //Get player data
-            float distanceBetweenOreAndPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position);
+            float distanceBetweenOreAndPlayer = Vector3.Distance(transform.position, GetPlayerCargoBayPosition());
 
-            //Forces (gravitate toward player, repel away from other ore, drag relative)
-            DragOreRelative();
-            if (control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d) //if there is room for one more
-            {
-                if (Time.time >= attractionTime)
-                {
-                    AttractToPlayer(distanceBetweenOreAndPlayer);
-                }
-                if (Time.time >= nextSlowUpdateCall)
-                {
-                    RepelFromOtherOre();
-                    nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;
-                }
-            }
-            
-            //Scale down as the ore gets closer to the player (to look like it's being absorbed) or as ore gets closer to deathTime
-            Scale(distanceBetweenOreAndPlayer);
-
-            //When close enough to player, absorb into and increment ore counter
+            //Tractor beam needs to be drawn when paused, too
             if (
-                distanceBetweenOreAndPlayer <= ABSORB_DIST
-                && control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d //if there is room for one more
+                Time.time >= attractionTime
+                && control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d
+                && distanceBetweenOreAndPlayer <= ATTRACT_DISTANCE_MAX
             )
             {
-                AbsorbIntoPlayer();
+                //Transform tractor beam
+                //Rotate to face player
+                tractorBeam.transform.rotation = Quaternion.LookRotation((GetPlayerCargoBayPosition() - transform.position).normalized);
+
+                //Stretch and offset to touch player
+                float stretchAmount = distanceBetweenOreAndPlayer * 10f;
+                tractorBeam.transform.localScale = new Vector3(1f, 1f, stretchAmount);
+                //tractorBeam.transform.position = transform.position + (tractorBeam.transform.forward * (distanceBetweenOreAndPlayer/ 2f));
             }
 
-            //If can't find way to player, absorb automagically
-            //if (Time.time >= deathTime) AbsorbIntoPlayer();
+            if (!Menu.menuOpenAndGamePaused)
+            {
+                //Forces (gravitate toward player, repel away from other ore, drag relative)
+                DragOreRelative();
+                if (control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d) //if there is room for one more
+                {
+                    if (Time.time >= attractionTime && distanceBetweenOreAndPlayer <= ATTRACT_DISTANCE_MAX)
+                    {
+                        //Tractor beam active
+                        AttractToPlayerCargoBay(distanceBetweenOreAndPlayer);
+                    }
+                    if (Time.time >= nextSlowUpdateCall)
+                    {
+                        RepelFromOtherOre();
+                        nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;
+                    }
+                }
+
+                //Scale down as the ore gets closer to the player (to look like it's being absorbed) or as ore gets closer to deathTime
+                Scale(distanceBetweenOreAndPlayer);
+
+                //When close enough to player, absorb into and increment ore counter
+                if (
+                    distanceBetweenOreAndPlayer <= ABSORB_DIST
+                    && control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d //if there is room for one more
+                )
+                {
+                    AbsorbIntoPlayer();
+                }
+
+                //If can't find way to player, absorb automagically
+                //if (Time.time >= deathTime) AbsorbIntoPlayer();
+            }
         }
+    }
+
+    private Vector3 GetPlayerCargoBayPosition()
+    {
+        return control.GetPlayerTransform().position - (control.GetPlayerTransform().up * 0.05f);
     }
 
     private void Scale(float distanceToPlayer)
@@ -162,11 +192,11 @@ public class Ore : MonoBehaviour
         }
     }
 
-    private void AttractToPlayer(float distanceBetweenOreAndPlayer)
+    private void AttractToPlayerCargoBay(float distanceBetweenOreAndPlayer)
     {
         if (!control.GetPlayerScript().isDestroyed)
         {
-            Vector3 directionToPlayer = (control.GetPlayerTransform().position - transform.position).normalized;
+            Vector3 directionToPlayer = (GetPlayerCargoBayPosition() - transform.position).normalized;
             float LimitedInverseDistanceBetweenPlayer = Mathf.Min(0.1f, 1f / distanceBetweenOreAndPlayer);
             rb.AddForce(directionToPlayer * ATTRACT_STRENGTH * LimitedInverseDistanceBetweenPlayer * Time.deltaTime);
         }

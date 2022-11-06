@@ -31,12 +31,13 @@ public class UI : MonoBehaviour
 
     //Target
     [System.NonSerialized] public Image targetImage;
-    private float targetXMin;
-    private float targetXMax;
-    private float targetYMin;
-    private float targetYMax;
+    //private float targetXMin;
+    //private float targetXMax;
+    //private float targetYMin;
+    //private float targetYMax;
     [System.NonSerialized] public bool renderTarget = false;
     private string targetTypeAndTitle = "No target";
+    public Image targetObjectLeadGhostImage;
 
     //Player resources
     [System.NonSerialized] public bool updatePlayerResourcesUIAnimations = true;
@@ -129,10 +130,10 @@ public class UI : MonoBehaviour
         waypointYMax = Screen.height - waypointYMin;
 
         //Target
-        targetXMin = targetImage.GetPixelAdjustedRect().width / 2;
-        targetXMax = Screen.width - targetXMin;
-        targetYMin = targetImage.GetPixelAdjustedRect().height / 2;
-        targetYMax = Screen.height - targetYMin;
+        //targetXMin = targetImage.GetPixelAdjustedRect().width / 2;
+        //targetXMax = Screen.width - targetXMin;
+        //targetYMin = targetImage.GetPixelAdjustedRect().height / 2;
+        //targetYMax = Screen.height - targetYMin;
     }
 
     private void Update()
@@ -224,7 +225,7 @@ public class UI : MonoBehaviour
             if (tipAimNeedsHelpCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
             {
                 SetTip(
-                    "Hold " + GetBindAsPrettyString(control.binds.bindAlignShipToReticle) + " to torque your ship in the direction you're looking!",
+                    "Hold " + GetBindAsPrettyString(control.binds.bindAlignShipToReticle, true) + " to torque your ship in the direction you're looking!",
                     ref tipAimNeedsHelpCertainty
                 );
             }
@@ -264,7 +265,7 @@ public class UI : MonoBehaviour
         }
     }
 
-    public string GetBindAsPrettyString(short bind)
+    public string GetBindAsPrettyString(short bind, bool addBrackets)
     {
         string pretty = "error";
 
@@ -295,8 +296,11 @@ public class UI : MonoBehaviour
         }
 
         //Surround with square brackets
-        pretty = "[" + pretty + "]";
-
+        if (addBrackets)
+        {
+            pretty = "[" + pretty + "]";
+        }
+        
         return pretty;
     }
     #endregion
@@ -448,35 +452,43 @@ public class UI : MonoBehaviour
     {
         renderWaypoint = true;
 
-        Vector3 waypointWorldPos = hit.collider.transform.position;
-
-        Vector2 waypointUIPos = Camera.main.WorldToScreenPoint(waypointWorldPos);
-        waypointUIPos.x = Mathf.Clamp(waypointUIPos.x, waypointXMin, waypointXMax);
-        waypointUIPos.y = Mathf.Clamp(waypointUIPos.y, waypointYMin, waypointYMax);
+        Vector2 waypointUIPos = Get2DUICoordsFrom3DWorldPosition(
+            hit.collider.transform.position,
+            waypointImage,
+            false
+        );
 
         waypointImage.transform.position = waypointUIPos;
 
-        //Check if position is behind camera
-        if (Vector3.Dot(waypointWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
-        {
-            if (waypointUIPos.x < Screen.width / 2f)
-            {
-                waypointUIPos.x = waypointXMax;
-            }
-            else
-            {
-                waypointUIPos.x = waypointXMin;
-            }
-
-            if (waypointUIPos.y < Screen.height / 2f)
-            {
-                waypointUIPos.y = waypointYMax;
-            }
-            else
-            {
-                waypointUIPos.y = waypointYMin;
-            }
-        }
+        //Vector3 waypointWorldPos = hit.collider.transform.position;
+        //
+        //Vector2 waypointUIPos = Camera.main.WorldToScreenPoint(waypointWorldPos);
+        //waypointUIPos.x = Mathf.Clamp(waypointUIPos.x, waypointXMin, waypointXMax);
+        //waypointUIPos.y = Mathf.Clamp(waypointUIPos.y, waypointYMin, waypointYMax);
+        //
+        //waypointImage.transform.position = waypointUIPos;
+        //
+        ////Check if position is behind camera
+        //if (Vector3.Dot(waypointWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
+        //{
+        //    if (waypointUIPos.x < Screen.width / 2f)
+        //    {
+        //        waypointUIPos.x = waypointXMax;
+        //    }
+        //    else
+        //    {
+        //        waypointUIPos.x = waypointXMin;
+        //    }
+        //
+        //    if (waypointUIPos.y < Screen.height / 2f)
+        //    {
+        //        waypointUIPos.y = waypointYMax;
+        //    }
+        //    else
+        //    {
+        //        waypointUIPos.y = waypointYMin;
+        //    }
+        //}
 
         waypointTextType.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + waypointTextBody.fontSize + waypointTextTitle.fontSize + waypointTextType.fontSize);
         waypointTextTitle.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + waypointTextBody.fontSize + waypointTextTitle.fontSize);
@@ -517,11 +529,11 @@ public class UI : MonoBehaviour
             )
             || (
                 targetObj.name == control.generation.enemy.name + "(Clone)"
-                && targetObj.GetComponent<Enemy>().destroying
+                && targetObj.GetComponent<Enemy>().isDestroying
             )
             || (
                 targetObj.name == control.generation.enemy.name + "(Clone)"
-                && targetObj.GetComponent<Enemy>().destroyed
+                && targetObj.GetComponent<Enemy>().isDestroyed
             )
         )
         {
@@ -529,36 +541,99 @@ public class UI : MonoBehaviour
             renderTarget = false;
             return;
         }
-        
-        Vector3 targetWorldPos = control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject.transform.position;
 
-        Vector2 targetUIPos = Camera.main.WorldToScreenPoint(targetWorldPos);
-        targetUIPos.x = Mathf.Clamp(targetUIPos.x, targetXMin, targetXMax);
-        targetUIPos.y = Mathf.Clamp(targetUIPos.y, targetYMin, targetYMax);
+        targetImage.transform.position = Get2DUICoordsFrom3DWorldPosition(
+            control.GetPlayerScript().targetObject.transform.position, 
+            targetImage,
+            true
+        );
+    }
 
-        //Check if position is behind camera
-        if (Vector3.Dot(targetWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
+    public Vector2 Get2DUICoordsFrom3DWorldPosition(Vector3 worldPosition, Image image, bool clamp)
+    {
+        //Transform world to screen
+        Vector2 uiPos = Camera.main.WorldToScreenPoint(worldPosition);
+
+        //Clamp
+        float targetXMin = image.GetPixelAdjustedRect().width / 2;
+        float targetXMax = Screen.width - targetXMin;
+        float targetYMin = image.GetPixelAdjustedRect().height / 2;
+        float targetYMax = Screen.height - targetYMin;
+
+        //If behind camera, insist on being against screen edge
+        float dot = Vector3.Dot(worldPosition - Camera.main.transform.position, Camera.main.transform.forward);
+        if (dot < 0f)
         {
-            if (targetUIPos.x < Screen.width / 2f)
+            if (clamp)
             {
-                targetUIPos.x = targetXMax;
-            }
-            else
-            {
-                targetUIPos.x = targetXMin;
-            }
+                //Invert the target position - otherwise it is inverted as it's "extruded" through the camera' Z axis, like a mirror does
+                uiPos.x = Screen.width - uiPos.x;
+                uiPos.y = Screen.height - uiPos.y;
 
-            if (targetUIPos.y < Screen.height / 2f)
-            {
-                targetUIPos.y = targetYMax;
+                //Break screen up into a crossed rectangle and find which triangular section the target lies in - some var names here may be inaccurate
+                Vector2 pointTopLeft = new Vector2(0f, 0f);
+                Vector2 pointTopRight = new Vector2(Screen.width, 0f);
+                Vector2 pointBottomLeft = new Vector2(0f, Screen.height);
+                Vector2 pointBottomRight = new Vector2(Screen.width, Screen.height);
+                Vector2 pointMiddle = new Vector2(Screen.width / 2f, Screen.height / 2f);
+
+                bool inTopCross = control.GetIfPointLiesWithinTriangle(uiPos, pointMiddle, pointBottomLeft, pointBottomRight);
+                bool inLeftCross = control.GetIfPointLiesWithinTriangle(uiPos, pointMiddle, pointTopLeft, pointBottomLeft);
+                bool inBottomCross = control.GetIfPointLiesWithinTriangle(uiPos, pointMiddle, pointTopRight, pointTopLeft);
+                bool inRightCross = control.GetIfPointLiesWithinTriangle(uiPos, pointMiddle, pointBottomRight, pointTopRight);
+
+                //Debug.Log(
+                //    "inTopCross: " + inTopCross
+                //    + "    inLeftCross: " + inLeftCross
+                //    + "\ninBottomCross: " + inBottomCross
+                //    + "    inRightCross: " + inRightCross
+                //);
+
+                //Continue the target from wherever it is in the middle toward the edge of the screen
+                float angleToEdge = Mathf.Atan2(uiPos.y - (Screen.height / 2f), uiPos.x - (Screen.width / 2f));
+                Vector2 coordsToEdge = Vector2.zero;
+
+                if (inTopCross)
+                {
+                    coordsToEdge.y = uiPos.y;
+                    coordsToEdge.x = coordsToEdge.y / Mathf.Tan(angleToEdge); //x = y/Tan(angle)
+                }
+                else if (inBottomCross)
+                {
+                    coordsToEdge.y = Screen.height - uiPos.y;
+                    coordsToEdge.x = coordsToEdge.y / Mathf.Tan(angleToEdge); //x = y/Tan(angle)
+                }
+                else if (inLeftCross)
+                {
+                    coordsToEdge.x = uiPos.x;
+                    coordsToEdge.y = uiPos.y;
+                }
+                else if (inRightCross)
+                {
+                    coordsToEdge.x = Screen.width - uiPos.x;
+                    coordsToEdge.y = Mathf.Tan(angleToEdge) * coordsToEdge.x; //y = tan(angle)x
+                }
+
+                float distanceToEdge = Mathf.Sqrt(Mathf.Pow(coordsToEdge.x, 2f) + Mathf.Pow(coordsToEdge.y, 2f));
+
+                uiPos.x += Mathf.Cos(angleToEdge) * distanceToEdge;
+                uiPos.y += Mathf.Sin(angleToEdge) * distanceToEdge;
             }
             else
             {
-                targetUIPos.y = targetYMin;
+                uiPos.x = -image.GetPixelAdjustedRect().width;
+                uiPos.y = -image.GetPixelAdjustedRect().height;
             }
         }
 
-        targetImage.transform.position = targetUIPos;
+        //Clamp to screen edge
+        if (clamp)
+        {
+            uiPos.x = Mathf.Clamp(uiPos.x, targetXMin, targetXMax);
+            uiPos.y = Mathf.Clamp(uiPos.y, targetYMin, targetYMax);
+        }
+        
+        return uiPos;
     }
 
     public void SetPlayerTargetObject(GameObject objectToTarget)
@@ -681,7 +756,24 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Moon";
-                waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameCelestial>().title;
+                string titleText = hit.collider.gameObject.GetComponent<NameCelestial>().title;
+                //Has satellite?
+                if (hit.collider.GetComponent<Moon>().isDiscovered)
+                {
+                    if (hit.collider.GetComponent<Moon>().hasStation)
+                    {
+                        titleText += " - has station";
+                    }
+                    else if (hit.collider.GetComponent<Moon>().hasHeighliner)
+                    {
+                        titleText += " - has heighliner";
+                    }
+                    else
+                    {
+                        titleText += " - devoid";
+                    }
+                }
+                waypointTextTitle.text = titleText;
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
                 
                 //Console waypoint
@@ -784,10 +876,10 @@ public class UI : MonoBehaviour
                 //Update UI
                 SetWaypointUI(hit);
             }
-            else
-            {
-                //Debug.Log("Undefined object " + hit.collider.gameObject.name + " hit " + hit.distance + " units away");
-            }
+            //else
+            //{
+            //    Debug.Log("Undefined object " + hit.collider.gameObject.name + " hit " + hit.distance + " units away");
+            //}
         }
         else if (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject != null)
         {
@@ -957,10 +1049,10 @@ public class UI : MonoBehaviour
         Player playerScript = control.GetPlayerScript();
 
         //Update values and start animations on a resource if its value changed
-        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F0") + " ICC",                           playerScript.soundSourceCoins);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[Asteroid.TYPE_PLATINOID].ToString("F0") + " kg",        playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL].ToString("F0") + " kg",   playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[Asteroid.TYPE_WATER].ToString("F0") + " kg",            playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F0") + " ICC",                                                      playerScript.soundSourceCurrencyChange);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[Asteroid.TYPE_PLATINOID].ToString("F0") + " kg / " + playerScript.oreMax,          playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL].ToString("F0") + " kg / " + playerScript.oreMax,     playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[Asteroid.TYPE_WATER].ToString("F0") + " kg / " + playerScript.oreMax,              playerScript.soundSourceOreCollected);
 
         //Update console
         UpdatePlayerConsole();
@@ -1107,14 +1199,14 @@ public class UI : MonoBehaviour
         if (playerScript.weaponSlotSelected == 0)
         {
             //SELECTING SLOT 0
-            weaponSelectedTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0);
-            weaponAlternateTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1);
+            weaponSelectedTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0, true);
+            weaponAlternateTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1, true);
         }
         else
         {
             //SELECTING SLOT 1
-            weaponSelectedTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1);
-            weaponAlternateTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0);
+            weaponSelectedTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1, true);
+            weaponAlternateTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0, true);
         }
 
         //Ammo

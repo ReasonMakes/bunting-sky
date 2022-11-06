@@ -14,14 +14,16 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public bool isDestroying = false;
     [System.NonSerialized] public bool isDestroyed = true;
     private float destroyingTime = 0f;
+    [System.NonSerialized] public float timeLastDamaged = -100f; //at what time this asteroid was last damaged
+    [System.NonSerialized] public readonly float PERIOD_ACTIVE_AFTER_DAMAGED = 10f; //how long to force remaining active after being damaged
     [System.NonSerialized] public bool performantMode = false;
-    [System.NonSerialized] public static float distanceThresholdGreaterThanPerformantMode = 80f;
+    [System.NonSerialized] public readonly static float THRESHOLD_DISTANCE_MAX_PERFORMANCE_MODE = 80f;
 
     [System.NonSerialized] public readonly static byte HEALTH_MAX = 4;
     [System.NonSerialized] public byte health = HEALTH_MAX;
 
     [System.NonSerialized] public bool isSeparating = true;
-    private readonly float INTERSECTING_REPEL_TELEPORT_STEP_DIST = 0.03f;
+    private readonly float INTERSECTING_REPEL_TELEPORT_STEP_DIST = 0.3f; //0.03f;
 
     [System.NonSerialized] public int size;
     [System.NonSerialized] public readonly static int SIZE_SMALL = 0;
@@ -53,7 +55,9 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public Vector3 rbMemAngularVel;
 
     public AudioSource soundHit;
+    [System.NonSerialized] public readonly float SOUND_HIT_VOLUME = 0.027f;
     public AudioSource soundExplosion;
+    [System.NonSerialized] public readonly float SOUND_EXPLOSION_VOLUME = 0.027f;
 
     [System.NonSerialized] public float timeDraggableRelative;
     private readonly float TIME_DRAGGABLE_RELATIVE_DELAY_PERIOD = 2f; //how long until the player ship will automatically begins dragging relative
@@ -291,6 +295,9 @@ public class Asteroid : MonoBehaviour
 
     public void Damage(byte damageAmount, Vector3 direction, Vector3 position, bool oreDrop)
     {
+        timeLastDamaged = Time.time;
+        SetPerformant(false);
+
         health = (byte)Mathf.Max(0f, health - damageAmount);
         if (health > 0)
         {
@@ -302,7 +309,21 @@ public class Asteroid : MonoBehaviour
         else
         {
             health = 0;
+
+            //Emit large sphere of particles
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, position, true);
+
+            //Send small asteroids flying in direction of hit normal
+            if (size == SIZE_LARGE)
+            {
+                SpawnClusterSmallFlyingTowardImpactNormal(direction, 3, 6);
+            }
+            else if (size == SIZE_MEDIUM)
+            {
+                SpawnClusterSmallFlyingTowardImpactNormal(direction, 0, 2);
+            }
+
+            //Spawn ore and smaller asteroids (if larger than smallest size)
             BreakApart(oreDrop);
         }
     }
@@ -314,7 +335,7 @@ public class Asteroid : MonoBehaviour
             //Update player tutorial bool
             if (!control.GetPlayerScript().tutorialHasMinedAsteroid && type == TYPE_CLAY_SILICATE)
             {
-                control.ui.SetTip("Clay-silicate asteroids contain little ore - look for differently coloured asteroids", 2f);
+                control.ui.SetTip("Clay-silicate asteroids contain little to no ore\nLook for differently coloured asteroids", 2f);
             }
             else
             {
@@ -483,7 +504,7 @@ public class Asteroid : MonoBehaviour
         for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
         {
             //Offset spawned asteroids randomly
-            float offsetMagnitude = 3f; //4f //1.2f
+            float offsetMagnitude = 1.5f; //3f; //4f //1.2f
             Vector3 position = transform.position + (offsetMagnitude * new Vector3(Random.value, Random.value, Random.value));
 
             //Spawn the new asteroid(s) from pool
@@ -500,6 +521,52 @@ public class Asteroid : MonoBehaviour
                 rb.inertiaTensor,
                 rb.inertiaTensorRotation
             );
+        }
+    }
+
+    private void SpawnClusterSmallFlyingTowardImpactNormal(Vector3 normal, int minCount, int maxCount)
+    {
+        for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
+        {
+            //Offset spawned asteroids randomly
+            float offsetMagnitude = 0.2f; //4f //1.2f
+            Vector3 position = transform.position + (offsetMagnitude * new Vector3(Random.value, Random.value, Random.value));
+
+            //Spawn the new asteroid(s) from pool
+            GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
+                position,
+                Asteroid.SIZE_SMALL,
+                type
+            );
+
+            //Pass rigidbody values
+            Rigidbody iaRb = instanceAsteroid.GetComponent<Asteroid>().GetComponent<Rigidbody>();
+            iaRb.velocity = rb.velocity;
+            iaRb.angularVelocity = rb.angularVelocity;
+            iaRb.inertiaTensor = rb.inertiaTensor;
+            iaRb.inertiaTensorRotation = rb.inertiaTensorRotation;
+
+            //Add force in direction of hit
+            float magnitude = Random.Range(800f, 2000f); //force strength
+
+            float frustumScale = 2f; //width and height of frustum to offset asteroid direction
+            Vector3 randomFrustumOffset = new Vector3( //generate world-space frustum
+                Random.Range(-frustumScale, frustumScale),
+                Random.Range(-frustumScale, frustumScale),
+                1f
+            );
+            randomFrustumOffset = instanceAsteroid.transform.TransformVector(randomFrustumOffset); //transform from world space to object space
+            float normalWeight = 12f; //how much of the final direction is made up of the original hit normal direction vs the random frustum offset
+            Vector3 direction = (randomFrustumOffset + (normal * normalWeight)).normalized; //direction is relative to the hit normal
+
+            iaRb.AddForce(magnitude * direction);
+
+            //Add torque
+            rb.AddTorque(100f * new Vector3(
+                Random.value,
+                Random.value,
+                Random.value
+            ));
         }
     }
 
@@ -578,8 +645,6 @@ public class Asteroid : MonoBehaviour
                 0.5f + (0.5f * Random.value)
             ).normalized;
             rb.AddForce(direction * magnitude);
-
-            //Debug.Log("Rogue!");
         }
         else if (roll <= rollMedium)
         {

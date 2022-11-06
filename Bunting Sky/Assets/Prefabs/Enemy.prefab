@@ -226,6 +226,7 @@ MonoBehaviour:
   modelGroupStrengthLarge: {fileID: 6685615498556311451}
   matEnemy: {fileID: 2100000, guid: 975c8070bf3ad6346af14d315d88a7fb, type: 2}
   ore: {fileID: 6046421670457136187, guid: 5f4a5adc8ea192b4fa0e54cc9c9e5cc4, type: 3}
+  soundSourceExplosion: {fileID: 7892786763060803639}
 --- !u!114 &7274521092117852910
 MonoBehaviour:
   m_ObjectHideFlags: 0

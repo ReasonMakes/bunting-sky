@@ -35,8 +35,9 @@ public class KeyBinds : MonoBehaviour
 
     [System.NonSerialized] public short bindPanMap;
     [System.NonSerialized] public short bindCameraFreeLook;
-    [System.NonSerialized] public short bindCameraZoomIn;
-    [System.NonSerialized] public short bindCameraZoomOut;
+    [System.NonSerialized] public short bindCameraZoomFollowDistIn;
+    [System.NonSerialized] public short bindCameraZoomFollowDistOut;
+    [System.NonSerialized] public short bindCameraZoomFOV;
 
     [System.NonSerialized] public short bindSetTarget;
     [System.NonSerialized] public short bindPrimaryFire;
@@ -67,6 +68,9 @@ public class KeyBinds : MonoBehaviour
 
         //Load user-saved keybinds. If no file exists, make one from the defaults
         Load(true);
+
+        //Update where keybinds are displayed
+        control.menu.MenuKeybindsUpdateBindText();
     }
 
     public void InitIOBuffer()
@@ -87,8 +91,9 @@ public class KeyBinds : MonoBehaviour
 
             bindPanMap = MOUSE_MIDDLE,
             bindCameraFreeLook = MOUSE_SECONDARY,
-            bindCameraZoomIn = MOUSE_SCROLL_UP,
-            bindCameraZoomOut = MOUSE_SCROLL_DOWN,
+            bindCameraZoomFollowDistIn = MOUSE_SCROLL_UP,
+            bindCameraZoomFollowDistOut = MOUSE_SCROLL_DOWN,
+            bindCameraZoomFOV = (short)KeyCode.Tab,
 
             bindSetTarget = MOUSE_MIDDLE,
             bindPrimaryFire = MOUSE_PRIMARY,
@@ -125,8 +130,9 @@ public class KeyBinds : MonoBehaviour
 
         ioBuffer.bindPanMap = bindPanMap;
         ioBuffer.bindCameraFreeLook = bindCameraFreeLook;
-        ioBuffer.bindCameraZoomIn = bindCameraZoomIn;
-        ioBuffer.bindCameraZoomOut = bindCameraZoomOut;
+        ioBuffer.bindCameraZoomFollowDistIn = bindCameraZoomFollowDistIn;
+        ioBuffer.bindCameraZoomFollowDistOut = bindCameraZoomFollowDistOut;
+        ioBuffer.bindCameraZoomFOV = bindCameraZoomFOV;
 
         ioBuffer.bindSetTarget = bindSetTarget;
         ioBuffer.bindPrimaryFire = bindPrimaryFire;
@@ -162,8 +168,9 @@ public class KeyBinds : MonoBehaviour
 
         bindPanMap = ioBuffer.bindPanMap;
         bindCameraFreeLook = ioBuffer.bindCameraFreeLook;
-        bindCameraZoomIn = ioBuffer.bindCameraZoomIn;
-        bindCameraZoomOut = ioBuffer.bindCameraZoomOut;
+        bindCameraZoomFollowDistIn = ioBuffer.bindCameraZoomFollowDistIn;
+        bindCameraZoomFollowDistOut = ioBuffer.bindCameraZoomFollowDistOut;
+        bindCameraZoomFOV = ioBuffer.bindCameraZoomFOV;
 
         bindSetTarget = ioBuffer.bindSetTarget;
         bindPrimaryFire = ioBuffer.bindPrimaryFire;
@@ -200,8 +207,9 @@ public class KeyBinds : MonoBehaviour
 
         public short bindPanMap;
         public short bindCameraFreeLook;
-        public short bindCameraZoomIn;
-        public short bindCameraZoomOut;
+        public short bindCameraZoomFollowDistIn;
+        public short bindCameraZoomFollowDistOut;
+        public short bindCameraZoomFOV;
 
         public short bindSetTarget;
         public short bindPrimaryFire;

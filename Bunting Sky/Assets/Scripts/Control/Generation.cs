@@ -153,8 +153,11 @@ public class Generation : MonoBehaviour
 
     private void SlowUpdate()
     {
-        SwapAsteroidPerformanceMode();
-        SwapEnemyPerformanceMode();
+        if (playerSpawned)
+        {
+            SwapAsteroidPerformanceMode();
+            SwapEnemyPerformanceMode();
+        }
     }
 
     private void VerySlowUpdate()
@@ -218,12 +221,16 @@ public class Generation : MonoBehaviour
             //The transform to check whether to swap
             Transform transformToSwap = asteroidsEnabled.transform.GetChild(i);
 
-            //Check which performance mode to use
+            Asteroid instanceAsteroidScript = transformToSwap.GetComponent<Asteroid>();
+
+            //Check which performance mode to use (fast-moving asteroids must be farther away before switching to performance mode)
             bool performant = (
-                Vector3.Distance(
-                control.GetPlayerTransform().position,
-                transformToSwap.position
-                ) >= Asteroid.distanceThresholdGreaterThanPerformantMode
+                Vector3.Distance( //moderately-far from player
+                    control.GetPlayerTransform().position,
+                    transformToSwap.position
+                ) >= Asteroid.THRESHOLD_DISTANCE_MAX_PERFORMANCE_MODE * Mathf.Max(1f, transformToSwap.GetComponent<Asteroid>().rb.velocity.magnitude * 0.3f)
+
+                && Time.time > instanceAsteroidScript.timeLastDamaged + instanceAsteroidScript.PERIOD_ACTIVE_AFTER_DAMAGED //not damaged recently
             );
 
             //Use proper performance mode
@@ -286,8 +293,12 @@ public class Generation : MonoBehaviour
         //nPlanetsPlanned = Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1); //extrastellar systems should have varied planet numbers
         PlanetarySystemClusterSpawn(nPlanetsPlanned, generationType);
 
-        //Update player UI
+        //Update
         control.ui.UpdateAllPlayerResourcesUI();
+        control.menu.sliderVolumeAll.value = control.settings.volumeAll;
+        control.menu.sliderVolumeMusic.value = control.settings.volumeMusic;
+        control.menu.MenuSettingsVolumeAllUpdate();   //changing slider values will call their respective methods only IF the setting is other than default,
+        control.menu.MenuSettingsVolumeMusicUpdate(); //so we call these explicitly to cover that case
 
         //Save
         SaveGame();
@@ -372,7 +383,7 @@ public class Generation : MonoBehaviour
 
         //Get positions for each planetary system
         Vector3[] position = new Vector3[nPlanets];
-        position = GenerateOrbitalPositionsWithReservedAngles(nPlanets, (int)(nPlanets * 1.5f), 2f, 3800f, 500f);
+        position = GenerateOrbitalPositionsWithReservedAngles(nPlanets, (int)(nPlanets * 1.5f), 2f, 3600f, 500f); //3000f //3800f old distanceOut
 
         //Spawn each planetary system
         for (int planetaryIndex = 0; planetaryIndex < nPlanets; planetaryIndex++)
@@ -674,7 +685,7 @@ public class Generation : MonoBehaviour
 
         //Get positions for each moon
         Vector3[] moonPositions = new Vector3[nMoons];
-        moonPositions = GenerateOrbitalPositionsWithReservedAngles(nMoons, (int)(nMoons * 2f), 2f, 500f, 350f); //nMoons, (int)(nMoons * 2f), 2f, 300f, 200f
+        moonPositions = GenerateOrbitalPositionsWithReservedAngles(nMoons, (int)(nMoons * 2f), 2f, 350f, 200f); //500f, 350f old distance //nMoons, (int)(nMoons * 2f), 2f, 300f, 200f
 
         //Spawn each moon
         for (int moonIndex = 0; moonIndex < nMoons; moonIndex++)
@@ -964,11 +975,16 @@ public class Generation : MonoBehaviour
             instanceAsteroid.GetComponent<Asteroid>().EnableInPool(position, size, type);
 
             //Add random torque
-            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(50f * new Vector3(
-                Mathf.Sqrt(Random.value),
-                Mathf.Sqrt(Random.value),
-                Mathf.Sqrt(Random.value)
-            ));
+            //float torqueMagnitudeRangeMax = 500f;
+            //float torqueMagnitude = Random.Range(0f, torqueMagnitudeRangeMax) * ((0.5f * Mathf.Sin(((control.TAU / 2f) * Random.value) - (control.TAU / 4f))) + 0.5f); //biased toward middle of range
+            //float torqueMagnitude = Mathf.Pow(30f, 2f) * Mathf.Sqrt(Random.value);
+            float torqueMagnitude = 60f * Mathf.Pow(Random.value, 1f / 4f);
+            Vector3 torqueDirection = new Vector3(
+                Random.value,
+                Random.value,
+                Random.value
+            ).normalized;
+            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(torqueMagnitude * torqueDirection);
 
             //Remember movement
             Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();

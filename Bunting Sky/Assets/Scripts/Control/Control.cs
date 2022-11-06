@@ -29,6 +29,7 @@ public class Control : MonoBehaviour
 
     //Origin looping
     private readonly float ORIGIN_LOOP_RADIUS = 20f;
+    [System.NonSerialized] public readonly float TAU = 6.28318530717958f;
 
     //User data
     public KeyBinds binds;
@@ -365,4 +366,51 @@ public class Control : MonoBehaviour
         return (int)str[index] - (int)'0';
     }
     #endregion
+
+    public Vector3 GetPredictedTrajectoryWithProjectileLeading(
+        Vector3 shooterPosition, Vector3 shooterVelocity, float shooterProjectileSpeed, float shooterProjectileManualLeadMultiplier,
+        Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetLastForceAdded, float targetMass
+    )
+    {
+        //Delta V
+        Vector3 deltaV = targetVelocity - shooterVelocity;
+
+        //Target position
+        Vector3 predictedTrajectory = targetPosition;
+
+        //Time until the projectiles hit the target
+        //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
+        float timeToTarget = Vector3.Magnitude(targetPosition - shooterPosition) / shooterProjectileSpeed;
+
+        //Lead speed
+        predictedTrajectory += (deltaV * (timeToTarget * shooterProjectileManualLeadMultiplier));
+
+        //Lead acceleration
+        //F = ma -> a = F/m
+        Vector3 targetAcceleration = targetLastForceAdded / targetMass;
+        //displacement = velocity * deltaTime + (1/2)​(acceleration)(deltaTime^2)
+        Vector3 displacementFromAcceleration = (deltaV * Time.deltaTime) + ((targetAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
+        predictedTrajectory += displacementFromAcceleration;
+
+        //Lead change in thrust direction (for if player is thrusting in a circle around the enemy)
+        //YET TO BE IMPLEMENTED
+
+        //Return prediction
+        return predictedTrajectory;
+    }
+
+    public bool GetIfPointLiesWithinTriangle(Vector2 point, Vector2 triVertex1, Vector2 triVertex2, Vector2 triVertex3)
+    {
+        //barycentric coordinate system
+        //http://totologic.blogspot.com/2014/01/accurate-point-in-triangle-test.html
+
+        float denominator = ((triVertex2.y - triVertex3.y) * (triVertex1.x - triVertex3.x) + (triVertex3.x - triVertex2.x) * (triVertex1.y - triVertex3.y));
+        float a =           ((triVertex2.y - triVertex3.y) * (point.x - triVertex3.x) + (triVertex3.x - triVertex2.x) * (point.y - triVertex3.y)) / denominator;
+        float b =           ((triVertex3.y - triVertex1.y) * (point.x - triVertex3.x) + (triVertex1.x - triVertex3.x) * (point.y - triVertex3.y)) / denominator;
+        float c =           1 - a - b;
+
+        return 0 <= a && a <= 1
+            && 0 <= b && b <= 1
+            && 0 <= c && c <= 1;
+    }
 }

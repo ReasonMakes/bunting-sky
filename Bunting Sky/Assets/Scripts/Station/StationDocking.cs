@@ -70,28 +70,31 @@ public class StationDocking : MonoBehaviour
 
             if (!Commerce.menuOpen && other.gameObject.name == "Player Collider")
             {
-                //Is host
-                host = true;
+                if (!control.GetPlayerScript().isDestroyed)
+                {
+                    //Is host
+                    host = true;
 
-                //Send name to commerce script
-                control.commerce.stationName.text = "Drydock\n" + humanName.title + " of " + GetParentMoonName(); //humanName.title + "'s Drydock";
-                control.commerce.pricePlatinoid = pricePlatinoid;
-                control.commerce.pricePreciousMetal = pricePreciousMetal;
-                control.commerce.priceWater = priceWater;
+                    //Send name to commerce script
+                    control.commerce.stationName.text = "Drydock\n" + humanName.title + " of " + GetParentMoonName(); //humanName.title + "'s Drydock";
+                    control.commerce.pricePlatinoid = pricePlatinoid;
+                    control.commerce.pricePreciousMetal = pricePreciousMetal;
+                    control.commerce.priceWater = priceWater;
 
-                //Send ore purchase offers to commerce script
-                control.commerce.pricePlatinoid = pricePlatinoid;
-                control.commerce.pricePreciousMetal = pricePreciousMetal;
-                control.commerce.priceWater = priceWater;
+                    //Send ore purchase offers to commerce script
+                    control.commerce.pricePlatinoid = pricePlatinoid;
+                    control.commerce.pricePreciousMetal = pricePreciousMetal;
+                    control.commerce.priceWater = priceWater;
 
-                //Send upgrades to commerce script
-                SendUpgradeButtonsToCommerce(0);//, control.commerce.menuButtonUpgrade0, out control.commerce.priceUpgrade0);
-                SendUpgradeButtonsToCommerce(1);//, control.commerce.menuButtonUpgrade1, out control.commerce.priceUpgrade1);
-                SendUpgradeButtonsToCommerce(2);//, control.commerce.menuButtonUpgrade2, out control.commerce.priceUpgrade2);
-                SendUpgradeButtonsToCommerce(3);//, control.commerce.menuButtonUpgrade3, out control.commerce.priceUpgrade3);
+                    //Send upgrades to commerce script
+                    SendUpgradeButtonsToCommerce(0);//, control.commerce.menuButtonUpgrade0, out control.commerce.priceUpgrade0);
+                    SendUpgradeButtonsToCommerce(1);//, control.commerce.menuButtonUpgrade1, out control.commerce.priceUpgrade1);
+                    SendUpgradeButtonsToCommerce(2);//, control.commerce.menuButtonUpgrade2, out control.commerce.priceUpgrade2);
+                    SendUpgradeButtonsToCommerce(3);//, control.commerce.menuButtonUpgrade3, out control.commerce.priceUpgrade3);
 
-                //Open commerce menu
-                control.commerce.MenuToggle();
+                    //Open commerce menu
+                    control.commerce.MenuToggle();
+                }
             }
         }
     }
@@ -176,5 +179,14 @@ public class StationDocking : MonoBehaviour
 
         //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
         return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<NameCelestial>().title;
+    }
+
+    public Moon GetParentMoonScript()
+    {
+        //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
+        int siblingIndex = transform.parent.GetSiblingIndex();
+
+        //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
+        return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<Moon>();
     }
 }

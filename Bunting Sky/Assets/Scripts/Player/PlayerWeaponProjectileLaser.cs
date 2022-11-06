@@ -9,8 +9,8 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
 
     [System.NonSerialized] public float timeSpentAlive;
     [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
-    private readonly float MIN_GLOW_DISTANCE = 4f; //1.0f;
-    //private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
+    private readonly float DISTANCE_THRESHOLD_MIN_TO_GLOW = 4f; //2f; //1.0f;
+    private readonly float COLLISION_ASTEROID_FORCE = 2.0f;
 
     [System.NonSerialized] public bool canDamage = true;
 
@@ -32,7 +32,7 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         {
             //Make point light visible after awhile and invisible just before self-destruction
             UpdateEmissionAndLuminosity();
-            
+
             //Raycast collisions
             UpdateCollisionDetection();
 
@@ -80,63 +80,60 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         LayerMask someLayerMask = -1;
         if (Physics.Raycast(transform.position, transform.right, out RaycastHit hit, raycastDistance, someLayerMask, QueryTriggerInteraction.Ignore))
         {
-            //Debug.Log("Laser hit object: " + hit.transform.name);
-
-            if (hit.transform.name == control.generation.asteroid.name + "(Clone)")
-            {
-                Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
-
-                //Break apart asteroid
-                if (!asteroidScript.isDestroying)
-                {
-                    if (canDamage)
-                    {
-                        //Calculate the direction from the laser to the asteroid hit point
-                        Vector3 direction = (transform.position - hit.point).normalized;
-
-                        //Add force to the asteroid (negative direction because we should push away, not toward)
-                        //asteroidScript.rb.AddForce(-direction * COLLISION_ASTEROID_FORCE);
-                        //asteroidScript.rb.AddTorque(-direction * COLLISION_ASTEROID_FORCE);
-
-                        //Damage the asteroid
-                        asteroidScript.Damage(1, direction, hit.point, true);
-                    }
-
-                    //Reset tooltip certainty
-                    //control.ui.tipAimNeedsHelpCertainty = 0f;
-                }
-            }
-            else if (hit.transform.name == control.generation.enemy.name + "(Clone)")
-            {
-                if (canDamage)
-                {
-                    //Calculate the direction from the laser to the asteroid hit point
-                    Vector3 direction = (transform.position - hit.point).normalized;
-
-                    hit.transform.GetComponent<Enemy>().Damage(1, direction, hit.point, true, true);
-                }
-
-                //Reset tooltip certainty
-                //control.ui.tipAimNeedsHelpCertainty = 0f;
-                
-            }
-
-            //Can no longer deal damage
-            canDamage = false;
-
-            //Deactivate self
-            //DeactivateSelf();
+            TryInteract(hit.transform, hit.point);
         }
     }
 
     void OnCollisionEnter(Collision collision)
     {
+        TryInteract(collision.transform, transform.position);
         DeactivateSelf();
+    }
+
+    private void TryInteract(Transform transformWeHit, Vector3 hitPoint)
+    {
+        //transform name
+        //Vector3 collision point
+
+        if (transformWeHit.name == control.generation.asteroid.name + "(Clone)")
+        {
+            Asteroid asteroidScript = transformWeHit.GetComponent<Asteroid>();
+
+            //Break apart asteroid
+            if (!asteroidScript.isDestroying)
+            {
+                if (canDamage)
+                {
+                    //Calculate the direction from the laser to the asteroid hit point
+                    Vector3 direction = (transform.position - hitPoint).normalized;
+
+                    //Add force to the asteroid (negative direction because we should push away, not toward)
+                    asteroidScript.rb.AddForce(-direction * COLLISION_ASTEROID_FORCE);
+                    asteroidScript.rb.AddTorque(-direction * COLLISION_ASTEROID_FORCE);
+
+                    //Damage the asteroid
+                    asteroidScript.Damage(1, direction, hitPoint, true);
+                }
+            }
+        }
+        else if (transformWeHit.name == control.generation.enemy.name + "(Clone)")
+        {
+            if (canDamage)
+            {
+                //Calculate the direction from the laser to the asteroid hit point
+                Vector3 direction = (transform.position - hitPoint).normalized;
+
+                transformWeHit.GetComponent<Enemy>().Damage(1, direction, hitPoint, true, true);
+            }
+        }
+
+        //Can no longer deal damage
+        canDamage = false;
     }
 
     private void UpdateEmissionAndLuminosity()
     {
-        bool glow = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > MIN_GLOW_DISTANCE; //todo add SPECIFICALLY forward velocity of player (use dot product?)
+        bool glow = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > DISTANCE_THRESHOLD_MIN_TO_GLOW; //todo add SPECIFICALLY forward velocity of player (use dot product?)
 
         transform.Find("Emissive Model").gameObject.SetActive(glow);
         transform.Find("Point Light").gameObject.SetActive(glow);

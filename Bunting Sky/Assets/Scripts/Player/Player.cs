@@ -15,6 +15,7 @@ public class Player : MonoBehaviour
     #region Init fields: Camera
     //Camera
     private bool fovSet = false;
+    private float cameraZoom = 1f;
     private readonly float MOUSE_SENS_COEFF = 1f;
     public GameObject positionMount;
     private float centreMountPitch = 0f;
@@ -33,6 +34,7 @@ public class Player : MonoBehaviour
     public GameObject fpModel;
     [System.NonSerialized] public static bool firstPerson = false;
     [System.NonSerialized] public static bool thirdPerson = false;
+    public Material tractorBeamMaterial;
     public GameObject mapCam;
     public GameObject mapLight;
     private Vector3 mapOffset = Vector3.zero;
@@ -72,17 +74,17 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
     //Thrust
     private Vector3 thrustVector;
-    private readonly float THRUST = 10e3f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
+    private readonly float THRUST = 13e3f; //10e3f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
-    private float matchVelOffThrustModifier = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
+    private readonly float THRUST_REDUCTION_TO_COMPENSATE_NO_DRAG_MULTIPLIER = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
     private readonly float THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER = 3.0f; //6.0f; //9.0f; //5.0f; //16f; //multiplies forward thrust after holding forward for awhile
     private readonly float THRUST_ENGINE_WARMUP_SPEED = 0.25f; //0.5f; //3f;
     private readonly float THRUST_ENGINE_COOLDOWN_SPEED = 12f;
     private readonly float THRUST_FORWARD_MULTIPLIER = 1.1f; //extra thrust for moving forward rather than strafing
     private float thrustMultiplier = 1f; //internally used multiplier to keep track of total multiplier
     private float thrustCheat = 1f;
-    public Vector3 lastForceAdded = Vector3.zero;
+    [System.NonSerialized] public Vector3 lastForceAdded = Vector3.zero;
     //Torque
     private float torqueBaseStrength = 500f; //30f;
     private float angularDragWhenEnginesOn = 40f; //40f; //for smoothing
@@ -105,11 +107,13 @@ public class Player : MonoBehaviour
 
     //Movement: Relative drag
     [System.NonSerialized] public GameObject targetObject;
+    public GameObject targetObjectLeadGhost;
+
     [System.NonSerialized] public GameObject cBodies;
     [System.NonSerialized] public readonly float ORBITAL_DRAG_MODE_THRESHOLD = 50f;
     [System.NonSerialized] public Vector3 velocityOfObjectDraggingRelativeTo = Vector3.zero; //used for fired projectiles
-    private float distToClosestMoon = 100f; //this should be greater than the orbitalDragModeThreshold so that the player starts with drag relative to system
-    private Transform closestMoonOrStationTransform;
+    private float distToClosestMoonOrMoonChild = 100f; //this should be greater than the orbitalDragModeThreshold so that the player starts with drag relative to system
+    private Transform closestMoonOrMoonChildTransform;
     private float distToClosestAsteroid = 100f;
     private Transform closestAsteroidTransformToDragRelativeTo;
     private readonly float DRAG = 3f; //Drag amount for all drag modes
@@ -133,16 +137,22 @@ public class Player : MonoBehaviour
     private float musicPlayTime = 30f; //max time until first song plays
     private readonly float MUSIC_PLAY_QUEUE_TIME = 60f;
     private readonly float MUSIC_PLAY_QUEUE_VARIANCE_TIME = 60f;
+    [System.NonSerialized] public readonly float SOUND_MUSIC_VOLUME = 0.04f;
     private bool firstSong = true;
 
     //Audio: Sound Effects
     public AudioSource soundSourceRocket;
     public AudioClip soundClipRocket;
-    private readonly float SOUND_ROCKET_MAX_VOLUME = 0.02f;
+    [System.NonSerialized] public readonly float SOUND_ROCKET_VOLUME = 0.027f; //0.4f; //0.02f;
     private readonly float SOUND_ROCKET_VOLUME_DELTA_RATE = 0.2f; //0.1f;
-    private readonly float SOUND_ROCKET_MAX_PITCH = 1.5f;
+    private readonly float SOUND_ROCKET_PITCH_MAX = 1.5f;
     private readonly float SOUND_ROCKET_PITCH_DELTA_RATE = 0.2f;
-
+    private readonly float SOUND_IMPACT_VOLUME_SIGNIFICANT = 0.067f;
+    private readonly float SOUND_IMPACT_VOLUME_INSIGNIFICANT = 0.027f;
+    [System.NonSerialized] public readonly float SOUND_LASER_FIRE_VOLUME = 0.017f;
+    [System.NonSerialized] public readonly float SOUND_LASER_RELOAD_VOLUME = 0.075f; //0.06f; //0.03f; //0.0175f; //0.02f;
+    [System.NonSerialized] public readonly float SOUND_SEISMIC_CHARGE_FIRE_VOLUME = 0.067f;
+    
     public AudioSource soundSourceLaser0;
     public AudioSource soundSourceLaser1;
     public AudioSource soundSourceLaser2;
@@ -159,12 +169,15 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public int soundSourceSeismicChargeArrayIndex = 0;
     [System.NonSerialized] public int soundSourceSeismicChargeArrayLength = 2;
     public AudioClip soundClipSeismicCharge;
+    public AudioSource soundSourceSeismicChargeExplosion;
+    [System.NonSerialized] public readonly float SOUND_SEISMIC_CHARGE_EXPLOSION_VOLUME = 0.067f;
 
     public AudioSource soundSourceOreCollected;
+    [System.NonSerialized] public readonly float SOUND_ORE_COLLECTED_VOLUME = 0.01f;
     public AudioClip soundClipOreCollected;
 
-    public AudioSource soundSourceCoins;
-    public AudioClip soundClipCoins;
+    public AudioSource soundSourceCurrencyChange;
+    [System.NonSerialized] public readonly float SOUND_CURRENCY_CHANGE_VOLUME = 0.067f;
 
     public AudioSource soundSourceCollision;
     public AudioClip soundClipCollision;
@@ -209,13 +222,17 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public int tutorialMoonVisitedID2 = -1;
     [System.NonSerialized] public int tutorialMoonVisitedID3 = -1;
     [System.NonSerialized] public bool tutorialHasUsedHeighliner = false;
-    private bool tutorialHasPressedZoomIn = false;
-    private bool tutorialHasPressedZoomOut = false;
+    private bool tutorialHasPressedZoomInInMap = false;
+    private bool tutorialHasPressedZoomOutInMap = false;
     private bool tutorialHasPressedPanMap = false;
     [System.NonSerialized] public bool tipHasBoughtOutline = false;
     [System.NonSerialized] public bool tipHasUsedOutline = false;
+    [System.NonSerialized] public bool tipHasBoughtRefinery = false;
+    [System.NonSerialized] public bool tipHasUsedRefinery = false;
     [System.NonSerialized] public bool tipHasBoughtSeismicCharges = false;
     [System.NonSerialized] public bool tipHasUsedSeismicCharges = false;
+    private bool tutorialHasZoomedIn = false;
+    private bool tutorialHasZoomedOut = false;
 
     //PARTICLES
     public GameObject damageParticlePrefab;
@@ -229,6 +246,7 @@ public class Player : MonoBehaviour
     //Cargo
     [System.NonSerialized] public double currency = 0.0d; //100.0; //ICC stands for interstellar crypto currency
     [System.NonSerialized] public double[] ore = new double[4] { 0.0d, 0.0d, 0.0d, 0.0d }; //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water //we use double here because the refinery subtracts fractions
+    [System.NonSerialized] public readonly double ORE_MAX_DEFAULT = 20.0d;
     [System.NonSerialized] public double oreMax = 20.0d;
 
     /* 
@@ -244,10 +262,12 @@ public class Player : MonoBehaviour
 
     [System.NonSerialized] public int[] upgradeLevels;
     private bool upgradesInitialized = false;
-    private readonly double REFINERY_ORE_WATER_IN_RATE = 0.1d;
-    private readonly double REFINERY_FUEL_OUT_RATE = 0.075d;
-    private readonly float REFINERY_TIME_BETWEEN_REFINES = 10.0f;
+    private readonly double REFINERY_ORE_WATER_IN_RATE = 1.0d; //0.1d;
+    private readonly double REFINERY_FUEL_OUT_RATE = 0.75d; //0.075d;
+    private readonly float REFINERY_TIME_BETWEEN_REFINES = 1.0f; //10.0f;
     private float refineryTimeAtLastRefine = 0f;
+    private readonly float UPGRADE_ACCELERATION_MULTIPLIER = 2f; //how many times more thrust (and half as much more drag) we get per upgrade level - this DOES speed the player up
+    private readonly float UPGRADE_TORQUE_FORCE_MULTIPLIER = 2f; //how many times more torque we get per upgrade level
     #endregion
 
     #region Init fields: Weapons
@@ -271,7 +291,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public static readonly int WEAPON_ID_NONE = 0;
     [System.NonSerialized] public static Weapon weaponNone = new Weapon(WEAPON_ID_NONE, "<None>");
     [System.NonSerialized] public static readonly int WEAPON_ID_MINING_LASER = 1;
-    [System.NonSerialized] public static Weapon weaponLaser = new Weapon(WEAPON_ID_MINING_LASER, "Mining laser");
+    [System.NonSerialized] public static Weapon weaponLaser = new Weapon(WEAPON_ID_MINING_LASER, "Nariman 40mm");
     [System.NonSerialized] public static readonly int WEAPON_ID_SEISMIC_CHARGES = 2;
     [System.NonSerialized] public static Weapon weaponSeismicCharges = new Weapon(WEAPON_ID_SEISMIC_CHARGES, "Seismic charges");
     [System.NonSerialized] public Weapon weaponSlot0 = weaponLaser; //Weapon in slot 0
@@ -286,6 +306,8 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public float weaponSelectedSingleCooldownDuration;
     [System.NonSerialized] public float weaponSelectedSingleCooldownCurrent;
 
+    [System.NonSerialized] public float weaponSelectedProjectileSpeed;
+
     [System.NonSerialized] public float weaponUsedRecently = 0f;
     #endregion
 
@@ -298,11 +320,11 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-        //Dev mode modifications
-        if (control.IS_EDITOR)
-        {
-            thrustCheat = 2f;
-        }
+        ////Dev mode modifications
+        //if (control.IS_EDITOR)
+        //{
+        //    thrustCheat = 2f;
+        //}
 
         //Damage particles pool
         damageParticles = control.generation.damageParticles; //get hierarchy reference
@@ -347,7 +369,7 @@ public class Player : MonoBehaviour
         centreMountPitch = centreMountTran.localRotation.x;
         centreMountYaw = centreMountTran.localRotation.y;
         centreMountRoll = centreMountTran.localRotation.z;
-        SetCameraSettings();
+        UpdateCameraSettings();
         
         //Vitals
         //We have to work with odd-numbered multiples of the inverse of the flash rate to end smoothly (end while it is transparent)
@@ -361,16 +383,15 @@ public class Player : MonoBehaviour
 
         //AUDIO
         //Play the first song 0 to 30 seconds after startup
-        musicPlayTime = Time.time;// + UnityEngine.Random.Range(0f, musicPlayTime);
+        musicPlayTime = Time.time + UnityEngine.Random.Range(0f, musicPlayTime);
 
-        //Init sounds
+        //Init sounds (this is unnecessary)
         soundSourceRocket.clip = soundClipRocket;
         soundSourceLaser0.clip = soundClipLaser;
         soundSourceLaser1.clip = soundClipLaser;
         soundSourceLaser2.clip = soundClipLaser;
         soundSourceLaser3.clip = soundClipLaser;
         soundSourceLaserReload.clip = soundClipLaserReload;
-        soundSourceCoins.clip = soundClipCoins;
         soundSourceCollision.clip = soundClipCollision;
         soundSourceSeismicCharge0.clip = soundClipSeismicCharge;
         soundSourceSeismicCharge1.clip = soundClipSeismicCharge;
@@ -555,18 +576,32 @@ public class Player : MonoBehaviour
                 transform.position += transform.forward * 400f;
             }
 
+            ////Unlock thrust acceleration
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_ACCELERATION]++;
+            //    Debug.Log(upgradeLevels[control.commerce.UPGRADE_ACCELERATION]);
+            //}
+
+            ////Give currency
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    currency += 1000;
+            //    control.ui.UpdateAllPlayerResourcesUI();
+            //}
+
             ////Spawn bandit
             //if (binds.GetInputDown(binds.bindCheat1))
             //{
             //    control.generation.EnemySpawn(transform.position + (transform.forward * 10f), Enemy.STRENGTH_ELITE);
             //}
 
-            //Unlock seismic charges
-            if (binds.GetInputDown(binds.bindCheat2))
-            {
-                upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-                weaponSlot1 = weaponSeismicCharges;
-            }
+            ////Unlock seismic charges
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+            //    weaponSlot1 = weaponSeismicCharges;
+            //}
 
             ////Spawn asteroid from pool
             //if (binds.GetInputDown(binds.bindCheat1))
@@ -619,13 +654,6 @@ public class Player : MonoBehaviour
             //    weaponSlot1 = weaponSeismicCharges;
             //}
 
-            ////Free money
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    currency += 1000;
-            //    control.ui.UpdateAllPlayerResourcesUI();
-            //}
-
             ////Force tutorial level
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
@@ -646,7 +674,7 @@ public class Player : MonoBehaviour
             //    }
             //}
         }
-        
+
 
         //Spawn
         //Press O to spawn asteroid
@@ -705,7 +733,7 @@ public class Player : MonoBehaviour
         //Setup the camera
         if (!fovSet)
         {
-            SetCameraSettings();
+            UpdateCameraSettings();
         }
 
         //AUDIO
@@ -745,7 +773,7 @@ public class Player : MonoBehaviour
 
             //Fuel increment (in-situ refinery)
             bool missingEnoughFuel = vitalsFuel < vitalsFuelMax - REFINERY_FUEL_OUT_RATE;
-            bool hasUpgrade = upgradeLevels[control.commerce.UPGRADE_IN_SITU_FUEL_REFINERY] >= 1;
+            bool hasUpgrade = upgradeLevels[control.commerce.UPGRADE_REFINERY] >= 1;
             bool hasEnoughOre = ore[Asteroid.TYPE_WATER] > REFINERY_ORE_WATER_IN_RATE;
             bool enoughTimeHasPassed = Time.time > refineryTimeAtLastRefine + REFINERY_TIME_BETWEEN_REFINES;
             if (missingEnoughFuel && hasUpgrade && hasEnoughOre && enoughTimeHasPassed && control.settings.refine)
@@ -843,7 +871,7 @@ public class Player : MonoBehaviour
             if (tipHasBoughtOutline && !tipHasUsedOutline)
             {
                 control.ui.SetTip(
-                    "Toggle eclipse vision with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleOutline)
+                    "Toggle eclipse vision with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleOutline, true)
                 );
 
                 if (binds.GetInputDown(binds.bindToggleOutline))
@@ -857,19 +885,33 @@ public class Player : MonoBehaviour
                 if (weaponSlotSelected == 0)
                 {
                     control.ui.SetTip(
-                        "Select seismic charges with " + control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1)
+                        "Select seismic charges with " + control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1, true)
                     );
                 }
                 else
                 {
                     control.ui.SetTip(
-                        "Fire a seismic charge with " + control.ui.GetBindAsPrettyString(control.binds.bindPrimaryFire)
+                        "Fire a seismic charge with " + control.ui.GetBindAsPrettyString(control.binds.bindPrimaryFire, true)
                     );
                 }
 
                 //Used flag toggled in weapons
             }
-            
+            //Refinery
+            if (tipHasBoughtRefinery && !tipHasUsedRefinery)
+            {
+                control.ui.SetTip(
+                    "The in-situ fuel refinery processes water ice from your cargo bay directly into usable fuel"
+                    + "You must have water ice in your cargo bay and the refinery toggled on for it to work"
+                    + "\nToggle refinery with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleRefine, true)
+                );
+
+                if (binds.GetInputDown(binds.bindToggleRefine))
+                {
+                    tipHasUsedOutline = true;
+                }
+            }
+
 
             //Camera shake
             //Generate actual offset
@@ -891,6 +933,84 @@ public class Player : MonoBehaviour
             float cameraOffsetRotationSmoothingMultiplier = CAMERA_OFFSET_ROTATION_SMOOTHING_RATE;
             cameraOffsetRotationMagnitudePitch *= cameraOffsetRotationSmoothingMultiplier;
             cameraOffsetRotationMagnitudeYaw *= cameraOffsetRotationSmoothingMultiplier;
+
+            //Target ghost
+            if (
+                targetObject != null
+                && (
+                    targetObject.name == control.generation.enemy.name + "(Clone)"
+                    || targetObject.name == control.generation.asteroid.name + "(Clone)"
+                )
+            )
+            {
+                //Check to make sure the target isn't in the process of destroying
+                bool enable = false;
+                if (targetObject.name == control.generation.enemy.name + "(Clone)")
+                {
+                    if (!targetObject.GetComponentInChildren<Enemy>().isDestroying && !targetObject.GetComponentInChildren<Enemy>().isDestroyed)
+                    {
+                        enable = true;
+                    }
+                }
+                else if (targetObject.name == control.generation.asteroid.name + "(Clone)")
+                {
+                    if (!targetObject.GetComponentInChildren<Asteroid>().isDestroying && !targetObject.GetComponentInChildren<Asteroid>().isDestroyed)
+                    {
+                        enable = true;
+                    }
+                }
+
+                //Set target ghost position
+                if (enable)
+                {
+                    targetObjectLeadGhost.SetActive(true);
+                    control.ui.targetObjectLeadGhostImage.gameObject.SetActive(true);
+
+                    //Determine last force added for calculating target acceleration
+                    Vector3 targetLastForceAdded = Vector3.zero;
+                    if (targetObject.name == control.generation.enemy.name + "(Clone)")
+                    {
+                        targetLastForceAdded = targetObject.GetComponentInChildren<Enemy>().lastForceAdded;
+                    }
+
+                    //Position the target ghost in the trajectory of the target
+                    targetObjectLeadGhost.transform.position = control.GetPredictedTrajectoryWithProjectileLeading(
+                        transform.position, rb.velocity, weaponSelectedProjectileSpeed, 1f,
+                        targetObject.transform.position, targetObject.GetComponentInChildren<Rigidbody>().velocity, targetLastForceAdded, targetObject.GetComponentInChildren<Rigidbody>().mass
+                    );
+
+                    //Align 2D UI element
+                    control.ui.targetObjectLeadGhostImage.transform.position = control.ui.Get2DUICoordsFrom3DWorldPosition(
+                        targetObjectLeadGhost.transform.position,
+                        control.ui.targetObjectLeadGhostImage,
+                        false
+                    );
+                }
+                else
+                {
+                    //Disable
+                    targetObjectLeadGhost.SetActive(false);
+                    control.ui.targetObjectLeadGhostImage.gameObject.SetActive(false);
+                }
+            }
+            else
+            {
+                //Disable
+                targetObjectLeadGhost.SetActive(false);
+                control.ui.targetObjectLeadGhostImage.gameObject.SetActive(false);
+            }
+
+            //Optical Zoom
+            if (binds.GetInput(binds.bindCameraZoomFOV))
+            {
+                cameraZoom = 0.5f;
+                UpdateCameraSettings();
+            }
+            else
+            {
+                cameraZoom = 1f;
+                UpdateCameraSettings();
+            }
         }
     }
 
@@ -932,61 +1052,61 @@ public class Player : MonoBehaviour
 
                 string forward;
                 if (tutorialHasPressedForward) {
-                    forward = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustForward) + "</color>";
+                    forward = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustForward, true) + "</color>";
                 }
                 else
                 {
-                    forward = control.ui.GetBindAsPrettyString(binds.bindThrustForward);
+                    forward = control.ui.GetBindAsPrettyString(binds.bindThrustForward, true);
                 }
 
                 string left;
                 if (tutorialHasPressedLeft)
                 {
-                    left = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustLeft) + "</color>";
+                    left = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustLeft, true) + "</color>";
                 }
                 else
                 {
-                    left = control.ui.GetBindAsPrettyString(binds.bindThrustLeft);
+                    left = control.ui.GetBindAsPrettyString(binds.bindThrustLeft, true);
                 }
 
                 string backward;
                 if (tutorialHasPressedBackward)
                 {
-                    backward = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustBackward) + "</color>";
+                    backward = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustBackward, true) + "</color>";
                 }
                 else
                 {
-                    backward = control.ui.GetBindAsPrettyString(binds.bindThrustBackward);
+                    backward = control.ui.GetBindAsPrettyString(binds.bindThrustBackward, true);
                 }
 
                 string right;
                 if (tutorialHasPressedRight)
                 {
-                    right = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustRight) + "</color>";
+                    right = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustRight, true) + "</color>";
                 }
                 else
                 {
-                    right = control.ui.GetBindAsPrettyString(binds.bindThrustRight);
+                    right = control.ui.GetBindAsPrettyString(binds.bindThrustRight, true);
                 }
 
                 string down;
                 if (tutorialHasPressedDown)
                 {
-                    down = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustDown) + "</color>";
+                    down = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustDown, true) + "</color>";
                 }
                 else
                 {
-                    down = control.ui.GetBindAsPrettyString(binds.bindThrustDown);
+                    down = control.ui.GetBindAsPrettyString(binds.bindThrustDown, true);
                 }
 
                 string up;
                 if (tutorialHasPressedUp)
                 {
-                    up = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustUp) + "</color>";
+                    up = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustUp, true) + "</color>";
                 }
                 else
                 {
-                    up = control.ui.GetBindAsPrettyString(binds.bindThrustUp);
+                    up = control.ui.GetBindAsPrettyString(binds.bindThrustUp, true);
                 }
 
                 control.ui.SetTip(
@@ -1016,15 +1136,23 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 1)
             {
                 control.ui.SetTip(
-                    "You can skip this tutorial in Menu > Settings (press [ESC])",
-                    TUTORIAL_TIP_DURATION * 0.5f
+                    "You can skip this tutorial in Menu > Settings (press " + control.ui.GetBindAsPrettyString(binds.bindToggleMenu, true) + "), if you desire",
+                    TUTORIAL_TIP_DURATION * 0.6f
                 );
-                IncrementTutorial();
+                IncrementTutorial(TUTORIAL_TIP_DURATION * 0.8f);
             }
             else if (tutorialLevel == 2)
             {
                 control.ui.SetTip(
-                    "Mine asteroids for valuable materials\nFire your weapon with " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire),
+                    "If you forget a keybind or wish to change one, go to Menu > Keybinds (press " + control.ui.GetBindAsPrettyString(binds.bindToggleMenu, true) + ")",
+                    TUTORIAL_TIP_DURATION
+                );
+                IncrementTutorial(TUTORIAL_TIP_DURATION);
+            }
+            else if (tutorialLevel == 3)
+            {
+                control.ui.SetTip(
+                    "Mine asteroids for valuable materials\nFire your weapon with " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire, true),
                     0f
                 );
 
@@ -1042,10 +1170,10 @@ public class Player : MonoBehaviour
                     IncrementTutorial(0f);
                 }
             }
-            else if (tutorialLevel == 3)
+            else if (tutorialLevel == 4)
             {
                 control.ui.SetTip(
-                    "Collect the ore by moving close enough for your tractor beam",
+                    "Collect the ore by moving close enough for your tractor beam to activate",
                     0f
                 );
 
@@ -1055,7 +1183,7 @@ public class Player : MonoBehaviour
                     IncrementTutorial(0f);
                 }
             }
-            else if (tutorialLevel == 4)
+            else if (tutorialLevel == 5)
             {
                 control.ui.SetTip(
                     "Sell your cargo at space stations to afford fuel, repairs, and upgrades",
@@ -1080,15 +1208,23 @@ public class Player : MonoBehaviour
                     IncrementTutorial(0f);
                 }
             }
-            else if (tutorialLevel == 5)
+            else if (tutorialLevel == 6)
             {
                 control.ui.SetTip(
-                    "If you forget a keybind or wish to change it, you can do so in Menu > Keybinds (press ESC)",
-                    TUTORIAL_TIP_DURATION * 0.5f
+                    "Whether mining or in combat, targetting assists aiming"
+                    + "\nTarget what you're looking at with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget, true),
+                    0f
                 );
-                IncrementTutorial();
+
+                if (targetObject != null)
+                {
+                    if (targetObject.name != control.generation.station.name)
+                    {
+                        IncrementTutorial(0f);
+                    }
+                }
             }
-            else if (tutorialLevel == 6)
+            else if (tutorialLevel == 7)
             {
                 control.ui.SetTip(
                     "Different asteroid types may be found around other celestial bodies, but beware:\nbandits may be looking to steal your cargo, your ship, and your life\nGood luck, pilot",
@@ -1096,11 +1232,51 @@ public class Player : MonoBehaviour
                 );
                 IncrementTutorial();
             }
-            else if (tutorialLevel == 7 && !tutorialHasUsedHeighliner && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1)
+            else if (tutorialLevel == 8 && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1) //visited 2 moons
+            {
+                if (!tutorialHasZoomedIn && !tutorialHasZoomedOut)
+                {
+                    control.ui.SetTip(
+                        "Zoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistIn, true) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistOut, true),
+                        0f
+                    );
+
+                    if (tutorialHasZoomedIn && tutorialHasZoomedOut)
+                    {
+                        IncrementTutorial(0f);
+                    }
+                }
+                else
+                {
+                    //Instant increment if the player already knows how to do it
+                    tutorialLevel++;
+                }
+            }
+            else if (tutorialLevel == 9)
+            {
+                if (!tutorialHasZoomedIn && !tutorialHasZoomedOut)
+                {
+                    control.ui.SetTip(
+                        "Third-person can be useful in combinationg with free-look " + control.ui.GetBindAsPrettyString(binds.bindCameraFreeLook, true) + "\nThis allows you to see beside & behind your ship while travelling through the void\nBut first-person is best for mining and for combat",
+                        TUTORIAL_TIP_DURATION
+                    );
+
+                    if (tutorialHasZoomedIn && tutorialHasZoomedOut)
+                    {
+                        IncrementTutorial(TUTORIAL_TIP_DURATION);
+                    }
+                }
+                else
+                {
+                    //Instant increment if the player already knows how to do it
+                    tutorialLevel++;
+                }
+            }
+            else if (tutorialLevel == 10 && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1 && tutorialMoonVisitedID3 != -1) //visited 3 moons
             {
                 //Hasn't visited a heighliner, and has visited several moons
                 control.ui.SetTip(
-                    "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap),
+                    "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap, true),
                     0f
                 );
 
@@ -1110,34 +1286,49 @@ public class Player : MonoBehaviour
                     IncrementTutorial(0f);
                 }
             }
-            else if (tutorialLevel == 8)
+            else if (tutorialLevel == 11)
             {
-                control.ui.SetTip(
-                    "You can use the map to set targets just as you would outside of it, with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget)
-                    + "\nZoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomIn) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomOut)
-                    + "\nPan around the map with " + control.ui.GetBindAsPrettyString(binds.bindPanMap),
-                    TUTORIAL_TIP_DURATION
-                );
-
-                //Show this tutorial tip until the player demonstrates understanding
-                if (binds.GetInput(binds.bindCameraZoomIn))     { tutorialHasPressedZoomIn = true; }
-                if (binds.GetInput(binds.bindCameraZoomOut))    { tutorialHasPressedZoomOut = true; }
-                if (binds.GetInput(binds.bindPanMap))           { tutorialHasPressedPanMap = true; }
-                if (
-                       tutorialHasPressedZoomIn
-                    && tutorialHasPressedZoomOut
-                    && tutorialHasPressedPanMap
-                )
+                if (UI.displayMap)
                 {
-                    IncrementTutorial(TUTORIAL_TIP_DURATION);
+                    control.ui.SetTip(
+                        "You can use the map to set targets just as you would outside of it, with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget, true)
+                        + "\nZoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistIn, true) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistOut, true)
+                        + "\nPan around the map with " + control.ui.GetBindAsPrettyString(binds.bindPanMap, true),
+                        TUTORIAL_TIP_DURATION
+                    );
+
+                    //Show this tutorial tip until the player demonstrates understanding
+                    if (binds.GetInput(binds.bindCameraZoomFollowDistIn)) { tutorialHasPressedZoomInInMap = true; }
+                    if (binds.GetInput(binds.bindCameraZoomFollowDistOut)) { tutorialHasPressedZoomOutInMap = true; }
+                    if (binds.GetInput(binds.bindPanMap)) { tutorialHasPressedPanMap = true; }
+                    if (
+                           tutorialHasPressedZoomInInMap
+                        && tutorialHasPressedZoomOutInMap
+                        && tutorialHasPressedPanMap
+                    )
+                    {
+                        IncrementTutorial(TUTORIAL_TIP_DURATION);
+                    }
+                }
+                else
+                {
+                    //If the player closes their map without looking, explain again
+                    control.ui.SetTip(
+                        "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap, true),
+                        0f
+                    );
                 }
             }
-            else if (tutorialLevel == 9)
+            else if (tutorialLevel == 12 && !tutorialHasUsedHeighliner)
             {
                 control.ui.SetTip(
                     "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
                     TUTORIAL_TIP_DURATION + 2f
                 );
+
+                //Tutorial complete; don't show it next time
+                control.settings.tutorial = false;
+
                 IncrementTutorial();
             }
         }
@@ -1191,7 +1382,11 @@ public class Player : MonoBehaviour
         //    UpdatePlayerMovementThrust();   //Move in the direction of player input
         //}
 
-        UpdatePlayerMovementDrag();         //Drag the ship relative to either the system or the nearest moon, depending on distance to nearest moon
+        if (!isDestroyed)
+        {
+            //Drag the ship relative to either the system or the nearest moon, depending on distance to nearest moon
+            UpdatePlayerMovementDrag();
+        }
     }
 
     private void LateUpdate()
@@ -1243,11 +1438,11 @@ public class Player : MonoBehaviour
         if (control.settings.tutorial)
         {
             //Highlight nearest asteroid
-            if (tutorialLevel == 2)
+            if (tutorialLevel == 3)
             {
                 HighlightNearestAsteroid();
             }
-            else if (tutorialLevel == 3)
+            else if (tutorialLevel == 5)
             {
                 //Target nearest space station
                 Transform nearestSpaceStation = control.GetClosestSpecificTransformFromHierarchy(
@@ -1270,7 +1465,7 @@ public class Player : MonoBehaviour
         //Has the player visited a few moons?
         if (tutorialMoonVisitedID1 == -1 || tutorialMoonVisitedID2 == -1 || tutorialMoonVisitedID3 == -1)
         {
-            if (distToClosestMoon <= 60f)
+            if (distToClosestMoonOrMoonChild <= 60f)
             {
                 if (tutorialMoonVisitedID1 == -1)
                 { 
@@ -1369,8 +1564,28 @@ public class Player : MonoBehaviour
         //If one exists, find the nearest moon or asteroid to determine whether or not to drag relative to it
         if (control.generation.moons.transform.childCount > 0)
         {
-            closestMoonOrStationTransform = Control.GetClosestTransformFromHierarchy(control.generation.moons.transform, transform.position);
-            distToClosestMoon = (transform.position - closestMoonOrStationTransform.transform.position).magnitude;
+            closestMoonOrMoonChildTransform = Control.GetClosestTransformFromHierarchy(control.generation.moons.transform, transform.position);
+            distToClosestMoonOrMoonChild = (transform.position - closestMoonOrMoonChildTransform.transform.position).magnitude;
+
+            //Moonar discovery
+            if (distToClosestMoonOrMoonChild < 60f)
+            {
+                if (closestMoonOrMoonChildTransform.gameObject.name == control.generation.moon.name + "(Clone)")
+                {
+                    //Moon
+                    closestMoonOrMoonChildTransform.GetComponent<Moon>().isDiscovered = true;
+                }
+                else if (closestMoonOrMoonChildTransform.gameObject.name == control.generation.station.name + "(Clone)")
+                {
+                    //Station
+                    closestMoonOrMoonChildTransform.GetComponentInChildren<StationDocking>().GetParentMoonScript().isDiscovered = true;
+                }
+                else if (closestMoonOrMoonChildTransform.gameObject.name == control.generation.heighliner.name + "(Clone)")
+                {
+                    //Heighliner
+                    closestMoonOrMoonChildTransform.GetComponentInChildren<HeighlinerEntry>().GetParentMoonScript().isDiscovered = true;
+                }
+            }
         }
         if (control.generation.asteroidsEnabled.transform.childCount > 0)
         {
@@ -1501,17 +1716,19 @@ public class Player : MonoBehaviour
 
         if (vitalsFuel > 0.0d && tempEngineDisable <= 0f && control.settings.matchVelocity)
         {
-            if (closestMoonOrStationTransform != null && distToClosestMoon <= ORBITAL_DRAG_MODE_THRESHOLD)
+            float dragEffective = DRAG * Mathf.Max(1f, upgradeLevels[control.commerce.UPGRADE_ACCELERATION] * UPGRADE_ACCELERATION_MULTIPLIER); //1.5x more drag after acc upgrade
+
+            if (closestMoonOrMoonChildTransform != null && distToClosestMoonOrMoonChild <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
                 //Planetoid-relative drag (we check if the transform is null because planetoids are destructible)
-                velocityOfObjectDraggingRelativeTo = closestMoonOrStationTransform.GetComponent<Rigidbody>().velocity;
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
+                velocityOfObjectDraggingRelativeTo = closestMoonOrMoonChildTransform.GetComponent<Rigidbody>().velocity;
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, dragEffective);
             }
             else if (closestAsteroidTransformToDragRelativeTo != null && distToClosestAsteroid <= ORBITAL_DRAG_MODE_THRESHOLD)
             {
                 //Asteroid-relative drag (we check if the transform is null because asteroids are destructible)
                 velocityOfObjectDraggingRelativeTo = closestAsteroidTransformToDragRelativeTo.GetComponent<Rigidbody>().velocity;
-                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, DRAG);
+                rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, velocityOfObjectDraggingRelativeTo, dragEffective);
             }
             //else if (targetObject != null)
             //{
@@ -1523,7 +1740,7 @@ public class Player : MonoBehaviour
             {
                 //Centre planet-relative drag
                 velocityOfObjectDraggingRelativeTo = Vector3.zero;
-                rb.velocity *= (1f - (DRAG * Time.deltaTime));
+                rb.velocity *= (1f - (dragEffective * Time.deltaTime));
             }
         }
     }
@@ -1589,19 +1806,17 @@ public class Player : MonoBehaviour
                 //Base strength modifier
                 //float torqueBaseStrength = 30f;
 
-                //Smoothing modifier so we don't overshoot
-                //If the rotation needed is very small but we have a ton of angular velocity, we need to slow down - not speed up
-                //How far the rotation is, where 2 is directly behind
-                float rotationDistance = (shipRelativeToCamera.normalized - transform.forward).magnitude;
-                //Larger values mean a smaller window in which the torque reduces
-                float threshold = 2f;
-                //Normalizing
-                float torqueDistanceModifier = Mathf.Min(1f, rotationDistance * threshold);
-                //Disabling this for now
-                torqueDistanceModifier = 1f;
+                ////Smoothing modifier so we don't overshoot
+                ////If the rotation needed is very small but we have a ton of angular velocity, we need to slow down - not speed up
+                ////How far the rotation is, where 2 is directly behind
+                //float rotationDistance = (shipRelativeToCamera.normalized - transform.forward).magnitude;
+                ////Larger values mean a smaller window in which the torque reduces
+                //float threshold = 2f;
+                ////Normalizing
+                //float torqueDistanceModifier = Mathf.Min(1f, rotationDistance * threshold);
 
                 //Adding all modifiers together
-                float torqueStrength = torqueBaseStrength * rb.angularDrag * torqueDistanceModifier * Time.deltaTime;
+                float torqueStrength = torqueBaseStrength * rb.angularDrag * Time.deltaTime * Mathf.Max(1f, upgradeLevels[control.commerce.UPGRADE_TORQUE_FORCE] * UPGRADE_TORQUE_FORCE_MULTIPLIER); //torque upgrade improves torque by 1.5x
 
                 //APPLY TORQUE
                 Vector3 torqueFinal = torqueVector * torqueStrength;
@@ -1620,10 +1835,9 @@ public class Player : MonoBehaviour
 
     private void UpdatePlayerMovementThrust()
     {
-        //Debug.Log(playerThrustEngineWarmupMultiplier);
-
-        //Reset vector
+        //Reset
         thrustVector = Vector3.zero;
+        thrustMultiplier = 1f;
 
         //Move if fuel
         if ((tempEngineDisable <= 0f || tempEngineDisableButFlickering) && vitalsFuel > 0.0d)
@@ -1635,7 +1849,7 @@ public class Player : MonoBehaviour
                 thrustVector += transform.forward;
 
                 //Faster if moving forward
-                thrustMultiplier = THRUST_FORWARD_MULTIPLIER;
+                thrustMultiplier *= THRUST_FORWARD_MULTIPLIER;
 
                 //Warming up; no weapons used recently
                 if (weaponUsedRecently <= 0f)
@@ -1645,25 +1859,30 @@ public class Player : MonoBehaviour
                         thrustEngineWarmupMultiplier + (thrustEngineWarmupMultiplier * THRUST_ENGINE_WARMUP_SPEED * Time.deltaTime));
 
                     //Total multiplier (moving forward and warmed up)
-                    thrustMultiplier = THRUST_FORWARD_MULTIPLIER * thrustEngineWarmupMultiplier;
+                    thrustMultiplier *= thrustEngineWarmupMultiplier;
                 }
             }
 
-            //Not warming up
+            //Forward thrust warmup is lost when no longer moving forward or when recently used a weapon
             if (!binds.GetInput(binds.bindThrustForward) || weaponUsedRecently > 0f)
             {
                 //Engine warmup decrement
                 thrustEngineWarmupMultiplier = Mathf.Max(1f, thrustEngineWarmupMultiplier - (Time.deltaTime * THRUST_ENGINE_COOLDOWN_SPEED));
-
-                //Total multiplier
-                thrustMultiplier = 1f;
             }
 
-            if (!control.settings.matchVelocity)
+            //Improve thrust after acceleration upgrade (we also increase drag)
+            if (upgradeLevels[control.commerce.UPGRADE_ACCELERATION] >= 1)
             {
-                thrustMultiplier *= matchVelOffThrustModifier;
+                thrustMultiplier *= upgradeLevels[control.commerce.UPGRADE_ACCELERATION] * UPGRADE_ACCELERATION_MULTIPLIER;
             }
 
+            //Reduce thrust when drag isn't present
+            if (!control.settings.matchVelocity || tempEngineDisableButFlickering)
+            {
+                thrustMultiplier *= THRUST_REDUCTION_TO_COMPENSATE_NO_DRAG_MULTIPLIER;
+            }
+
+            //Debug thrust modifier
             thrustMultiplier *= thrustCheat;
 
             //We don't want the player to be able to move if the moving check fails
@@ -1709,11 +1928,11 @@ public class Player : MonoBehaviour
                 }
 
                 //Set map zoom (default 1560)
-                if (binds.GetInput(binds.bindCameraZoomOut))
+                if (binds.GetInput(binds.bindCameraZoomFollowDistOut))
                 {
                     mapCam.GetComponent<Camera>().orthographicSize = Mathf.Min(15000.0f, mapCam.GetComponent<Camera>().orthographicSize *= 1.1f);
                 }
-                else if (binds.GetInput(binds.bindCameraZoomIn))
+                else if (binds.GetInput(binds.bindCameraZoomFollowDistIn))
                 {
                     mapCam.GetComponent<Camera>().orthographicSize = Mathf.Max(10.0f, mapCam.GetComponent<Camera>().orthographicSize *= 0.9f);
                 }
@@ -1727,7 +1946,7 @@ public class Player : MonoBehaviour
                 //Not map
                 mapOffset = Vector3.zero;
 
-                if (binds.GetInput(binds.bindCameraZoomIn) || binds.GetInput(binds.bindCameraZoomOut))
+                if (binds.GetInput(binds.bindCameraZoomFollowDistIn) || binds.GetInput(binds.bindCameraZoomFollowDistOut))
                 {
                     SetCameraFollowDistance();
                 }
@@ -1823,7 +2042,7 @@ public class Player : MonoBehaviour
             else
             {
                 //Return volume back to normal
-                music.volume = 0.01f; //0.01 is default max music volume
+                music.volume = control.settings.volumeAll * control.settings.volumeMusic * control.settings.VOLUME_MUSIC_MULTIPLIER;
 
                 //Stop the combat song
                 music.Stop();
@@ -1844,7 +2063,7 @@ public class Player : MonoBehaviour
                 else
                 {
                     //Return volume back to normal
-                    music.volume = 0.01f; //0.01 is default max music volume
+                    music.volume = control.settings.volumeAll * control.settings.volumeMusic * control.settings.VOLUME_MUSIC_MULTIPLIER; //0.01 is default max music volume
 
                     //Stop previous song
                     music.Stop();
@@ -1877,18 +2096,39 @@ public class Player : MonoBehaviour
     {
         //Vitals
         vitalsHealthMax = VITALS_HEALTH_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_REINFORCED_HULL]);
-        //vitalsHealth = vitalsHealthMax;
 
         vitalsFuelMax = VITALS_FUEL_MAX_STARTER * (1.0d + (upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK] * 0.5d));
-        //Debug.LogFormat("{0}, {1}, {2}", vitalsFuelMax, VITALS_FUEL_MAX_STARTER, upgradeLevels[control.commerce.UPGRADE_TITAN_FUEL_TANK]);
-        //vitalsFuel = vitalsFuelMax;
 
         control.ui.UpdatePlayerVitalsDisplay();
+
+        //Mining
+        oreMax = ORE_MAX_DEFAULT * Mathf.Max(1f, 2f * upgradeLevels[control.commerce.UPGRADE_CARGO_SPACE]);
 
         //Movement
         thrustEngineWarmupMultiplierMax = THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_RAPTOR_ENGINES]);
 
+        //Abilities
+        if (upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1 && !tipHasBoughtOutline)
+        {
+            //Eclipse vision tip
+            tipHasBoughtOutline = true;
+        }
+        if (upgradeLevels[control.commerce.UPGRADE_REFINERY] >= 1 && !tipHasBoughtRefinery)
+        {
+            //Eclipse vision tip
+            tipHasBoughtRefinery = true;
+        }
+
         //Weapons
+        if (upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] >= 1)
+        {
+            //Give mining laser weapon
+            //Slot 0 is always the mining laser
+            weaponSlot1 = weaponSeismicCharges;
+
+            //Display tip
+            tipHasBoughtSeismicCharges = true;
+        }
         playerWeaponLaser.UpdateUpgrades();
         playerWeaponSeismicCharge.UpdateUpgrades();
         //control.ui.UpdatePlayerWeaponsUI();
@@ -1909,7 +2149,7 @@ public class Player : MonoBehaviour
             control.settings.CAMERA_DISTANCE_MAX,
             Math.Max(
                 control.settings.CAMERA_DISTANCE_MIN,
-                control.settings.cameraDistance - (((Convert.ToSingle(binds.GetInput(binds.bindCameraZoomIn)) - 0.5f) * 2f) * zoomRate)
+                control.settings.cameraDistance - (((Convert.ToSingle(binds.GetInput(binds.bindCameraZoomFollowDistIn)) - 0.5f) * 2f) * zoomRate)
             )
         );
 
@@ -1959,6 +2199,16 @@ public class Player : MonoBehaviour
 
         //Ship direction reticles
         control.ui.playerShipDirectionReticleTree.SetActive(!isDestroyed);
+
+        //Tractor beam (too bright in FP or too dim in TP without this)
+        if (firstPerson)
+        {
+            tractorBeamMaterial.SetFloat("minAlpha", 0.001f); //minAlpha, property 2/2, Vector1
+        }
+        else
+        {
+            tractorBeamMaterial.SetFloat("minAlpha", 0.005f);
+        }
     }
 
     private void GetMouseToCameraTransform()
@@ -2053,7 +2303,7 @@ public class Player : MonoBehaviour
         fpCamMount.transform.position = transform.position + cameraOffsetAcceleration + cameraOffsetPosition + (transform.forward * 0.115f) + (transform.up * 0.008f);
     }
 
-    public void SetCameraSettings()
+    public void UpdateCameraSettings()
     {
         //Clip planes
         fpCamInterior.GetComponent<Camera>().nearClipPlane = FP_CAM_INTERIOR_CLIPPING_PLANE_NEAR;
@@ -2062,9 +2312,9 @@ public class Player : MonoBehaviour
         //HFOV
         if (control.settings.hFieldOfView > 0f)
         {
-            fpCamInterior.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView, fpCamInterior.GetComponent<Camera>().aspect);
-            fpCam.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView, fpCam.GetComponent<Camera>().aspect);
-            tpCam.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView, tpCam.GetComponent<Camera>().aspect);
+            fpCamInterior.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView * cameraZoom, fpCamInterior.GetComponent<Camera>().aspect);
+            fpCam.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView * cameraZoom, fpCam.GetComponent<Camera>().aspect);
+            tpCam.GetComponent<Camera>().fieldOfView = Camera.HorizontalToVerticalFieldOfView(control.settings.hFieldOfView * cameraZoom, tpCam.GetComponent<Camera>().aspect);
 
             fovSet = true;
         }
@@ -2154,6 +2404,8 @@ public class Player : MonoBehaviour
 
             weaponSelectedSingleCooldownDuration = playerWeaponLaser.SINGLE_COOLDOWN_DURATION;
             weaponSelectedSingleCooldownCurrent = playerWeaponLaser.singleCooldownCurrent;
+
+            weaponSelectedProjectileSpeed = playerWeaponLaser.PROJECTILE_SPEED;
         }
         else if (GetWeaponSelectedID() == WEAPON_ID_SEISMIC_CHARGES)
         {
@@ -2164,6 +2416,8 @@ public class Player : MonoBehaviour
 
             weaponSelectedSingleCooldownDuration = playerWeaponSeismicCharge.SINGLE_COOLDOWN_DURATION;
             weaponSelectedSingleCooldownCurrent = playerWeaponSeismicCharge.singleCooldownCurrent;
+
+            weaponSelectedProjectileSpeed = playerWeaponSeismicCharge.PROJECTILE_SPEED;
         }
         else
         {
@@ -2218,6 +2472,7 @@ public class Player : MonoBehaviour
         //Play the track
         if (control.settings.music)
         {
+            music.volume = control.settings.volumeAll * control.settings.volumeMusic * SOUND_MUSIC_VOLUME;
             music.Play();
         }
         
@@ -2246,12 +2501,16 @@ public class Player : MonoBehaviour
 
         if (canAndIsMoving)
         {
-            soundSourceRocket.volume = Mathf.Min(SOUND_ROCKET_MAX_VOLUME, soundSourceRocket.volume + (Time.deltaTime * rocketVolumeDeltaRate));
+            float volumeRocketMax = SOUND_ROCKET_VOLUME * control.settings.volumeAll;
 
-            soundSourceRocket.pitch = Mathf.Min(SOUND_ROCKET_MAX_PITCH, soundSourceRocket.pitch + (Time.deltaTime * SOUND_ROCKET_PITCH_DELTA_RATE));
+            //Increment
+            soundSourceRocket.volume = Mathf.Min(volumeRocketMax, soundSourceRocket.volume + (Time.deltaTime * rocketVolumeDeltaRate));
+
+            soundSourceRocket.pitch = Mathf.Min(SOUND_ROCKET_PITCH_MAX, soundSourceRocket.pitch + (Time.deltaTime * SOUND_ROCKET_PITCH_DELTA_RATE));
         }
         else
         {
+            //Decrement
             soundSourceRocket.volume = Mathf.Max(0f, soundSourceRocket.volume - ((soundSourceRocket.volume * Time.deltaTime * rocketVolumeDeltaRate) * 32f));
 
             soundSourceRocket.pitch = Mathf.Max(1f, soundSourceRocket.pitch - ((soundSourceRocket.pitch * Time.deltaTime * SOUND_ROCKET_PITCH_DELTA_RATE) * 32f));
@@ -2395,7 +2654,7 @@ public class Player : MonoBehaviour
             CameraShakeAdd(new Vector2(CAMERA_OFFSET_POSITION_MAGNITUDE_MAX, CAMERA_OFFSET_ROTATION_MAGNITUDE_MAX));
 
             //Play sound effect
-            soundSourceCollision.volume = 0.05f;
+            soundSourceCollision.volume = SOUND_IMPACT_VOLUME_SIGNIFICANT * control.settings.volumeAll; //we need to adjust the volume here because we lower it when the impact is insignificant
             soundSourceCollision.pitch = UnityEngine.Random.Range(0.8f, 1.2f);
             soundSourceCollision.Play();
 
@@ -2442,7 +2701,7 @@ public class Player : MonoBehaviour
         else
         {
             //Play sound effect
-            soundSourceCollision.volume = 0.01f;
+            soundSourceCollision.volume = SOUND_IMPACT_VOLUME_INSIGNIFICANT * control.settings.volumeAll; //insignificant impacts are quieter
             soundSourceCollision.pitch = UnityEngine.Random.Range(0.4f, 0.8f);
             soundSourceCollision.Play();
         }

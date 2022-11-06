@@ -19,6 +19,8 @@ public class Enemy : MonoBehaviour
     //Drag
     private readonly float DRAG = 3f;
 
+    [System.NonSerialized] public Vector3 lastForceAdded = Vector3.zero;
+
     //Weapons - all overridden by difficulty
     private float weaponCooldown = 0f; //Current burst - DO NOT EDIT
     private float weaponReloadPeriod = 2f; //Time in seconds between bursts
@@ -49,8 +51,8 @@ public class Enemy : MonoBehaviour
                                                                //OVERRRIDDEN BY DIFFICULTY
 
     //Performance
-    [System.NonSerialized] public bool destroying = false;
-    [System.NonSerialized] public bool destroyed = true;
+    [System.NonSerialized] public bool isDestroying = false;
+    [System.NonSerialized] public bool isDestroyed = true;
     private float destroyingTime = 0f;
     [System.NonSerialized] public bool performantMode = false;
     [System.NonSerialized] public Vector3 rbMemVel;
@@ -76,6 +78,10 @@ public class Enemy : MonoBehaviour
     public GameObject ore;
     private readonly float ORE_POSITION_OFFSET_RANDOM_MAGNITUDE = 5f;
 
+    //Sound
+    public AudioSource soundSourceExplosion;
+    [System.NonSerialized] public readonly float SOUND_EXPLOSION_VOLUME = 0.027f;
+
     private void Start()
     {
         SetHitboxEnabledAndChoose(true);
@@ -87,9 +93,9 @@ public class Enemy : MonoBehaviour
     {
         if (!performantMode)
         {
-            if (!Menu.menuOpenAndGamePaused && !destroyed)
+            if (!Menu.menuOpenAndGamePaused && !isDestroyed)
             {
-                if (destroying)
+                if (isDestroying)
                 {
                     //DESTRUCTION
                     //Increment timer
@@ -144,26 +150,27 @@ public class Enemy : MonoBehaviour
                     if (aggro)
                     {
                         //Lead, so that weapons fire is more likely to connect
+                        destination = control.GetPredictedTrajectoryWithProjectileLeading(
+                            transform.position, rb.velocity, EnemyWeaponLaser.PROJECTILE_SPEED, MANUAL_LEAD_MULTIPLIER,
+                            control.GetPlayerTransform().position, control.GetPlayerScript().rb.velocity, control.GetPlayerScript().lastForceAdded, control.GetPlayerScript().rb.mass
+                        );
 
-                        //Target position
-                        destination = control.GetPlayerTransform().position;
-
-                        //Time until the projectiles hit the target
-                        //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
-                        float timeToTarget = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) / EnemyWeaponLaser.PROJECTILE_SPEED;
-
-                        //Lead speed
-                        destination += (control.GetPlayerScript().rb.velocity * (timeToTarget * MANUAL_LEAD_MULTIPLIER));
-
-                        //Lead acceleration
-                        //F = ma -> a = F/m
-                        Vector3 playerAcceleration = control.GetPlayerScript().lastForceAdded / control.GetPlayerScript().rb.mass;
-                        //displacement = velocity * deltaTime + (1/2)​(acceleration)(deltaTime^2)
-                        Vector3 displacementFromAcceleration = (control.GetPlayerScript().rb.velocity * Time.deltaTime) + ((playerAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
-                        destination += displacementFromAcceleration;
-
-                        //Lead change in thrust direction (for if player is thrusting in a circle around the enemy)
-                        //YET TO BE IMPLEMENTED
+                        ////Target position
+                        //destination = control.GetPlayerTransform().position;
+                        //
+                        ////Time until the projectiles hit the target
+                        ////t = d/v; time in seconds it will take the weapon projectile to be at the target destination
+                        //float timeToTarget = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position) / EnemyWeaponLaser.PROJECTILE_SPEED;
+                        //
+                        ////Lead speed
+                        //destination += (control.GetPlayerScript().rb.velocity * (timeToTarget * MANUAL_LEAD_MULTIPLIER));
+                        //
+                        ////Lead acceleration
+                        ////F = ma -> a = F/m
+                        //Vector3 playerAcceleration = control.GetPlayerScript().lastForceAdded / control.GetPlayerScript().rb.mass;
+                        ////displacement = velocity * deltaTime + (1/2)​(acceleration)(deltaTime^2)
+                        //Vector3 displacementFromAcceleration = (control.GetPlayerScript().rb.velocity * Time.deltaTime) + ((playerAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
+                        //destination += displacementFromAcceleration;
 
                         //Display target destination (before randomness)
                         playerGhost.transform.position = destination;
@@ -329,7 +336,10 @@ public class Enemy : MonoBehaviour
         //Add forward and strafe vectors together with weights
         float distToPlayer = Vector3.Magnitude(control.GetPlayerTransform().position - transform.position);
         float strafeWeight = 0f; //weight approaches 1f as the distance from the enemy to the player approaches DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE
-        if (control.GetPlayerScript().weaponUsedRecently > 0f && distToPlayer < DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO)
+        if (
+            strength == STRENGTH_ELITE || strength == STRENGTH_MAJOR
+            || (control.GetPlayerScript().weaponUsedRecently > 0f && distToPlayer < DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO) //minors don't strafe until they are shot at
+        )
         {
             float aggroDistMinusStrafeDist = DISTANCE_THRESHOLD_LESS_THAN_TO_AGGRO - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE;
             strafeWeight = (aggroDistMinusStrafeDist - (distToPlayer - DISTANCE_THRESHOLD_LESS_THAN_TO_STRAFE)) / aggroDistMinusStrafeDist;
@@ -337,7 +347,8 @@ public class Enemy : MonoBehaviour
         thrustVector = (forwardVector * (1f - strafeWeight)) + (strafeVector * (strafeWeight));
 
         //Thrust
-        rb.AddForce(thrustVector.normalized * thrust * Time.deltaTime);
+        lastForceAdded = thrustVector.normalized * thrust * Time.deltaTime;
+        rb.AddForce(lastForceAdded);
     }
 
     private void UpdateEnemyMovementDrag()
@@ -469,10 +480,10 @@ public class Enemy : MonoBehaviour
 
     public void BreakApart(bool oreDrop)
     {
-        if (!destroying)
+        if (!isDestroying)
         {
             //Disable self
-            destroying = true;
+            isDestroying = true;
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, transform.position, true);
             control.GetPlayerScript().nEnemiesAggrod--;
             DisableModelAndTriggerVolumes();
@@ -541,18 +552,18 @@ public class Enemy : MonoBehaviour
         }
         
         //Destroy or undestroy
-        destroying = false;
+        isDestroying = false;
         if (enabled)
         {
             gameObject.SetActive(true);
-            destroyed = false;
+            isDestroyed = false;
             targetCollider1.enabled = true;
             targetCollider2.enabled = true;
         }
         else
         {
             destroyingTime = 0f;
-            destroyed = true;
+            isDestroyed = true;
             targetCollider1.enabled = false;
             targetCollider2.enabled = false;
             rb.velocity = Vector3.zero;

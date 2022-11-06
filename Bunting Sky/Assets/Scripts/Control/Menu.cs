@@ -31,6 +31,8 @@ public class Menu : MonoBehaviour
     public Toggle menuSettingsToggleFullscreen;
     public Toggle menuSettingsToggleMatchVelocity;
     public Toggle menuSettingsToggleSpinStabilizers;
+    public Slider sliderVolumeAll;
+    public Slider sliderVolumeMusic;
 
     public GameObject menuKeybinds;
     private bool menuKeybindsIsSettingBind = false;
@@ -49,19 +51,20 @@ public class Menu : MonoBehaviour
     private short BIND_ID_FREE_LOOK = 10;
     private short BIND_ID_ZOOM_IN = 11;
     private short BIND_ID_ZOOM_OUT = 12;
-    private short BIND_ID_SET_TARGET = 13;
-    private short BIND_ID_FIRE = 14;
-    private short BIND_ID_RELOAD = 15;
-    private short BIND_ID_SPOTLIGHT = 16;
-    private short BIND_ID_OUTLINE = 17;
-    private short BIND_ID_MAP = 18;
-    private short BIND_ID_REFINE = 19;
-    private short BIND_ID_WEAPON1 = 20;
-    private short BIND_ID_WEAPON2 = 21;
-    private short BIND_ID_HUD = 22;
-    private short BIND_ID_FPS = 23;
-    private short BIND_ID_SCREENSHOT = 24;
-    private short BIND_ID_MENU = 25;
+    private short BIND_ID_ZOOM_OPTICAL = 13;
+    private short BIND_ID_SET_TARGET = 14;
+    private short BIND_ID_FIRE = 15;
+    private short BIND_ID_RELOAD = 16;
+    private short BIND_ID_SPOTLIGHT = 17;
+    private short BIND_ID_OUTLINE = 18;
+    private short BIND_ID_MAP = 19;
+    private short BIND_ID_REFINE = 20;
+    private short BIND_ID_WEAPON1 = 21;
+    private short BIND_ID_WEAPON2 = 22;
+    private short BIND_ID_HUD = 23;
+    private short BIND_ID_FPS = 24;
+    private short BIND_ID_SCREENSHOT = 25;
+    private short BIND_ID_MENU = 26;
 
     public TMP_Text menuBindsThrustForward;
     public TMP_Text menuBindsThrustLeft;
@@ -76,6 +79,7 @@ public class Menu : MonoBehaviour
     public TMP_Text menuBindsCameraFreeLook;
     public TMP_Text menuBindsCameraZoomIn;
     public TMP_Text menuBindsCameraZoomOut;
+    public TMP_Text menuBindsCameraZoomOptical;
     public TMP_Text menuBindsSetTarget;
     public TMP_Text menuBindsPrimaryFire;
     public TMP_Text menuBindsPrimaryReload;
@@ -91,6 +95,7 @@ public class Menu : MonoBehaviour
     public TMP_Text menuBindsToggleMenu;
 
     public TMP_Text menuSubIsPaused;
+    public TMP_Text menuButtonResumeLabel;
 
     [SerializeField] private Control control;
 
@@ -273,7 +278,7 @@ public class Menu : MonoBehaviour
             menuSettingsHFieldOfViewIn.text = inputField.ToString();
 
             //Update in game
-            control.generation.instancePlayer.GetComponentInChildren<Player>().SetCameraSettings();
+            control.generation.instancePlayer.GetComponentInChildren<Player>().UpdateCameraSettings();
         }
     }
 
@@ -439,6 +444,20 @@ public class Menu : MonoBehaviour
     public void MenuSettingsRefineToggle()
     {
         control.settings.refine = !control.settings.refine;
+
+        if (!menuOpenAndGamePaused)
+        {
+            if (control.settings.refine)
+            {
+                control.ui.SetTip("In-situ fuel refinery active");
+
+            }
+            else
+            {
+                control.ui.SetTip("In-situ fuel refinery inactive");
+            }
+        }
+
         control.settings.Save();
     }
 
@@ -464,6 +483,58 @@ public class Menu : MonoBehaviour
             //Update in menu
             menuSettingsTargetFPSIn.text = inputField.ToString();
         }
+    }
+
+    public void MenuSettingsVolumeAllUpdate()
+    {
+        control.settings.volumeAll = sliderVolumeAll.value;
+        control.settings.Save();
+
+        //rocket volume is procedural
+        control.GetPlayerScript().soundSourceLaser0.volume = control.GetPlayerScript().SOUND_LASER_FIRE_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceLaser1.volume = control.GetPlayerScript().SOUND_LASER_FIRE_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceLaser2.volume = control.GetPlayerScript().SOUND_LASER_FIRE_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceLaser3.volume = control.GetPlayerScript().SOUND_LASER_FIRE_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceLaserReload.volume = control.GetPlayerScript().SOUND_LASER_RELOAD_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceSeismicCharge0.volume = control.GetPlayerScript().SOUND_SEISMIC_CHARGE_FIRE_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceSeismicCharge1.volume = control.GetPlayerScript().SOUND_SEISMIC_CHARGE_FIRE_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceSeismicChargeExplosion.volume = control.GetPlayerScript().SOUND_SEISMIC_CHARGE_EXPLOSION_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceOreCollected.volume = control.GetPlayerScript().SOUND_ORE_COLLECTED_VOLUME * control.settings.volumeAll;
+        control.GetPlayerScript().soundSourceCurrencyChange.volume = control.GetPlayerScript().SOUND_CURRENCY_CHANGE_VOLUME * control.settings.volumeAll;
+        //collision/impact volume is procedural
+
+        //Asteroids
+        for (int i = 0; i < control.generation.asteroidsEnabled.transform.childCount; i++)
+        {
+            Asteroid instanceAsteroid = control.generation.asteroidsEnabled.transform.GetChild(i).GetComponent<Asteroid>();
+
+            instanceAsteroid.soundExplosion.volume = instanceAsteroid.SOUND_EXPLOSION_VOLUME * control.settings.volumeAll;
+            instanceAsteroid.soundHit.volume = instanceAsteroid.SOUND_HIT_VOLUME * control.settings.volumeAll;
+        }
+        for (int i = 0; i < control.generation.asteroidsDisabled.transform.childCount; i++)
+        {
+            Asteroid instanceAsteroid = control.generation.asteroidsDisabled.transform.GetChild(i).GetComponent<Asteroid>();
+
+            instanceAsteroid.soundExplosion.volume = instanceAsteroid.SOUND_EXPLOSION_VOLUME * control.settings.volumeAll;
+            instanceAsteroid.soundHit.volume = instanceAsteroid.SOUND_HIT_VOLUME * control.settings.volumeAll;
+        }
+
+        //Bandits
+        for (int i = 0; i < control.generation.enemies.transform.childCount; i++)
+        {
+            Enemy instanceEnemy = control.generation.enemies.transform.GetChild(i).GetComponent<Enemy>();
+
+            instanceEnemy.soundSourceExplosion.volume = instanceEnemy.SOUND_EXPLOSION_VOLUME * control.settings.volumeAll;
+        }
+    }
+
+    public void MenuSettingsVolumeMusicUpdate()
+    {
+        control.settings.volumeMusic = sliderVolumeMusic.value;
+        control.settings.Save();
+
+        //Update current song
+        control.GetPlayerScript().music.volume = control.settings.volumeAll * control.settings.volumeMusic * control.GetPlayerScript().SOUND_MUSIC_VOLUME;
     }
 
     public void MenuSettingsMusicToggle()
@@ -562,6 +633,11 @@ public class Menu : MonoBehaviour
         //Thanks roojerry from the Unity forum
         if (menuKeybindsIsSettingBind)
         {
+            control.ui.SetTip(
+                "Press the key you want to bind that input to, then primary click anywhere outside of the button to bind it",
+                0f
+            );
+
             if (Input.anyKey || control.binds.GetInput(control.binds.MOUSE_SCROLL_UP) || control.binds.GetInput(control.binds.MOUSE_SCROLL_DOWN))
             {
                 //Get the bind, if there is one
@@ -606,8 +682,9 @@ public class Menu : MonoBehaviour
                     if (menuKeybindsBindID == BIND_ID_CHEAT2) { control.binds.bindCheat2 = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_PAN_MAP) { control.binds.bindPanMap = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_FREE_LOOK) { control.binds.bindCameraFreeLook = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_ZOOM_IN) { control.binds.bindCameraZoomIn = inputCode; }
-                    if (menuKeybindsBindID == BIND_ID_ZOOM_OUT) { control.binds.bindCameraZoomOut = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_ZOOM_IN) { control.binds.bindCameraZoomFollowDistIn = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_ZOOM_OUT) { control.binds.bindCameraZoomFollowDistOut = inputCode; }
+                    if (menuKeybindsBindID == BIND_ID_ZOOM_OPTICAL) { control.binds.bindCameraZoomFOV = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_SET_TARGET) { control.binds.bindSetTarget = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_FIRE) { control.binds.bindPrimaryFire = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_RELOAD) { control.binds.bindPrimaryReload = inputCode; }
@@ -622,14 +699,14 @@ public class Menu : MonoBehaviour
                     if (menuKeybindsBindID == BIND_ID_SCREENSHOT) { control.binds.bindSaveScreenshot = inputCode; }
                     if (menuKeybindsBindID == BIND_ID_MENU) { control.binds.bindToggleMenu = inputCode; }
 
+                    //Save the keybind
+                    control.binds.Save();
+
                     //Update menu text
                     MenuKeybindsUpdateBindText();
 
                     //Exit bind setting mode
                     menuKeybindsIsSettingBind = false;
-
-                    //Save the keybind
-                    control.binds.Save();
                 }
                 else
                 {
@@ -701,77 +778,35 @@ public class Menu : MonoBehaviour
         MenuKeybindsUpdateBindText();
     }
 
-    private void MenuKeybindsUpdateBindText() {
-        menuBindsThrustForward.text         = MenuKeybindsGetBindString(control.binds.bindThrustForward);
-        menuBindsThrustLeft.text            = MenuKeybindsGetBindString(control.binds.bindThrustLeft);
-        menuBindsThrustBackward.text        = MenuKeybindsGetBindString(control.binds.bindThrustBackward);
-        menuBindsThrustRight.text           = MenuKeybindsGetBindString(control.binds.bindThrustRight);
-        menuBindsThrustUp.text              = MenuKeybindsGetBindString(control.binds.bindThrustUp);
-        menuBindsThrustDown.text            = MenuKeybindsGetBindString(control.binds.bindThrustDown);
-        menuBindsAlignShipToReticle.text    = MenuKeybindsGetBindString(control.binds.bindAlignShipToReticle);
-        menuBindsCheat1.text                = MenuKeybindsGetBindString(control.binds.bindCheat1);
-        menuBindsCheat2.text                = MenuKeybindsGetBindString(control.binds.bindCheat2);
-        menuBindsCycleMovementMode.text     = MenuKeybindsGetBindString(control.binds.bindPanMap);
-        menuBindsCameraFreeLook.text        = MenuKeybindsGetBindString(control.binds.bindCameraFreeLook);
-        menuBindsCameraZoomIn.text          = MenuKeybindsGetBindString(control.binds.bindCameraZoomIn);
-        menuBindsCameraZoomOut.text         = MenuKeybindsGetBindString(control.binds.bindCameraZoomOut);
-        menuBindsSetTarget.text             = MenuKeybindsGetBindString(control.binds.bindSetTarget);
-        menuBindsPrimaryFire.text           = MenuKeybindsGetBindString(control.binds.bindPrimaryFire);
-        menuBindsPrimaryReload.text         = MenuKeybindsGetBindString(control.binds.bindPrimaryReload);
-        menuBindsToggleSpotlight.text       = MenuKeybindsGetBindString(control.binds.bindToggleSpotlight);
-        menuBindsToggleOutline.text         = MenuKeybindsGetBindString(control.binds.bindToggleOutline);
-        menuBindsToggleMap.text             = MenuKeybindsGetBindString(control.binds.bindToggleMap);
-        menuBindsToggleRefine.text          = MenuKeybindsGetBindString(control.binds.bindToggleRefine);
-        menuBindsSelectWeapon1.text         = MenuKeybindsGetBindString(control.binds.bindSelectWeaponSlot0);
-        menuBindsSelectWeapon2.text         = MenuKeybindsGetBindString(control.binds.bindSelectWeaponSlot1);
-        menuBindsToggleHUD.text             = MenuKeybindsGetBindString(control.binds.bindToggleHUD);
-        menuBindsToggleFPS.text             = MenuKeybindsGetBindString(control.binds.bindToggleFPS);
-        menuBindsSaveScreenshot.text        = MenuKeybindsGetBindString(control.binds.bindSaveScreenshot);
-        menuBindsToggleMenu.text            = MenuKeybindsGetBindString(control.binds.bindToggleMenu);
-    }
-
-    private string MenuKeybindsGetBindString(short bind)
-    {
-        //Default to error
-        string bindString = "Error";
-
-        //0 to 509 = KeyCode
-        //MOUSE_PRIMARY = 1000
-        //MOUSE_SECONDARY = 1001
-        //MOUSE_MIDDLE = 1002
-        //MOUSE_SCROLL_UP = 1003
-        //MOUSE_SCROLL_DOWN = 1004
-        if (bind >= 1000 && bind <= 1004)
-        {
-            switch (bind)
-            {
-                case 1000:
-                    bindString = "Left Mouse";
-                    break;
-
-                case 1001:
-                    bindString = "Right Mouse";
-                    break;
-
-                case 1002:
-                    bindString = "Middle Mouse";
-                    break;
-
-                case 1003:
-                    bindString = "Scroll Up";
-                    break;
-
-                case 1004:
-                    bindString = "Scroll Down";
-                    break;
-            }
-        }
-        else //if (bind <= 509)
-        {
-            bindString = ((KeyCode)bind).ToString();
-        }
-
-        return bindString;
+    public void MenuKeybindsUpdateBindText() {
+        menuBindsThrustForward.text         = control.ui.GetBindAsPrettyString(control.binds.bindThrustForward, false);
+        menuBindsThrustLeft.text            = control.ui.GetBindAsPrettyString(control.binds.bindThrustLeft, false);
+        menuBindsThrustBackward.text        = control.ui.GetBindAsPrettyString(control.binds.bindThrustBackward, false);
+        menuBindsThrustRight.text           = control.ui.GetBindAsPrettyString(control.binds.bindThrustRight, false);
+        menuBindsThrustUp.text              = control.ui.GetBindAsPrettyString(control.binds.bindThrustUp, false);
+        menuBindsThrustDown.text            = control.ui.GetBindAsPrettyString(control.binds.bindThrustDown, false);
+        menuBindsAlignShipToReticle.text    = control.ui.GetBindAsPrettyString(control.binds.bindAlignShipToReticle, false);
+        menuBindsCheat1.text                = control.ui.GetBindAsPrettyString(control.binds.bindCheat1, false);
+        menuBindsCheat2.text                = control.ui.GetBindAsPrettyString(control.binds.bindCheat2, false);
+        menuBindsCycleMovementMode.text     = control.ui.GetBindAsPrettyString(control.binds.bindPanMap, false);
+        menuBindsCameraFreeLook.text        = control.ui.GetBindAsPrettyString(control.binds.bindCameraFreeLook, false);
+        menuBindsCameraZoomIn.text          = control.ui.GetBindAsPrettyString(control.binds.bindCameraZoomFollowDistIn, false);
+        menuBindsCameraZoomOut.text         = control.ui.GetBindAsPrettyString(control.binds.bindCameraZoomFollowDistOut, false);
+        menuBindsCameraZoomOptical.text     = control.ui.GetBindAsPrettyString(control.binds.bindCameraZoomFOV, false);
+        menuBindsSetTarget.text             = control.ui.GetBindAsPrettyString(control.binds.bindSetTarget, false);
+        menuBindsPrimaryFire.text           = control.ui.GetBindAsPrettyString(control.binds.bindPrimaryFire, false);
+        menuBindsPrimaryReload.text         = control.ui.GetBindAsPrettyString(control.binds.bindPrimaryReload, false);
+        menuBindsToggleSpotlight.text       = control.ui.GetBindAsPrettyString(control.binds.bindToggleSpotlight, false);
+        menuBindsToggleOutline.text         = control.ui.GetBindAsPrettyString(control.binds.bindToggleOutline, false);
+        menuBindsToggleMap.text             = control.ui.GetBindAsPrettyString(control.binds.bindToggleMap, false);
+        menuBindsToggleRefine.text          = control.ui.GetBindAsPrettyString(control.binds.bindToggleRefine, false);
+        menuBindsSelectWeapon1.text         = control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot0, false);
+        menuBindsSelectWeapon2.text         = control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1, false);
+        menuBindsToggleHUD.text             = control.ui.GetBindAsPrettyString(control.binds.bindToggleHUD, false);
+        menuBindsToggleFPS.text             = control.ui.GetBindAsPrettyString(control.binds.bindToggleFPS, false);
+        menuBindsSaveScreenshot.text        = control.ui.GetBindAsPrettyString(control.binds.bindSaveScreenshot, false);
+        menuBindsToggleMenu.text            = control.ui.GetBindAsPrettyString(control.binds.bindToggleMenu, false);
+        menuButtonResumeLabel.text          = "Resume " + control.ui.GetBindAsPrettyString(control.binds.bindToggleMenu, true);
     }
 
     public void MenuKeybindsThurstForwardSet()
@@ -863,6 +898,13 @@ public class Menu : MonoBehaviour
         menuKeybindsIsSettingBind = true;
         menuBindsCameraZoomOut.text = "";
         menuKeybindsBindID = BIND_ID_ZOOM_OUT;
+    }
+
+    public void MenuKeybindsCameraZoomOpticalSet()
+    {
+        menuKeybindsIsSettingBind = true;
+        menuBindsCameraZoomOptical.text = "";
+        menuKeybindsBindID = BIND_ID_ZOOM_OPTICAL;
     }
 
     public void MenuKeybindsSetTargetSet()
