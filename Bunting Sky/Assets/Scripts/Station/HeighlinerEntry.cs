@@ -7,10 +7,20 @@ using UnityEngine.UI;
 public class HeighlinerEntry : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    [System.NonSerialized] public GameObject exitNode = null;
+    [System.NonSerialized] public GameObject parentPlanet;
+    [System.NonSerialized] public GameObject exitNode;
     public GameObject mapLineModelPrefab;
     [System.NonSerialized] public GameObject mapLineModel;
     [System.NonSerialized] public bool isDiscovered = false;
+
+    private void Start()
+    {
+        //Set parent
+        transform.parent.parent = control.generation.moons.transform;
+
+        //Set name
+        transform.parent.GetComponent<NameHuman>().title = "Heighliner";
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -31,53 +41,52 @@ public class HeighlinerEntry : MonoBehaviour
             }
             else
             {
-                if (exitNode == null)
-                {
-                    Debug.LogError("Exit node for " + GetParentMoonName() + " is null; nowhere to teleport to");
-                }
-                else
-                {
-                    //Teleport
-                    //----------------
-                    //Debug.Log("Teleporting: " + GetParentMoonName() + " -> " + exitNode.GetComponentInChildren<HeighlinerEntry>().GetParentMoonName());
+                //Teleport
+                //----------------
+                //Debug.Log("Teleporting: " + GetParentMoonName() + " -> " + exitNode.GetComponentInChildren<HeighlinerEntry>().GetParentMoonName());
 
-                    //Is discoverd
-                    isDiscovered = true;
-                    //Set exit node as discovered too
-                    exitNode.GetComponentInChildren<HeighlinerEntry>().isDiscovered = true;
+                //Is discoverd
+                isDiscovered = true;
 
-                    //Remember recent teleport
-                    control.GetPlayerScript().recentTeleport = true;
+                //Set exit node as discovered too
+                exitNode.GetComponentInChildren<HeighlinerEntry>().isDiscovered = true;
 
-                    //Ignore collisions briefly to avoid glitch caused by (I think) floating point precision errors
-                    control.GetPlayerScript().collisionImmunity = 1f;
+                //Remember recent teleport
+                control.GetPlayerScript().recentTeleport = true;
 
-                    //Teleport player to exit node
-                    control.GetPlayerTransform().position = exitNode.transform.position + new Vector3(0f, 0f, 0f);
-                }
+                //Ignore collision damage briefly to avoid glitch caused by (I think) floating point precision errors
+                control.GetPlayerScript().collisionDamageInvulnerabilityTemporary = 1f;
+
+                //Remap velocity to exit node's orientation
+                //Vector3 playerVelocityDirection = control.GetPlayerScript().rb.velocity.normalized;
+                float playerVelocityMagnitude = control.GetPlayerScript().rb.velocity.magnitude;
+                control.GetPlayerScript().rb.velocity = exitNode.transform.forward * playerVelocityMagnitude;
+
+                //Teleport player to exit node
+                control.GetPlayerTransform().position = exitNode.transform.position;
             }
         }
     }
 
-    public string GetParentMoonName()
-    {
-        //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
-        int siblingIndex = transform.parent.GetSiblingIndex();
+    //public string GetParentMoonName()
+    //{
+    //    //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
+    //    int siblingIndex = transform.parent.GetSiblingIndex();
+    //
+    //    //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
+    //    return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<NameCelestial>().title;
+    //}
+    //
+    //public Moon GetParentMoonScript()
+    //{
+    //    //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
+    //    int siblingIndex = transform.parent.GetSiblingIndex();
+    //
+    //    //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
+    //    return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<Moon>();
+    //}
 
-        //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
-        return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<NameCelestial>().title;
-    }
-
-    public Moon GetParentMoonScript()
-    {
-        //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
-        int siblingIndex = transform.parent.GetSiblingIndex();
-
-        //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
-        return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<Moon>();
-    }
-
-    public void SpawnMapLineModel()
+    public bool Setup()
     {
         if (exitNode != null)
         {
@@ -85,9 +94,15 @@ public class HeighlinerEntry : MonoBehaviour
             float distanceToExitNode = Vector3.Distance(transform.position, exitNode.transform.position);
             Quaternion rotationToLookAtExitNode = Quaternion.LookRotation((exitNode.transform.position - transform.position).normalized);
 
+            //ROTATION
+            //Rotate to point toward exit node
+            transform.parent.rotation = rotationToLookAtExitNode;
+
+            //MAP UI LINE
             //Instantiate
-            mapLineModel = Instantiate(mapLineModelPrefab, transform.position, rotationToLookAtExitNode);
-            mapLineModel.transform.parent = transform;
+            mapLineModel = Instantiate(mapLineModelPrefab);
+            mapLineModel.transform.parent = transform.parent;
+            mapLineModel.transform.rotation = transform.parent.rotation;
 
             //Scale the distance
             mapLineModel.transform.localScale = new Vector3(
@@ -96,22 +111,26 @@ public class HeighlinerEntry : MonoBehaviour
                 distanceToExitNode //length
             );
             mapLineModel.transform.localScale /= 40f;
-
+            
             //Offset position to be in between the two objects
             mapLineModel.transform.position = (transform.position + exitNode.transform.position)/2f;
-
+            
+            //Render above everything except the player
             mapLineModel.transform.position = new Vector3(
                 mapLineModel.transform.position.x,
                 (control.GetPlayerScript().mapCam.GetComponent<Camera>().farClipPlane / 2f) - 300f, //control.GetPlayerScript().mapCam.transform.position.y - 100f,
                 mapLineModel.transform.position.z
             );
-
+            
             //Set as inactive so it's invisible until the player looks at their map
             mapLineModel.SetActive(false);
+            
+            return true;
         }
         else
         {
-            //Debug.Log("Unable to instantiate map line model as this heighliner has no exit node set!");
+            Debug.LogError("No exit node set");
+            return false;
         }
     }
 }

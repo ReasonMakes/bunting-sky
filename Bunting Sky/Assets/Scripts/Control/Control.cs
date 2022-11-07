@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -209,7 +210,7 @@ public class Control : MonoBehaviour
          */
 
         //Randomize size (needs to be shifted one to the right so that multiplication has grows the low-end number too)
-        float value = Random.Range(1f, (float)valueRootOfMax);
+        float value = UnityEngine.Random.Range(1f, (float)valueRootOfMax);
 
         //Power (making distribution uneven, and unintentionally making smaller sizes rarer)
         value *= value;
@@ -413,5 +414,29 @@ public class Control : MonoBehaviour
         return 0 <= a && a <= 1
             && 0 <= b && b <= 1
             && 0 <= c && c <= 1;
+    }
+
+    public Color GetColorFromHexString(string hex)
+    {
+        //Hex comes as a length-6 string representing hexadecimal numbers; representing R, G, B - in that order. (We are assuming there is no #)
+        //Ex: FFFFFF = FF, FF, FF = 255, 255, 255 = 1f, 1f, 1f = white
+        //Get the relevant two characters of the string for this additive primary colour
+        //string hexRFrag = hex.Substring(0, 2);
+        //Convert from string, to hex, to integer: "FF" = FF = 255
+        //int intR = Convert.ToInt32(hexRFrag, 16);
+        //Convert from int to unit interval float: 255 = 1f
+        //float floatR = intR / 255f;
+
+        //Get the relevant two characters; convert string("FF"), to hex(FF), to integer(255); convert int(255) to unit interval float(1f)
+        Color color = new Color(
+            Convert.ToInt32(hex.Substring(0, 2), 16) / 255f,
+            Convert.ToInt32(hex.Substring(2, 2), 16) / 255f,
+            Convert.ToInt32(hex.Substring(4, 2), 16) / 255f,
+            1f
+        );
+
+        //Debug.Log(hex + " = " + color);
+
+        return color;
     }
 }

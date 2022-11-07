@@ -415,9 +415,6 @@ public class Asteroid : MonoBehaviour
         //Generally Enable() or Disable() should be used instead of calling this directly.
         //Enable prompts coordinates and other needed data and Disable() is more readable
 
-        //Debug
-        control.generation.callsAsteroidSetPoolStatus++;
-
         //Disable performant mode
         SetPerformant(false);
 

@@ -65,10 +65,8 @@ public class Generation : MonoBehaviour
                     public GameObject moon;
                     public GameObject station;
                     public GameObject heighliner;
-                        [System.NonSerialized] public List<GameObject> heighlinerList = new List<GameObject>();
-                        [System.NonSerialized] public int heighlinerCount = 0;
-                        [System.NonSerialized] public GameObject heighlinerInitial = null;
-                        [System.NonSerialized] public GameObject heighlinerOpenLinker = null;
+                        [System.NonSerialized] public int heighlinerExitNodesSet;
+                        private bool heighlinersSetup = false;
 
                 public GameObject asteroids;
                     public GameObject asteroidsEnabled;
@@ -94,14 +92,20 @@ public class Generation : MonoBehaviour
 
         public GameObject damageParticles;
 
-    //Debug
-    [System.NonSerialized] public int callsAsteroidPoolSpawn = 0;
-    [System.NonSerialized] public int callsAsteroidSetPoolStatus = 0;
-    [System.NonSerialized] public int callsAsteroidSetPoolStatusTrue = 0;
-    [System.NonSerialized] public int callsAsteroidSetPoolStatusFalse = 0;
-    [System.NonSerialized] public int countAsteroidsPutInEnabledTree = 0;
-    [System.NonSerialized] public int callsAsteroidPoolSpawnCluster = 0;
-    [System.NonSerialized] public bool printGenerationDetailedToAsteroids = false;
+    //Colours
+    private readonly string[,] COLOR_PALETTE = new string[10, 4]
+    {
+        {"6184D8", "50C5B7", "9CEC5B", "F0F465"},
+        {"53DD6C", "63A088", "6F5E53", "8980F5"},
+        {"788AA3", "92B6B1", "B2C9AB", "E8DDB5"},
+        {"FA8334", "FFFD77", "FFE882", "388697"},
+        {"8D8D92", "BEB2C8", "D7D6D6", "53D8FB"},
+        {"FFEDDF", "C5D86D", "86615C", "AFE0CE"},
+        {"BA1200", "9DD1F1", "508AA8", "C8E0F4"},
+        {"7E8287", "9DA39A", "B98389", "DB2955"},
+        {"A99F96", "DDA77B", "945D5E", "474B24"},
+        {"F06543", "E8E9EB", "E0DFD5", "F09D51"}
+    };
 
     private void Start()
     {
@@ -153,6 +157,31 @@ public class Generation : MonoBehaviour
 
     private void SlowUpdate()
     {
+        //AFTER GENERATION COMPLETE
+        //Setup all heighliners' map models and rotations
+        if (heighlinerExitNodesSet >= nPlanetsPlanned * 2 && !heighlinersSetup)
+        {
+            bool loopSuccess = true;
+
+            for (int planetaryIndex = 0; planetaryIndex < nPlanetsPlanned; planetaryIndex++)
+            {
+                Planet planetScript = control.generation.planets.transform.GetChild(planetaryIndex).GetComponent<Planet>();
+
+                if (!planetScript.heighliner0.GetComponentInChildren<HeighlinerEntry>().Setup())
+                {
+                    loopSuccess = false;
+                }
+
+                if (!planetScript.heighliner1.GetComponentInChildren<HeighlinerEntry>().Setup())
+                {
+                    loopSuccess = false;
+                }
+            }
+
+            heighlinersSetup = loopSuccess;
+        }
+
+        //Performance mode swaps
         if (playerSpawned)
         {
             SwapAsteroidPerformanceMode();
@@ -320,8 +349,6 @@ public class Generation : MonoBehaviour
         Control.DestroyAllChildren(moons, 0f);
         hitboxSwapMoonsChild = 0;
 
-        heighlinerList.Clear();
-
         Control.DestroyAllChildren(asteroidsEnabled, 0f);
         Control.DestroyAllChildren(asteroidsDisabled, 0f);
         //asteroidsPool.Clear();
@@ -478,35 +505,10 @@ public class Generation : MonoBehaviour
         )
     {
         //Colour scheme
-        float mainColor = Random.Range(0.8f, 1f);
-        float r;
-        float g;
-        float b;
-
-        float colorToBeMain = Random.value;
-        if (colorToBeMain <= 0.3333f)
-        {
-            r = mainColor;
-            g = Random.value;
-            b = Random.value;
-        }
-        else if (colorToBeMain <= 0.6666f)
-        {
-            r = Random.value;
-            g = mainColor;
-            b = Random.value;
-        }
-        else
-        {
-            r = Random.value;
-            g = Random.value;
-            b = mainColor;
-        }
-
-        Color tint = new Color(r, g, b);
+        int colorPaletteIndex = Random.Range(0, COLOR_PALETTE.GetLength(0));
 
         //PLANET
-        GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride, tint);
+        GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride, colorPaletteIndex);
 
         //PLANETARY SYSTEM BODIES
         if (generationType != GENERATION_TYPE_LOADED_GAME)
@@ -522,18 +524,44 @@ public class Generation : MonoBehaviour
             {
                 nMoons = Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1);
             }
-            if (printGenerationDetailedToAsteroids) Debug.Log("PLANET - system generating.\nSystem index: " + planetarySystemIndex + ", moons: " + nMoons);
             GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(
                 nMoons,
                 planetarySystemIndex,
                 position,
                 spawnAsteroids,
-                tint
+                colorPaletteIndex
             );
-            //Instance heighliner map connection pieces after all moons and their heighliners have been generated
-            for (int heighlinerIndex = 0; heighlinerIndex < heighlinerList.Count; heighlinerIndex++)
+
+            //Heighliners
+            instancePlanet.GetComponent<Planet>().heighliner0 = SpawnHeighliner(position + Vector3.right * 200f, instancePlanet);
+            instancePlanet.GetComponent<Planet>().heighliner1 = SpawnHeighliner(position + Vector3.left * 200f, instancePlanet);
+            //Exit nodes: link and point at each other
+            if (planetarySystemIndex >= 1) //Skip index 0 because there is nothing to link back to yet because we haven't generated the last heighliner yet
             {
-                heighlinerList[heighlinerIndex].GetComponentInChildren<HeighlinerEntry>().SpawnMapLineModel();
+                //Set the exit node of this planet's heighliner0 to the previous planet's heighliner1 - loop back to the start
+                GameObject thisHeighliner0 = instancePlanet.GetComponent<Planet>().heighliner0;
+                GameObject previousHeighliner1 = planets.transform.GetChild(planetarySystemIndex - 1).GetComponent<Planet>().heighliner1;
+
+                //1.0 -> 0.1   ...   4.0 -> 3.1
+                thisHeighliner0.GetComponentInChildren<HeighlinerEntry>().exitNode = previousHeighliner1; heighlinerExitNodesSet++;
+                thisHeighliner0.transform.rotation = Quaternion.LookRotation(previousHeighliner1.transform.position);
+                //0.1 -> 1.0   ...   3.1 -> 4.0
+                previousHeighliner1.GetComponentInChildren<HeighlinerEntry>().exitNode = thisHeighliner0; heighlinerExitNodesSet++;
+                previousHeighliner1.transform.rotation = Quaternion.LookRotation(thisHeighliner0.transform.position);
+
+                //Link last planet's hieghliner1 to first planet's heighliner0
+                if (planetarySystemIndex == nPlanets - 1)
+                {
+                    GameObject initialHeighliner0 = planets.transform.GetChild(0).GetComponent<Planet>().heighliner0;
+                    GameObject thisHeighliner1 = instancePlanet.GetComponent<Planet>().heighliner1;
+
+                    //0.0 -> 4.1
+                    initialHeighliner0.GetComponentInChildren<HeighlinerEntry>().exitNode = thisHeighliner1; heighlinerExitNodesSet++;
+                    initialHeighliner0.transform.rotation = Quaternion.LookRotation(thisHeighliner1.transform.position);
+                    //4.1 -> 0.0
+                    thisHeighliner1.GetComponentInChildren<HeighlinerEntry>().exitNode = initialHeighliner0; heighlinerExitNodesSet++;
+                    thisHeighliner1.transform.rotation = Quaternion.LookRotation(initialHeighliner0.transform.position);
+                }
             }
 
             //If home planetary system
@@ -555,7 +583,6 @@ public class Generation : MonoBehaviour
                 {
                     asteroidType = Asteroid.TYPE_PLATINOID;
                 }
-                if (printGenerationDetailedToAsteroids) Debug.Log("PLANET, PLAYER SPAWN - spawning asteroids");
                 if (spawnAsteroids)
                 {
                     AsteroidPoolSpawnCluster(
@@ -577,11 +604,9 @@ public class Generation : MonoBehaviour
             {
                 //Planetary systems OTHER than player spawn
                 //Asteroid belt (some percent of all planets have one)
-                if (printGenerationDetailedToAsteroids) Debug.Log("PLANET ROLLING 50%");
                 float nPercentAsteroidBelts = 50f;
                 if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
                 {
-                    if (printGenerationDetailedToAsteroids) Debug.Log("PLANET TRUE - spawning asteroid cluster");
                     //Any asteroid type can spawn in other planetary systems than the one the player spawns at
                     if (spawnAsteroids)
                     {
@@ -592,10 +617,6 @@ public class Generation : MonoBehaviour
                             false
                         );
                     }
-                }
-                else
-                {
-                    if (printGenerationDetailedToAsteroids) Debug.Log("PLANET FALSE");
                 }
 
                 //Bandits
@@ -650,7 +671,53 @@ public class Generation : MonoBehaviour
         return instancePlanet;
     }
 
-    private GameObject PlanetSpawn(Vector3 position, int planetarySystemIndex, string titleOverride, Color tint)
+    public GameObject SpawnHeighliner(Vector3 position, GameObject hostPlanet)
+    {
+        //Spawn the heighliner
+        GameObject instanceHeighliner = Instantiate(
+            heighliner,
+            position,
+            Quaternion.identity
+        );
+
+        //Setup script
+        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().parentPlanet = hostPlanet;
+        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().control = control;
+
+        ////Set exit node
+        //if (heighlinerCount == 0)
+        //{
+        //    heighlinerInitial = instanceHeighliner;
+        //}
+        ////cant do initial (index[0]) as it links with final; can't do index[1] as it has no previous to link to
+        //else if (heighlinerCount >= 1 && heighlinerCount <= (nPlanetsPlanned * 2) - 2)
+        //{
+        //    if (heighlinerOpenLinker == null)
+        //    {
+        //        //If no open linker, make this the open linker and let the last heighliner set this heighliner's TP nodes
+        //        heighlinerOpenLinker = instanceHeighliner;
+        //    }
+        //    else
+        //    {
+        //        //Set this heighliner's exit node, and connect its sister's exit node to it
+        //        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = heighlinerOpenLinker;
+        //        heighlinerOpenLinker.GetComponentInChildren<HeighlinerEntry>().exitNode = instanceHeighliner;
+        //
+        //        //Reset generation to having no open linker at present
+        //        heighlinerOpenLinker = null;
+        //    }
+        //}
+        //else if (heighlinerCount == (nPlanetsPlanned * 2) - 1)
+        //{ //last heighliner is -1 because we haven't incremented the count yet
+        //    //Set this heighliner's exit node, and connect its sister's exit node to it
+        //    instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = heighlinerInitial;
+        //    heighlinerInitial.GetComponentInChildren<HeighlinerEntry>().exitNode = instanceHeighliner;
+        //}
+
+        return instanceHeighliner;
+    }
+
+    private GameObject PlanetSpawn(Vector3 position, int planetarySystemIndex, string titleOverride, int colorPaletteIndex)
     {
         //Instantiate
         GameObject instancePlanet = Instantiate(
@@ -682,25 +749,8 @@ public class Generation : MonoBehaviour
             instancePlanet.GetComponent<NameCelestial>().title = titleOverride;
         }
 
-        //Set home planet
-        Planet planetScript = instancePlanet.GetComponent<Planet>();
-        if (planetarySystemIndex == 0)
-        {
-            //This is the player's home planetary system
-            instancePlanetHome = instancePlanet;
-
-            //Set asteroids types
-            planetScript.asteroidType1 = Asteroid.TYPE_PLATINOID;
-            planetScript.asteroidType2 = Asteroid.TYPE_WATER;
-        }
-        else
-        {
-            //Set asteroids types
-            planetScript.asteroidType1 = Asteroid.GetRandomType();
-            planetScript.asteroidType2 = Asteroid.GetRandomTypeExcluding(planetScript.asteroidType1);
-        }
-
         //Set color/tint
+        Color tint = control.GetColorFromHexString(COLOR_PALETTE[colorPaletteIndex, 0]);
         instancePlanet.transform.Find("Model").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
         instancePlanet.transform.Find("AtmosphereOutside").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
 
@@ -709,7 +759,7 @@ public class Generation : MonoBehaviour
     #endregion
 
     #region Moons
-    private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition, bool spawnAsteroids, Color tint)
+    private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition, bool spawnAsteroids, int colorPaletteIndex)
     {
         //At the end we will return the last generated moon
         GameObject instanceMoon = null;
@@ -731,40 +781,26 @@ public class Generation : MonoBehaviour
             //Generate a slight vertical offset per moon
             instanceMoonPosition.y += Random.value * 20f;
 
+            //Color
+            int colorSubIndex = (1 + moonIndex) % COLOR_PALETTE.GetLength(1); //loop through colour palette - start offset because the planet takes index 0
+            Color tint = control.GetColorFromHexString(COLOR_PALETTE[colorPaletteIndex, colorSubIndex]);
+
             //Spawn this moon
-            if (moonIndex == nMoons - 1)
-            {
-                //Player spawn moon - guarantee a space station
-                instanceMoon = MoonSpawn(
-                    false,
-                    planetIndex, moonIndex,
-                    instanceMoonPosition, tint,
-                    true,
-                    null, false,
-                    null, false, 0f, 0f, 0f, null
-                );
-            }
-            else
-            {
-                //Not player spawn moon - station generation is randomized
-                instanceMoon = MoonSpawn(
-                    false,
-                    planetIndex, moonIndex,
-                    instanceMoonPosition, tint,
-                    true,
-                    null, false,
-                    null, false, 0f, 0f, 0f, null
-                );
-            }
-            
+            instanceMoon = MoonSpawn(
+                false,
+                planetIndex, moonIndex,
+                instanceMoonPosition, tint,
+                (moonIndex == nMoons - 1), //Player spawn moon - guarantee a space station
+                null, false,
+                null, false, 0f, 0f, 0f, null
+            );
+
             //Spawn asteroid belt around this moon (some percentage of moons - other than player's spawn moon - have them)
             if (spawnAsteroids)
             {
-                if (printGenerationDetailedToAsteroids) Debug.Log("MOON - considering asteroid belt");
                 float nPercentAsteroidBelts = 50f;
                 if (moonIndex == nMoons - 1)
                 {
-                    if (printGenerationDetailedToAsteroids) Debug.Log("MOON PLAYER SPAWN - spawning asteroid belt.\nMoonar index: " + moonIndex);
                     //Player spawn moon - water asteroids only but GUARANTEED valuables
                     AsteroidPoolSpawnCluster(
                         CLUSTER_TYPE_MOON_RINGS,
@@ -777,7 +813,6 @@ public class Generation : MonoBehaviour
                 {
                     if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
                     {
-                        if (printGenerationDetailedToAsteroids) Debug.Log("MOON TRUE 50%");
                         //Player spawn SYSTEM - water and platinoid only
                         byte asteroidType = Asteroid.TYPE_WATER;
                         if (Random.value > 0.5f)
@@ -791,14 +826,9 @@ public class Generation : MonoBehaviour
                             false
                         );
                     }
-                    else
-                    {
-                        if (printGenerationDetailedToAsteroids) Debug.Log("MOON FALSE");
-                    }
                 }
                 else if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
                 {
-                    if (printGenerationDetailedToAsteroids) Debug.Log("MOON TRUE 50%");
                     //All other systems - any asteroid type
                     AsteroidPoolSpawnCluster(
                         CLUSTER_TYPE_MOON_RINGS,
@@ -806,10 +836,6 @@ public class Generation : MonoBehaviour
                         instanceMoonPosition,
                         false
                     );
-                }
-                else
-                {
-                    if (printGenerationDetailedToAsteroids) Debug.Log("MOON FALSE");
                 }
             }
         }
@@ -888,12 +914,12 @@ public class Generation : MonoBehaviour
                 //Force a station to spawn and return those coords to spawn the player there (mainly for player station, but also to ensure each planetary system has at least one station)
                 instanceMoon.GetComponent<Moon>().SpawnStation(null, true, 0f, 0f, 0f, null);
             }
-            else if (moonIndex == 1 || moonIndex == 2)
-            {
-                //Heighliner
-                //Force a heighliner to spawn
-                instanceMoon.GetComponent<Moon>().SpawnHeighliner("Heighliner");
-            }
+            //else if (moonIndex == 1 || moonIndex == 2)
+            //{
+            //    //Heighliner
+            //    //Force a heighliner to spawn
+            //    instanceMoon.GetComponent<Moon>().SpawnHeighliner("Heighliner");
+            //}
             else if (forceStation)
             {
                 //Force a station to spawn (unless a heighliner is required)
@@ -997,9 +1023,6 @@ public class Generation : MonoBehaviour
     {
         //Spawn a single asteroid from the pool (move an asteroid from disabled to enabled)
 
-        //Debug
-        callsAsteroidPoolSpawn++;
-
         GameObject instanceAsteroid = null;
 
         //If we have room in the pool to draw from
@@ -1054,8 +1077,6 @@ public class Generation : MonoBehaviour
 
     private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position, bool guaranteeValuables)
     {
-        //Debug
-        callsAsteroidPoolSpawnCluster++;
 
         if (clusterType == CLUSTER_TYPE_PLANET_RINGS || clusterType == CLUSTER_TYPE_MOON_RINGS)
         {
@@ -1295,190 +1316,187 @@ public class Generation : MonoBehaviour
     #region: Saving and loading
     public void SaveGame()
     {
-        if (false) //false keyword disables this ALWAYS - temporarily disabling saving and loading until it is fixed
-        {
-            //INIT ARRAYS TO BE USED FOR SAVING
-            //Planets
-            float[,] planetPosition = new float[planetarySystems.Count, 3];
-            string[] planetName = new string[planetarySystems.Count];
-            byte[] planetarySystemMoonQuantity = new byte[planetarySystems.Count];
-
-            //Moons
-            Moon[] moonArray = FindObjectsOfType<Moon>();
-            float[,] moonPosition = new float[moonArray.Length, 3];
-            string[] moonName = new string[moonArray.Length];
-            bool[] moonHasStation = new bool[moonArray.Length];
-
-            string[] stationTitle = new string[moonArray.Length];
-            float[] stationPricePlatinoid = new float[moonArray.Length];
-            float[] stationPricePreciousMetal = new float[moonArray.Length];
-            float[] stationPriceWater = new float[moonArray.Length];
-            int[,] stationUpgradeIndex = new int[moonArray.Length, StationDocking.upgradeButtons];
-
-            //ASSIGN VERSE DATA TO THOSE ARRAYS
-            for (int planetaryIndex = 0; planetaryIndex < planetarySystems.Count; planetaryIndex++)
-            {
-                //PLANETS
-                GameObject instancePlanet = planetarySystems[planetaryIndex][0]; //0 is the planet, the rest of the list is moons
-
-                //Position
-                planetPosition[planetaryIndex, 0] = instancePlanet.transform.position.x;
-                planetPosition[planetaryIndex, 1] = instancePlanet.transform.position.y;
-                planetPosition[planetaryIndex, 2] = instancePlanet.transform.position.z;
-
-                //Name
-                planetName[planetaryIndex] = instancePlanet.GetComponent<NameCelestial>().title;
-
-                //Number of moons
-                planetarySystemMoonQuantity[planetaryIndex] = (byte)planetarySystems[planetaryIndex].Count;
-
-                //Go until count - 1 because 0 is the planet so we offset everything by +1, and we don't want to go over
-                for (int moonIndex = 0; moonIndex < planetarySystems[planetaryIndex].Count - 1; moonIndex++)
-                {
-                    //MOONS
-                    GameObject instanceMoon = planetarySystems[planetaryIndex][moonIndex + 1]; //add 1 because 0 is the planet
-                    Moon instanceMoonScript = instanceMoon.GetComponent<Moon>(); //TODO: sometimes this is null
-
-                    //Position
-                    moonPosition[moonIndex, 0] = instanceMoon.transform.position.x;
-                    moonPosition[moonIndex, 1] = instanceMoon.transform.position.y;
-                    moonPosition[moonIndex, 2] = instanceMoon.transform.position.z;
-
-                    //Name
-                    moonName[moonIndex] = instanceMoon.GetComponent<NameCelestial>().title;
-
-                    //Station
-                    moonHasStation[moonIndex] = instanceMoon.GetComponent<Moon>().hasStation;
-                    if (instanceMoonScript.hasStation && instanceMoonScript.instancedStation != null)
-                    {
-                        stationTitle[moonIndex] = instanceMoonScript.instancedStation.GetComponent<NameHuman>().title;
-                        stationPricePlatinoid[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePlatinoid;
-                        stationPricePreciousMetal[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePreciousMetal;
-                        stationPriceWater[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().priceWater;
-
-                        //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
-                        for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
-                        {
-                            stationUpgradeIndex[moonIndex, upgradeButtonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().upgradeIndexAtButton[upgradeButtonIndex];
-                        }
-                    }
-                    else
-                    {
-                        stationTitle[moonIndex] = null;
-                        stationPricePlatinoid[moonIndex] = 0f;
-                        stationPricePreciousMetal[moonIndex] = 0f;
-                        stationPriceWater[moonIndex] = 0f;
-
-                        //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
-                        for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
-                        {
-                            stationUpgradeIndex[moonIndex, upgradeButtonIndex] = control.commerce.UPGRADE_SOLD_OUT;
-                        }
-                    }
-                }
-            }
-
-            //Asteroids
-            Asteroid[] asteroidArray = FindObjectsOfType<Asteroid>();
-
-            float[,] asteroidPosition = new float[asteroidArray.Length, 3];
-            float[,] asteroidVelocity = new float[asteroidArray.Length, 3];
-            int[] asteroidSize = new int[asteroidArray.Length];
-            byte[] asteroidType = new byte[asteroidArray.Length];
-            byte[] asteroidHealth = new byte[asteroidArray.Length];
-
-            byte asteroidArrayIndex = 0;
-            foreach (Asteroid asteroid in asteroidArray)
-            {
-                //Position
-                asteroidPosition[asteroidArrayIndex, 0] = asteroid.transform.position.x;
-                asteroidPosition[asteroidArrayIndex, 1] = asteroid.transform.position.y;
-                asteroidPosition[asteroidArrayIndex, 2] = asteroid.transform.position.z;
-
-                //Velocity
-                asteroidVelocity[asteroidArrayIndex, 0] = asteroid.GetComponent<Rigidbody>().velocity.x;
-                asteroidVelocity[asteroidArrayIndex, 1] = asteroid.GetComponent<Rigidbody>().velocity.y;
-                asteroidVelocity[asteroidArrayIndex, 2] = asteroid.GetComponent<Rigidbody>().velocity.z;
-
-                //Size
-                asteroidSize[asteroidArrayIndex] = asteroid.size;
-
-                //Type
-                asteroidType[asteroidArrayIndex] = asteroid.type;
-
-                //Health
-                asteroidHealth[asteroidArrayIndex] = asteroid.health;
-
-                //Increment
-                asteroidArrayIndex++;
-            }
-
-            //Verse
-            float[] verseSpacePosition = new float[3];
-            verseSpacePosition[0] = verseSpace.transform.position.x;
-            verseSpacePosition[1] = verseSpace.transform.position.y;
-            verseSpacePosition[2] = verseSpace.transform.position.z;
-
-            //Player
-            Player playerScript = instancePlayer.GetComponentInChildren<Player>();
-            float[] playerPosition = new float[3];
-            playerPosition[0] = playerScript.transform.position.x;
-            playerPosition[1] = playerScript.transform.position.y;
-            playerPosition[2] = playerScript.transform.position.z;
-
-            //SAVE TO DATA CLASS
-            LevelData.Data data = new LevelData.Data();
-
-            //World properties
-            //Centre star
-            data.starName = instanceStarHome.GetComponent<NameCelestial>().title;
-
-            //Planets
-            data.planetQuantity = (byte)planetarySystems.Count;
-            data.planetPosition = planetPosition;
-            data.planetName = planetName;
-            data.planetarySystemMoonQuantity = planetarySystemMoonQuantity;
-
-            //Moons
-            data.moonQuantity = (byte)moonArray.Length;
-            data.moonPosition = moonPosition;
-            data.moonName = moonName;
-            data.moonHasStation = moonHasStation;
-
-            //Stations
-            data.stationTitle = stationTitle;
-            data.stationPricePlatinoid = stationPricePlatinoid;
-            data.stationPricePreciousMetal = stationPricePreciousMetal;
-            data.stationPriceWater = stationPriceWater;
-            data.stationUpgradeIndex = stationUpgradeIndex;
-
-            //Asteroids
-            data.asteroidQuantity = asteroidArray.Length;
-            data.asteroidPosition = asteroidPosition;
-            data.asteroidVelocity = asteroidVelocity;
-            data.asteroidSize = asteroidSize;
-            data.asteroidType = asteroidType;
-            data.asteroidHealth = asteroidHealth;
-
-            //Verse space
-            data.verseSpacePosition = verseSpacePosition;
-
-            //Player properties
-            data.playerPosition = playerPosition;
-
-            data.playerUpgrades = playerScript.upgradeLevels;
-
-            data.playerVitalsHealth = playerScript.vitalsHealth;
-            data.playerDestroyed = playerScript.isDestroyed;
-
-            data.playerVitalsFuel = playerScript.vitalsFuel;
-
-            data.playerCurrency = playerScript.currency;
-            data.playerOre = playerScript.ore;
-
-            //SAVE THE CLASS/GAME
-            LevelData.SaveGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile, data);
-        }
+        ////INIT ARRAYS TO BE USED FOR SAVING
+        ////Planets
+        //float[,] planetPosition = new float[planetarySystems.Count, 3];
+        //string[] planetName = new string[planetarySystems.Count];
+        //byte[] planetarySystemMoonQuantity = new byte[planetarySystems.Count];
+        //
+        ////Moons
+        //Moon[] moonArray = FindObjectsOfType<Moon>();
+        //float[,] moonPosition = new float[moonArray.Length, 3];
+        //string[] moonName = new string[moonArray.Length];
+        //bool[] moonHasStation = new bool[moonArray.Length];
+        //
+        //string[] stationTitle = new string[moonArray.Length];
+        //float[] stationPricePlatinoid = new float[moonArray.Length];
+        //float[] stationPricePreciousMetal = new float[moonArray.Length];
+        //float[] stationPriceWater = new float[moonArray.Length];
+        //int[,] stationUpgradeIndex = new int[moonArray.Length, StationDocking.upgradeButtons];
+        //
+        ////ASSIGN VERSE DATA TO THOSE ARRAYS
+        //for (int planetaryIndex = 0; planetaryIndex < planetarySystems.Count; planetaryIndex++)
+        //{
+        //    //PLANETS
+        //    GameObject instancePlanet = planetarySystems[planetaryIndex][0]; //0 is the planet, the rest of the list is moons
+        //
+        //    //Position
+        //    planetPosition[planetaryIndex, 0] = instancePlanet.transform.position.x;
+        //    planetPosition[planetaryIndex, 1] = instancePlanet.transform.position.y;
+        //    planetPosition[planetaryIndex, 2] = instancePlanet.transform.position.z;
+        //
+        //    //Name
+        //    planetName[planetaryIndex] = instancePlanet.GetComponent<NameCelestial>().title;
+        //
+        //    //Number of moons
+        //    planetarySystemMoonQuantity[planetaryIndex] = (byte)planetarySystems[planetaryIndex].Count;
+        //
+        //    //Go until count - 1 because 0 is the planet so we offset everything by +1, and we don't want to go over
+        //    for (int moonIndex = 0; moonIndex < planetarySystems[planetaryIndex].Count - 1; moonIndex++)
+        //    {
+        //        //MOONS
+        //        GameObject instanceMoon = planetarySystems[planetaryIndex][moonIndex + 1]; //add 1 because 0 is the planet
+        //        Moon instanceMoonScript = instanceMoon.GetComponent<Moon>(); //TODO: sometimes this is null
+        //
+        //        //Position
+        //        moonPosition[moonIndex, 0] = instanceMoon.transform.position.x;
+        //        moonPosition[moonIndex, 1] = instanceMoon.transform.position.y;
+        //        moonPosition[moonIndex, 2] = instanceMoon.transform.position.z;
+        //
+        //        //Name
+        //        moonName[moonIndex] = instanceMoon.GetComponent<NameCelestial>().title;
+        //
+        //        //Station
+        //        moonHasStation[moonIndex] = instanceMoon.GetComponent<Moon>().hasStation;
+        //        if (instanceMoonScript.hasStation && instanceMoonScript.instancedStation != null)
+        //        {
+        //            stationTitle[moonIndex] = instanceMoonScript.instancedStation.GetComponent<NameHuman>().title;
+        //            stationPricePlatinoid[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePlatinoid;
+        //            stationPricePreciousMetal[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().pricePreciousMetal;
+        //            stationPriceWater[moonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().priceWater;
+        //
+        //            //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
+        //            for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
+        //            {
+        //                stationUpgradeIndex[moonIndex, upgradeButtonIndex] = instanceMoonScript.instancedStation.GetComponentInChildren<StationDocking>().upgradeIndexAtButton[upgradeButtonIndex];
+        //            }
+        //        }
+        //        else
+        //        {
+        //            stationTitle[moonIndex] = null;
+        //            stationPricePlatinoid[moonIndex] = 0f;
+        //            stationPricePreciousMetal[moonIndex] = 0f;
+        //            stationPriceWater[moonIndex] = 0f;
+        //
+        //            //Concatenate the array so that we have the moon data along with the data for each upgrade offer's index
+        //            for (int upgradeButtonIndex = 0; upgradeButtonIndex < StationDocking.upgradeButtons; upgradeButtonIndex++)
+        //            {
+        //                stationUpgradeIndex[moonIndex, upgradeButtonIndex] = control.commerce.UPGRADE_SOLD_OUT;
+        //            }
+        //        }
+        //    }
+        //}
+        //
+        ////Asteroids
+        //Asteroid[] asteroidArray = FindObjectsOfType<Asteroid>();
+        //
+        //float[,] asteroidPosition = new float[asteroidArray.Length, 3];
+        //float[,] asteroidVelocity = new float[asteroidArray.Length, 3];
+        //int[] asteroidSize = new int[asteroidArray.Length];
+        //byte[] asteroidType = new byte[asteroidArray.Length];
+        //byte[] asteroidHealth = new byte[asteroidArray.Length];
+        //
+        //byte asteroidArrayIndex = 0;
+        //foreach (Asteroid asteroid in asteroidArray)
+        //{
+        //    //Position
+        //    asteroidPosition[asteroidArrayIndex, 0] = asteroid.transform.position.x;
+        //    asteroidPosition[asteroidArrayIndex, 1] = asteroid.transform.position.y;
+        //    asteroidPosition[asteroidArrayIndex, 2] = asteroid.transform.position.z;
+        //
+        //    //Velocity
+        //    asteroidVelocity[asteroidArrayIndex, 0] = asteroid.GetComponent<Rigidbody>().velocity.x;
+        //    asteroidVelocity[asteroidArrayIndex, 1] = asteroid.GetComponent<Rigidbody>().velocity.y;
+        //    asteroidVelocity[asteroidArrayIndex, 2] = asteroid.GetComponent<Rigidbody>().velocity.z;
+        //
+        //    //Size
+        //    asteroidSize[asteroidArrayIndex] = asteroid.size;
+        //
+        //    //Type
+        //    asteroidType[asteroidArrayIndex] = asteroid.type;
+        //
+        //    //Health
+        //    asteroidHealth[asteroidArrayIndex] = asteroid.health;
+        //
+        //    //Increment
+        //    asteroidArrayIndex++;
+        //}
+        //
+        ////Verse
+        //float[] verseSpacePosition = new float[3];
+        //verseSpacePosition[0] = verseSpace.transform.position.x;
+        //verseSpacePosition[1] = verseSpace.transform.position.y;
+        //verseSpacePosition[2] = verseSpace.transform.position.z;
+        //
+        ////Player
+        //Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+        //float[] playerPosition = new float[3];
+        //playerPosition[0] = playerScript.transform.position.x;
+        //playerPosition[1] = playerScript.transform.position.y;
+        //playerPosition[2] = playerScript.transform.position.z;
+        //
+        ////SAVE TO DATA CLASS
+        //LevelData.Data data = new LevelData.Data();
+        //
+        ////World properties
+        ////Centre star
+        //data.starName = instanceStarHome.GetComponent<NameCelestial>().title;
+        //
+        ////Planets
+        //data.planetQuantity = (byte)planetarySystems.Count;
+        //data.planetPosition = planetPosition;
+        //data.planetName = planetName;
+        //data.planetarySystemMoonQuantity = planetarySystemMoonQuantity;
+        //
+        ////Moons
+        //data.moonQuantity = (byte)moonArray.Length;
+        //data.moonPosition = moonPosition;
+        //data.moonName = moonName;
+        //data.moonHasStation = moonHasStation;
+        //
+        ////Stations
+        //data.stationTitle = stationTitle;
+        //data.stationPricePlatinoid = stationPricePlatinoid;
+        //data.stationPricePreciousMetal = stationPricePreciousMetal;
+        //data.stationPriceWater = stationPriceWater;
+        //data.stationUpgradeIndex = stationUpgradeIndex;
+        //
+        ////Asteroids
+        //data.asteroidQuantity = asteroidArray.Length;
+        //data.asteroidPosition = asteroidPosition;
+        //data.asteroidVelocity = asteroidVelocity;
+        //data.asteroidSize = asteroidSize;
+        //data.asteroidType = asteroidType;
+        //data.asteroidHealth = asteroidHealth;
+        //
+        ////Verse space
+        //data.verseSpacePosition = verseSpacePosition;
+        //
+        ////Player properties
+        //data.playerPosition = playerPosition;
+        //
+        //data.playerUpgrades = playerScript.upgradeLevels;
+        //
+        //data.playerVitalsHealth = playerScript.vitalsHealth;
+        //data.playerDestroyed = playerScript.isDestroyed;
+        //
+        //data.playerVitalsFuel = playerScript.vitalsFuel;
+        //
+        //data.playerCurrency = playerScript.currency;
+        //data.playerOre = playerScript.ore;
+        //
+        ////SAVE THE CLASS/GAME
+        //LevelData.SaveGame(Application.persistentDataPath + Control.userDataFolder + Control.userLevelSaveFile, data);
     }
 
     private void TryLoadGameElseNewGame()
@@ -1494,155 +1512,155 @@ public class Generation : MonoBehaviour
         }
         else
         {
-            //Debug.Log("Save exists; loading game");
-
-            //Star
-            StarSpawn(data.starName);
-
-            //Planets
-            for (int planetIndex = 0; planetIndex < data.planetQuantity; planetIndex++)
-            {
-                GameObject instancePlanet = PlanetSpawn(
-                    new Vector3(
-                        data.planetPosition[planetIndex, 0],
-                        data.planetPosition[planetIndex, 1],
-                        data.planetPosition[planetIndex, 2]
-                    ),
-                    planetIndex,
-                    data.planetName[planetIndex],
-                    data.planetColor[planetIndex]
-                );
-
-                //GameObject instancePlanet = PlanetarySystemSpawnAndPlayerSpawn(
-                //    GENERATION_TYPE_LOADED_GAME,
-                //    planetIndex,
-                //    0,
-                //    new Vector3(
-                //        data.planetPosition[planetIndex, 0],
-                //        data.planetPosition[planetIndex, 1],
-                //        data.planetPosition[planetIndex, 2]
-                //    ),
-                //    data.planetName[planetIndex]
-                //);
-
-                //Expand the list
-                planetarySystems.Add(new List<GameObject>());
-
-                //Add planet to the list
-                planetarySystems[planetIndex].Add(instancePlanet);
-
-                //Moons
-                for (int moonIndex = 0; moonIndex < data.planetarySystemMoonQuantity[planetIndex]; moonIndex++)
-                {
-                    GameObject instanceMoon;
-                    if (data.moonHasStation[moonIndex])
-                    {
-                        //Slice the array so that we have only the upgrade offers' indices (since we are already looping through each moon)
-                        int[] controlScriptPlanetoidStationUpgradeIndex = new int[StationDocking.upgradeButtons];
-                        for (int upgrade = 0; upgrade < StationDocking.upgradeButtons; upgrade++)
-                        {
-                            controlScriptPlanetoidStationUpgradeIndex[upgrade] = data.stationUpgradeIndex[moonIndex, upgrade];
-                        }
-
-                        instanceMoon = MoonSpawn(
-                            true,
-                            planetIndex,
-                            moonIndex,
-                            new Vector3(
-                                data.moonPosition[moonIndex, 0],
-                                data.moonPosition[moonIndex, 1],
-                                data.moonPosition[moonIndex, 2]
-                            ),
-                            data.moonTint[moonIndex],
-                            data.moonHasStation[moonIndex],
-                            data.moonName[moonIndex],
-                            data.moonHasStation[moonIndex],
-                            data.stationTitle[moonIndex],
-                            false, //generate offers?
-                            data.stationPricePlatinoid[moonIndex],
-                            data.stationPricePreciousMetal[moonIndex],
-                            data.stationPriceWater[moonIndex],
-                            controlScriptPlanetoidStationUpgradeIndex
-                        );
-                    }
-                    else
-                    {
-                        instanceMoon = MoonSpawn(
-                            true,
-                            planetIndex,
-                            moonIndex,
-                            new Vector3(
-                                data.moonPosition[moonIndex, 0],
-                                data.moonPosition[moonIndex, 1],
-                                data.moonPosition[moonIndex, 2]
-                            ),
-                            data.moonTint[moonIndex],
-                            data.moonHasStation[moonIndex],
-                            data.moonName[moonIndex],
-                            data.moonHasStation[moonIndex],
-                            null,
-                            false, //generate offers?
-                            0f,
-                            0f,
-                            0f,
-                            null
-                        );
-                    }
-
-                    //Add the moon to the list
-                    planetarySystems[planetIndex].Add(instanceMoon);
-                }
-            }
-            
-            //Asteroids
-            for (byte i = 0; i < data.asteroidQuantity; i++)
-            {
-                //SpawnAsteroid(
-                //    new Vector3(
-                //        data.asteroidPosition[i, 0],
-                //        data.asteroidPosition[i, 1],
-                //        data.asteroidPosition[i, 2]
-                //    ),
-                //    new Vector3(
-                //        data.asteroidVelocity[i, 0],
-                //        data.asteroidVelocity[i, 1],
-                //        data.asteroidVelocity[i, 2]
-                //    ),
-                //    data.asteroidSize[i],
-                //    data.asteroidType[i],
-                //    data.asteroidHealth[i]
-                //);
-            }
-
-            //PLAYER
-            PlayerSpawn(
-                GENERATION_TYPE_LOADED_GAME,
-                new Vector3(
-                    data.playerPosition[0],
-                    data.playerPosition[1],
-                    data.playerPosition[2]
-                )
-            );
-            Player playerScript = instancePlayer.GetComponentInChildren<Player>();
-
-            //Player properties
-            playerScript.upgradeLevels = data.playerUpgrades;
-            playerScript.UpdateUpgrades();
-
-            playerScript.vitalsHealth = data.playerVitalsHealth;
-            playerScript.isDestroyed = data.playerDestroyed;
-
-            playerScript.vitalsFuel = data.playerVitalsFuel;
-
-            playerScript.currency = data.playerCurrency;
-            playerScript.ore = data.playerOre;
-
-            //Verse position relative to origin
-            verseSpace.transform.position = new Vector3(
-                data.verseSpacePosition[0],
-                data.verseSpacePosition[1],
-                data.verseSpacePosition[2]
-            );
+            ////Debug.Log("Save exists; loading game");
+            //
+            ////Star
+            //StarSpawn(data.starName);
+            //
+            ////Planets
+            //for (int planetIndex = 0; planetIndex < data.planetQuantity; planetIndex++)
+            //{
+            //    GameObject instancePlanet = PlanetSpawn(
+            //        new Vector3(
+            //            data.planetPosition[planetIndex, 0],
+            //            data.planetPosition[planetIndex, 1],
+            //            data.planetPosition[planetIndex, 2]
+            //        ),
+            //        planetIndex,
+            //        data.planetName[planetIndex],
+            //        data.planetColor[planetIndex]
+            //    );
+            //
+            //    //GameObject instancePlanet = PlanetarySystemSpawnAndPlayerSpawn(
+            //    //    GENERATION_TYPE_LOADED_GAME,
+            //    //    planetIndex,
+            //    //    0,
+            //    //    new Vector3(
+            //    //        data.planetPosition[planetIndex, 0],
+            //    //        data.planetPosition[planetIndex, 1],
+            //    //        data.planetPosition[planetIndex, 2]
+            //    //    ),
+            //    //    data.planetName[planetIndex]
+            //    //);
+            //
+            //    //Expand the list
+            //    planetarySystems.Add(new List<GameObject>());
+            //
+            //    //Add planet to the list
+            //    planetarySystems[planetIndex].Add(instancePlanet);
+            //
+            //    //Moons
+            //    for (int moonIndex = 0; moonIndex < data.planetarySystemMoonQuantity[planetIndex]; moonIndex++)
+            //    {
+            //        GameObject instanceMoon;
+            //        if (data.moonHasStation[moonIndex])
+            //        {
+            //            //Slice the array so that we have only the upgrade offers' indices (since we are already looping through each moon)
+            //            int[] controlScriptPlanetoidStationUpgradeIndex = new int[StationDocking.upgradeButtons];
+            //            for (int upgrade = 0; upgrade < StationDocking.upgradeButtons; upgrade++)
+            //            {
+            //                controlScriptPlanetoidStationUpgradeIndex[upgrade] = data.stationUpgradeIndex[moonIndex, upgrade];
+            //            }
+            //
+            //            instanceMoon = MoonSpawn(
+            //                true,
+            //                planetIndex,
+            //                moonIndex,
+            //                new Vector3(
+            //                    data.moonPosition[moonIndex, 0],
+            //                    data.moonPosition[moonIndex, 1],
+            //                    data.moonPosition[moonIndex, 2]
+            //                ),
+            //                data.moonTint[moonIndex],
+            //                data.moonHasStation[moonIndex],
+            //                data.moonName[moonIndex],
+            //                data.moonHasStation[moonIndex],
+            //                data.stationTitle[moonIndex],
+            //                false, //generate offers?
+            //                data.stationPricePlatinoid[moonIndex],
+            //                data.stationPricePreciousMetal[moonIndex],
+            //                data.stationPriceWater[moonIndex],
+            //                controlScriptPlanetoidStationUpgradeIndex
+            //            );
+            //        }
+            //        else
+            //        {
+            //            instanceMoon = MoonSpawn(
+            //                true,
+            //                planetIndex,
+            //                moonIndex,
+            //                new Vector3(
+            //                    data.moonPosition[moonIndex, 0],
+            //                    data.moonPosition[moonIndex, 1],
+            //                    data.moonPosition[moonIndex, 2]
+            //                ),
+            //                data.moonTint[moonIndex],
+            //                data.moonHasStation[moonIndex],
+            //                data.moonName[moonIndex],
+            //                data.moonHasStation[moonIndex],
+            //                null,
+            //                false, //generate offers?
+            //                0f,
+            //                0f,
+            //                0f,
+            //                null
+            //            );
+            //        }
+            //
+            //        //Add the moon to the list
+            //        planetarySystems[planetIndex].Add(instanceMoon);
+            //    }
+            //}
+            //
+            ////Asteroids
+            //for (byte i = 0; i < data.asteroidQuantity; i++)
+            //{
+            //    //SpawnAsteroid(
+            //    //    new Vector3(
+            //    //        data.asteroidPosition[i, 0],
+            //    //        data.asteroidPosition[i, 1],
+            //    //        data.asteroidPosition[i, 2]
+            //    //    ),
+            //    //    new Vector3(
+            //    //        data.asteroidVelocity[i, 0],
+            //    //        data.asteroidVelocity[i, 1],
+            //    //        data.asteroidVelocity[i, 2]
+            //    //    ),
+            //    //    data.asteroidSize[i],
+            //    //    data.asteroidType[i],
+            //    //    data.asteroidHealth[i]
+            //    //);
+            //}
+            //
+            ////PLAYER
+            //PlayerSpawn(
+            //    GENERATION_TYPE_LOADED_GAME,
+            //    new Vector3(
+            //        data.playerPosition[0],
+            //        data.playerPosition[1],
+            //        data.playerPosition[2]
+            //    )
+            //);
+            //Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+            //
+            ////Player properties
+            //playerScript.upgradeLevels = data.playerUpgrades;
+            //playerScript.UpdateUpgrades();
+            //
+            //playerScript.vitalsHealth = data.playerVitalsHealth;
+            //playerScript.isDestroyed = data.playerDestroyed;
+            //
+            //playerScript.vitalsFuel = data.playerVitalsFuel;
+            //
+            //playerScript.currency = data.playerCurrency;
+            //playerScript.ore = data.playerOre;
+            //
+            ////Verse position relative to origin
+            //verseSpace.transform.position = new Vector3(
+            //    data.verseSpacePosition[0],
+            //    data.verseSpacePosition[1],
+            //    data.verseSpacePosition[2]
+            //);
         }
     }
     #endregion

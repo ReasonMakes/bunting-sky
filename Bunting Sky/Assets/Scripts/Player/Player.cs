@@ -120,7 +120,7 @@ public class Player : MonoBehaviour
 
     //Movement: heighliner teleports
     [System.NonSerialized] public bool recentTeleport = false;
-    [System.NonSerialized] public float collisionImmunity = 0f;
+    [System.NonSerialized] public float collisionDamageInvulnerabilityTemporary = 0f;
     #endregion
 
     #region Init fields: Audio
@@ -580,6 +580,37 @@ public class Player : MonoBehaviour
                 transform.position += transform.forward * 150f;
             }
 
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                for (int i = 0; i < control.generation.planets.transform.childCount; i++)
+                {
+                    //Planet planetScript = control.generation.planets.transform.GetChild(i).GetComponent<Planet>();
+                    //HeighlinerEntry heighlinerScript = planetScript.heighliner0.GetComponentInChildren<HeighlinerEntry>();
+                    //heighlinerScript.mapLineModel.transform.Rotate(0f, 10f, 0f);
+                    //heighlinerScript.mapLineModel.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+                    //heighlinerScript.mapLineModel.transform.rotation = heighlinerScript.mapLineModel.transform.parent.rotation;
+                }
+            }
+
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    for (int i = 0; i < control.generation.planets.transform.childCount; i++)
+            //    {
+            //        GameObject planetInstanceHeighliner0 = control.generation.planets.transform.GetChild(i).GetComponent<Planet>().heighliner0;
+            //        Vector3 planetInstanceHeighliner0ExitNodePosition = planetInstanceHeighliner0.GetComponentInChildren<HeighlinerEntry>().exitNode.transform.position;
+            //        planetInstanceHeighliner0.transform.rotation = Quaternion.LookRotation(planetInstanceHeighliner0ExitNodePosition);
+            //
+            //        GameObject planetInstanceHeighliner1 = control.generation.planets.transform.GetChild(i).GetComponent<Planet>().heighliner1;
+            //        Vector3 planetInstanceHeighliner1ExitNodePosition = planetInstanceHeighliner1.GetComponentInChildren<HeighlinerEntry>().exitNode.transform.position;
+            //        planetInstanceHeighliner1.transform.rotation = Quaternion.LookRotation(planetInstanceHeighliner1ExitNodePosition);
+            //    }
+            //}
+
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    transform.rotation = Quaternion.LookRotation(control.generation.planets.transform.GetChild(0).position);
+            //}
+
             ////Unlock double blowback
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
@@ -605,13 +636,13 @@ public class Player : MonoBehaviour
             //    control.ui.UpdateAllPlayerResourcesUI();
             //}
 
-            //Spawn bandit
-            if (binds.GetInputDown(binds.bindCheat2))
-            {
-                healthInfiniteCheat = true;
-                control.generation.EnemySpawn(transform.position + (transform.forward * 20f), enemyStengthToSpawn);
-                enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Enum.GetNames(typeof(Enemy.Strength)).Length);
-            }
+            ////Spawn bandit
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    healthInfiniteCheat = true;
+            //    control.generation.EnemySpawn(transform.position + (transform.forward * 20f), enemyStengthToSpawn);
+            //    enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Enum.GetNames(typeof(Enemy.Strength)).Length);
+            //}
 
             ////Unlock seismic charges
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -821,7 +852,7 @@ public class Player : MonoBehaviour
             //Collision immunity wears off
             float collisionImmunityPeriod = 0.25f; //Time in seconds the player will be immune for
             float collisionImmunityDecrementRate = Time.deltaTime / collisionImmunityPeriod;
-            collisionImmunity = Mathf.Max(0f, collisionImmunity - collisionImmunityDecrementRate);
+            collisionDamageInvulnerabilityTemporary = Mathf.Max(0f, collisionDamageInvulnerabilityTemporary - collisionImmunityDecrementRate);
 
             //Recent weapon use movement penalty wears off
             float weaponUsedRecentlyPeriod = 0.25f; //Time in seconds the player will be immune for
@@ -1599,11 +1630,11 @@ public class Player : MonoBehaviour
                     //Station
                     closestMoonOrMoonChildTransform.GetComponentInChildren<StationDocking>().GetParentMoonScript().isDiscovered = true;
                 }
-                else if (closestMoonOrMoonChildTransform.gameObject.name == control.generation.heighliner.name + "(Clone)")
-                {
-                    //Heighliner
-                    closestMoonOrMoonChildTransform.GetComponentInChildren<HeighlinerEntry>().GetParentMoonScript().isDiscovered = true;
-                }
+                //else if (closestMoonOrMoonChildTransform.gameObject.name == control.generation.heighliner.name + "(Clone)")
+                //{
+                //    //Heighliner
+                //    closestMoonOrMoonChildTransform.GetComponentInChildren<HeighlinerEntry>().GetParentPlanetScript().isDiscovered = true;
+                //}
             }
         }
         if (control.generation.asteroidsEnabled.transform.childCount > 0)
@@ -2669,7 +2700,7 @@ public class Player : MonoBehaviour
 
         //SELF
         double damageToDeal = 0.0d;
-        if (isBanditLaser || impactDeltaV.magnitude >= impactIntoleranceThreshold && collisionImmunity <= 0f)
+        if (isBanditLaser || impactDeltaV.magnitude >= impactIntoleranceThreshold && collisionDamageInvulnerabilityTemporary <= 0f)
         {
             //Shake camera
             CameraShakeAdd(new Vector2(CAMERA_OFFSET_POSITION_MAGNITUDE_MAX, CAMERA_OFFSET_ROTATION_MAGNITUDE_MAX));

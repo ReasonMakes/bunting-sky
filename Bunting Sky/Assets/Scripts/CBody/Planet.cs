@@ -4,6 +4,6 @@ using UnityEngine;
 
 public class Planet : MonoBehaviour
 {
-    [System.NonSerialized] public byte asteroidType1;
-    [System.NonSerialized] public byte asteroidType2;
+    [System.NonSerialized] public GameObject heighliner0;
+    [System.NonSerialized] public GameObject heighliner1;
 }

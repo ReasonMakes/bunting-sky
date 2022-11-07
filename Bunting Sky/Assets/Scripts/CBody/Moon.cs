@@ -168,60 +168,60 @@ public class Moon : MonoBehaviour
         return gameObject;
     }
 
-    public void SpawnHeighliner(string titleOverride)
-    {
-        //Remember that this planetoid has a station oribting it
-        hasHeighliner = true;
-
-        //Spawn the heighliner
-        instancedHeighliner = Instantiate
-        (
-            heighliner,
-            transform.position + new Vector3(20f, 20f, 20f),
-            Quaternion.Euler(0f, 0f, 0f)
-        );
-
-        //Set parent
-        instancedHeighliner.transform.parent = transform.parent;
-
-        //Set name
-        instancedHeighliner.GetComponent<NameHuman>().title = titleOverride;
-
-        //Pass control reference
-        instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().control = control;
-
-        //Add to control list
-        control.generation.heighlinerList.Add(instancedHeighliner);
-
-        //Set exit node
-        if (control.generation.heighlinerCount == 0)
-        {
-            control.generation.heighlinerInitial = instancedHeighliner;
-        }
-        else if (control.generation.heighlinerCount >= 1 && control.generation.heighlinerCount <= (control.generation.nPlanetsPlanned * 2) - 2) //cant do initial (index[0]) as it links with final; can't do index[1] as it has no previous to link to
-        {
-            if (control.generation.heighlinerOpenLinker == null)
-            {
-                //If no open linker, make this the open linker and wait until another heighliner exists to connect to this one
-                control.generation.heighlinerOpenLinker = instancedHeighliner;
-            }
-            else
-            {
-                //Set this heighliner's exit node, and connect its sister's exit node to it
-                instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = control.generation.heighlinerOpenLinker;
-                control.generation.heighlinerOpenLinker.GetComponentInChildren<HeighlinerEntry>().exitNode = instancedHeighliner;
-
-                //Reset generation to having no open linker at present
-                control.generation.heighlinerOpenLinker = null;
-            }
-        }
-        else if (control.generation.heighlinerCount == (control.generation.nPlanetsPlanned * 2) - 1) { //last heighliner is -1 because we haven't incremented the count yet
-            //Set this heighliner's exit node, and connect its sister's exit node to it
-            instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = control.generation.heighlinerInitial;
-            control.generation.heighlinerInitial.GetComponentInChildren<HeighlinerEntry>().exitNode = instancedHeighliner;
-        }
-
-        //Increment heighliner count
-        control.generation.heighlinerCount++;
-    }
+    //public void SpawnHeighliner(string titleOverride)
+    //{
+    //    //Remember that this moon has a satellite oribting it
+    //    hasHeighliner = true;
+    //
+    //    //Spawn the heighliner
+    //    instancedHeighliner = Instantiate
+    //    (
+    //        heighliner,
+    //        transform.position + new Vector3(20f, 20f, 20f),
+    //        Quaternion.Euler(0f, 0f, 0f)
+    //    );
+    //
+    //    //Set parent
+    //    instancedHeighliner.transform.parent = transform.parent;
+    //
+    //    //Set name
+    //    instancedHeighliner.GetComponent<NameHuman>().title = titleOverride;
+    //
+    //    //Pass control reference
+    //    instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().control = control;
+    //
+    //    //Add to control list
+    //    control.generation.heighlinerList.Add(instancedHeighliner);
+    //
+    //    //Set exit node
+    //    if (control.generation.heighlinerCount == 0)
+    //    {
+    //        control.generation.heighlinerInitial = instancedHeighliner;
+    //    }
+    //    else if (control.generation.heighlinerCount >= 1 && control.generation.heighlinerCount <= (control.generation.nPlanetsPlanned * 2) - 2) //cant do initial (index[0]) as it links with final; can't do index[1] as it has no previous to link to
+    //    {
+    //        if (control.generation.heighlinerOpenLinker == null)
+    //        {
+    //            //If no open linker, make this the open linker and wait until another heighliner exists to connect to this one
+    //            control.generation.heighlinerOpenLinker = instancedHeighliner;
+    //        }
+    //        else
+    //        {
+    //            //Set this heighliner's exit node, and connect its sister's exit node to it
+    //            instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = control.generation.heighlinerOpenLinker;
+    //            control.generation.heighlinerOpenLinker.GetComponentInChildren<HeighlinerEntry>().exitNode = instancedHeighliner;
+    //
+    //            //Reset generation to having no open linker at present
+    //            control.generation.heighlinerOpenLinker = null;
+    //        }
+    //    }
+    //    else if (control.generation.heighlinerCount == (control.generation.nPlanetsPlanned * 2) - 1) { //last heighliner is -1 because we haven't incremented the count yet
+    //        //Set this heighliner's exit node, and connect its sister's exit node to it
+    //        instancedHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = control.generation.heighlinerInitial;
+    //        control.generation.heighlinerInitial.GetComponentInChildren<HeighlinerEntry>().exitNode = instancedHeighliner;
+    //    }
+    //
+    //    //Increment heighliner count
+    //    control.generation.heighlinerCount++;
+    //}
 }

@@ -27,7 +27,7 @@ Material:
     - _MaxTranslucency: 0.04
     - _MinTranslucency: 0
     - _Translucency: 45.1
-    - minAlpha: 0.005
+    - minAlpha: 0.001
     m_Colors:
     - Color_58D26B04: {r: 0.7529412, g: 1.9764706, b: 2.9960785, a: 1}
     - _Color: {r: 0.19215682, g: 0.7647059, b: 1, a: 0.34901962}

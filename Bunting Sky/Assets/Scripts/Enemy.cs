@@ -450,9 +450,9 @@ public class Enemy : MonoBehaviour
         {
             //Physical size
             modelGroup = modelGroup0;
-            
+
             //Difficulty
-            health = 3;
+            health = 6; //3;
             thrust = 2500f; //4e3f;
             torque = 600f;
             destinationRandomOffsetMultiplier = 1f; //2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
@@ -467,7 +467,7 @@ public class Enemy : MonoBehaviour
             modelGroup = modelGroup1;
 
             //Difficulty
-            health = 6;
+            health = 12; //6;
             thrust = 8e3f;
             torque = 16e3f; //10e3f;
             destinationRandomOffsetMultiplier = 0.1f; //0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
@@ -482,7 +482,7 @@ public class Enemy : MonoBehaviour
             modelGroup = modelGroup2;
 
             //Difficulty
-            health = 10; //10hp is player default; 20hp is player max health after upgrading hull strength
+            health = 20; //10hp is player default; 20hp is player max health after upgrading hull strength
             //thrust = 10e3f;
             thrust = control.GetPlayerScript().THRUST;
             torque = 30e3f; //25e3f; //18e3f; //16e3f; //12e3f;
@@ -499,7 +499,7 @@ public class Enemy : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Unrecognized code: " + this.strength);
+            Debug.LogError("Unrecognized strength code: " + this.strength);
         }
 
         //Activate the model

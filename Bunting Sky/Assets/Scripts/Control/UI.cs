@@ -326,19 +326,21 @@ public class UI : MonoBehaviour
         //control.GetPlayerScript().mapLight.SetActive(displayMap);
         //Map ship model
         control.GetPlayerScript().transform.parent.Find("Position Mount").Find("Centre Mount").Find("Ship Map Model").gameObject.SetActive(displayMap);
-        
+
         //Heighliner map lines
-        for (int heighlinerIndex = 0; heighlinerIndex < control.generation.heighlinerList.Count; heighlinerIndex++)
+        for (int planetIndex = 0; planetIndex < control.generation.planets.transform.childCount; planetIndex++)
         {
             //Refs
-            GameObject heighliner = control.generation.heighlinerList[heighlinerIndex];
-            Transform heighlinerMapLineModel = heighliner.transform.Find("Jump Trigger Volume").Find("HeighlinerMapLineModel(Clone)");
+            GameObject planetInstance = control.generation.planets.transform.GetChild(planetIndex).gameObject;
+            GameObject heighliner = planetInstance.GetComponent<Planet>().heighliner0; //we only care about heighliner0 and not heighliner1, because all 0s link to 1s
+            HeighlinerEntry heighlinerScript = heighliner.GetComponentInChildren<HeighlinerEntry>(); //we only care about heighliner0 and not heighliner1, because all 0s link to 1s
+            Transform heighlinerMapLineModel = heighliner.transform.Find("HeighlinerMapLineModel(Clone)");
 
-            //Protect against null ref exception
-            if (heighlinerMapLineModel != null)
-            { 
+            //Protect against null ref exception (happens for the first 5 frames, minimum)
+            if (heighlinerScript.exitNode != null)
+            {
                 //Only display line after discovered
-                if (heighliner.GetComponentInChildren<HeighlinerEntry>().isDiscovered)
+                if (heighlinerScript.isDiscovered)
                 {
                     heighlinerMapLineModel.gameObject.SetActive(displayMap);
                 }
@@ -348,6 +350,26 @@ public class UI : MonoBehaviour
                 Debug.Log("Heighliner has no map line model!");
             }
         }
+        //for (int heighlinerIndex = 0; heighlinerIndex < control.generation.heighlinerList.Count; heighlinerIndex++)
+        //{
+        //    //Refs
+        //    GameObject heighliner = control.generation.heighlinerList[heighlinerIndex];
+        //    Transform heighlinerMapLineModel = heighliner.transform.Find("Jump Trigger Volume").Find("HeighlinerMapLineModel(Clone)");
+        //
+        //    //Protect against null ref exception
+        //    if (heighlinerMapLineModel != null)
+        //    { 
+        //        //Only display line after discovered
+        //        if (heighliner.GetComponentInChildren<HeighlinerEntry>().isDiscovered)
+        //        {
+        //            heighlinerMapLineModel.gameObject.SetActive(displayMap);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        Debug.Log("Heighliner has no map line model!");
+        //    }
+        //}
 
         if (displayMap)
         {
@@ -459,36 +481,6 @@ public class UI : MonoBehaviour
         );
 
         waypointImage.transform.position = waypointUIPos;
-
-        //Vector3 waypointWorldPos = hit.collider.transform.position;
-        //
-        //Vector2 waypointUIPos = Camera.main.WorldToScreenPoint(waypointWorldPos);
-        //waypointUIPos.x = Mathf.Clamp(waypointUIPos.x, waypointXMin, waypointXMax);
-        //waypointUIPos.y = Mathf.Clamp(waypointUIPos.y, waypointYMin, waypointYMax);
-        //
-        //waypointImage.transform.position = waypointUIPos;
-        //
-        ////Check if position is behind camera
-        //if (Vector3.Dot(waypointWorldPos - Camera.main.transform.position, Camera.main.transform.forward) < 0f)
-        //{
-        //    if (waypointUIPos.x < Screen.width / 2f)
-        //    {
-        //        waypointUIPos.x = waypointXMax;
-        //    }
-        //    else
-        //    {
-        //        waypointUIPos.x = waypointXMin;
-        //    }
-        //
-        //    if (waypointUIPos.y < Screen.height / 2f)
-        //    {
-        //        waypointUIPos.y = waypointYMax;
-        //    }
-        //    else
-        //    {
-        //        waypointUIPos.y = waypointYMin;
-        //    }
-        //}
 
         waypointTextType.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + waypointTextBody.fontSize + waypointTextTitle.fontSize + waypointTextType.fontSize);
         waypointTextTitle.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + waypointTextBody.fontSize + waypointTextTitle.fontSize);
@@ -803,16 +795,14 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Heighliner";
-                Transform heighlinerTransform = hit.collider.transform;
-                Transform moonTransform = heighlinerTransform.parent.GetChild(heighlinerTransform.GetSiblingIndex() - 1);
-                string moonName = moonTransform.GetComponent<NameCelestial>().title;
-                string finalTitle = "Interplanetary. Orbiting " + moonName;
-                if (heighlinerTransform.GetComponentInChildren<HeighlinerEntry>().isDiscovered)
+                HeighlinerEntry heighlinerScript = hit.collider.transform.GetComponentInChildren<HeighlinerEntry>();
+                string hostCBodyName = heighlinerScript.parentPlanet.GetComponent<NameCelestial>().title;
+                string finalTitle = "Interplanetary. Orbiting " + hostCBodyName;
+                if (heighlinerScript.isDiscovered)
                 {
-                    Transform exitNodeHeighliner = heighlinerTransform.GetComponentInChildren<HeighlinerEntry>().exitNode.transform;
-                    Transform exitNodeHeighlinerMoon = exitNodeHeighliner.parent.GetChild(exitNodeHeighliner.GetSiblingIndex() - 1);
-                    string exitNodeHeighlinerMoonTitle = exitNodeHeighlinerMoon.GetComponent<NameCelestial>().title;
-                    finalTitle = "Interplanetary. " + moonName + " to " + exitNodeHeighlinerMoonTitle;
+                    HeighlinerEntry exitNodeHeighlinerScript = heighlinerScript.exitNode.transform.GetComponentInChildren<HeighlinerEntry>();
+                    string exitNodeHeighlinerMoonName = exitNodeHeighlinerScript.parentPlanet.GetComponent<NameCelestial>().title;
+                    finalTitle = "Interplanetary. " + hostCBodyName + " to " + exitNodeHeighlinerMoonName;
                 }
                 waypointTextTitle.text = finalTitle;
                 //waypointTextTitle.text = hit.collider.gameObject.GetComponent<NameHuman>().title;
