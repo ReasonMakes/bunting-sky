@@ -58,16 +58,11 @@ public class Player : MonoBehaviour
     //Visuals
     public GameObject spotlight;
     [System.NonSerialized] public bool isOutlinesVisible = false;
-    [System.NonSerialized] public bool outlineCanUse = true; //Whether the player is able to toggle the outline on
     [System.NonSerialized] public float outlineFade = 1f; //Multiplier for outline intensity - DO NOT EDIT; this changes dynamically
-    [System.NonSerialized] public readonly float OUTLINE_PERIOD_FADING = 2f; //Fade out over this period of time, in seconds
-    [System.NonSerialized] public readonly float OUTLINE_PERIOD_ENABLED = 3f; //Time in seconds outlines will show for
+    [System.NonSerialized] public readonly float OUTLINE_PERIOD_FADING_WHILE_ENABLED = 2f; //Fade out over this period of time, in seconds
+    [System.NonSerialized] public readonly float OUTLINE_PERIOD_ENABLED = 6f; //3f; //Time in seconds outlines will show for
     [System.NonSerialized] public readonly float OUTLINE_PERIOD_COOLDOWN = 1.5f; //Time in seconds before outlines can be shown again
-    [System.NonSerialized] public float outlineCanUseAgainTime = 0f; //At what time the player can use outlines again (measured against Time.time) - DO NOT EDIT; this changes dynamically
-    [System.NonSerialized] public float outlineDisableTime = 0f; //At what time outlines will be disabled - DO NOT EDIT; this changes dynamically
-    [System.NonSerialized] public static int CBODY_TYPE_PLANET = 0;
-    [System.NonSerialized] public static int CBODY_TYPE_MOON = 1;
-    [System.NonSerialized] public static int CBODY_TYPE_ASTEROID = 2;
+    [System.NonSerialized] public float outlineActivatedTime = -100f; //Time when the outline was last activated - CHANGES DYNAMICALLY
 
     #region Init fields: Movement
     //Movement
@@ -581,12 +576,19 @@ public class Player : MonoBehaviour
                 transform.position += transform.forward * 150f;
             }
 
-            //Invulnerable
+            //Eclipse vision upgrade
             if (binds.GetInputDown(binds.bindCheat2))
             {
-                //Invulnerable
-                healthInfiniteCheat = true;
+                upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
+                UpdateUpgrades();
             }
+
+            ////Invulnerable
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    //Invulnerable
+            //    healthInfiniteCheat = true;
+            //}
 
             ////Spawn bandit
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -602,12 +604,12 @@ public class Player : MonoBehaviour
             //    enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Control.GetEnumLength(typeof(Enemy.Strength)));
             //}
 
-            //Unlock seismic charges
-            if (binds.GetInputDown(binds.bindCheat2))
-            {
-                upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-                weaponSlot1 = weaponSeismicCharges;
-            }
+            ////Unlock seismic charges
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+            //    weaponSlot1 = weaponSeismicCharges;
+            //}
 
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
@@ -711,14 +713,6 @@ public class Player : MonoBehaviour
             //            asteroidToDestroy.GetComponent<Asteroid>().BeginDestroying();
             //        }
             //    }
-            //}
-
-            ////Eclipse vision upgrade
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
-            //    tipHasBoughtSeismicCharges = true;
-            //    weaponSlot1 = weaponSeismicCharges;
             //}
 
             ////Force tutorial level
@@ -895,18 +889,35 @@ public class Player : MonoBehaviour
                 mapModel.position = new Vector3(transform.position.x, mapCam.transform.position.y - 200f, transform.position.z);
             }
 
-            //Outlines
-            if (outlineCanUseAgainTime <= Time.time)
+            //OUTLINES
+            float timeUntilCanUse = Time.time - (outlineActivatedTime + OUTLINE_PERIOD_ENABLED + OUTLINE_PERIOD_COOLDOWN);
+
+            //Debug.Log("---------------------------------");
+            //Debug.Log("timeUntilCanUse: " + timeUntilCanUse);
+            //Debug.Log("isOutlinesVisible:" + isOutlinesVisible);
+            //Debug.Log("outlineActivatedTime: " + outlineActivatedTime);
+            //Debug.Log("Time.time: " + Time.time);
+            //Debug.Log("outlineFade: " + outlineFade);
+
+            //Cooldown UI
+            float timePastDisableMoment = Time.time - (outlineActivatedTime + OUTLINE_PERIOD_ENABLED);
+            float remainingCDFraction = timePastDisableMoment / OUTLINE_PERIOD_COOLDOWN;
+            control.ui.abilityEclipseVision.Find("Cooldown").GetComponent<Image>().fillAmount = Mathf.Max(0f, Mathf.Min(1f,
+                1f - remainingCDFraction
+            ));
+
+            //Visible? (Including faded)
+            if (Time.time < outlineActivatedTime + OUTLINE_PERIOD_ENABLED)
             {
-                //Allowed to use outlines again
-                outlineCanUse = true;
-            }
-            if (!outlineCanUse && outlineDisableTime <= Time.time)
-            {
-                if (outlineFade > 0f && outlineDisableTime + OUTLINE_PERIOD_FADING > Time.time)
+                //Outline active
+                if (
+                    outlineFade > 0f
+                    && isOutlinesVisible
+                    //&& Time.time >= outlineActivatedTime + OUTLINE_PERIOD_ENABLED - OUTLINE_PERIOD_FADING_WHILE_ENABLED
+                )
                 {
                     //Fade outlines out over time
-                    outlineFade = Mathf.Max(0f, (outlineDisableTime + OUTLINE_PERIOD_FADING - Time.time) / OUTLINE_PERIOD_FADING);
+                    outlineFade = Mathf.Max(0f, (outlineActivatedTime + OUTLINE_PERIOD_ENABLED - OUTLINE_PERIOD_FADING_WHILE_ENABLED - Time.time) / OUTLINE_PERIOD_FADING_WHILE_ENABLED);
                     UpdateOutlines();
                 }
                 else
@@ -916,15 +927,23 @@ public class Player : MonoBehaviour
 
                     if (isOutlinesVisible)
                     {
-                        //Disable outlines completely to prepare for reenabling
+                        //Turn off
                         ToggleOutline();
                     }
                 }
             }
-            if (binds.GetInputDown(binds.bindToggleOutline))
+
+            //Toggle
+            if (
+                binds.GetInputDown(binds.bindToggleOutline)
+                && upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1
+            )
             {
                 //Can only turn on when cooldown allows it, but can turn off at any time
-                if (control.GetPlayerScript().outlineCanUse || control.GetPlayerScript().isOutlinesVisible)
+                if (
+                    timeUntilCanUse >= 0f
+                    || isOutlinesVisible
+                )
                 {
                     ToggleOutline();
                 }
@@ -1452,7 +1471,7 @@ public class Player : MonoBehaviour
     private void TargetGlow()
     {
         //Make the target glow
-        float period = 0.6f;
+        float period = 0.3f; //0.6f;
         float intensity = (Time.time % period) * (2f / period);
         //Loop back and forth smoothly (this is also why we multiply by 2f instead of 1f above)
         intensity = Mathf.Abs(1f - intensity);
@@ -2227,14 +2246,21 @@ public class Player : MonoBehaviour
         thrustEngineWarmupMultiplierMax = THRUST_ENGINE_WARMUP_MULTIPLIER_MAX_STARTER * (1 + upgradeLevels[control.commerce.UPGRADE_RAPTOR_ENGINES]);
 
         //Abilities
-        if (upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1 && !tipHasBoughtOutline)
+        if (upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1)
         {
-            //Eclipse vision tip
-            tipHasBoughtOutline = true;
+            //Eclipse vision
+            //Show CD UI
+            control.ui.abilityEclipseVision.gameObject.SetActive(true);
+
+            //Tip
+            if (!tipHasBoughtOutline)
+            {
+                tipHasBoughtOutline = true;
+            }
         }
         if (upgradeLevels[control.commerce.UPGRADE_REFINERY] >= 1 && !tipHasBoughtRefinery)
         {
-            //Eclipse vision tip
+            //Refinery tip
             tipHasBoughtRefinery = true;
         }
 
@@ -2319,13 +2345,15 @@ public class Player : MonoBehaviour
         //Ship direction reticles
         control.ui.playerShipDirectionReticleTree.SetActive(!isDestroyed);
 
-        //Tractor beam (too bright in FP or too dim in TP without this)
+        //Tractor beam (too bright in FP or too dim in TP without this) and tip text (avoid obstructing the player's view)
         if (firstPerson)
         {
+            control.ui.tipText.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector3(0f, 275f, 0f);
             tractorBeamMaterial.SetFloat("minAlpha", 0.001f); //minAlpha, property 2/2, Vector1
         }
         else
         {
+            control.ui.tipText.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector3(0f, 205f, 0f);
             tractorBeamMaterial.SetFloat("minAlpha", 0.005f);
         }
     }
@@ -2661,12 +2689,18 @@ public class Player : MonoBehaviour
                 if (bodyIndex == 0)
                 {
                     //Planet
-                    UpdateOutlineMaterial(CBODY_TYPE_PLANET, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
+                    UpdateOutlineMaterial(
+                        Generation.HighlightableCBodyType.planet,
+                        control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material
+                    );
                 }
                 else
                 {
                     //Moons
-                    UpdateOutlineMaterial(CBODY_TYPE_MOON, control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material);
+                    UpdateOutlineMaterial(
+                        Generation.HighlightableCBodyType.moon,
+                        control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material
+                    );
                 }
             }
         }
@@ -2679,24 +2713,24 @@ public class Player : MonoBehaviour
             if (!asteroidTransform.GetComponentInChildren<Asteroid>().isDestroying)
             {
                 Material material = asteroidTransform.GetComponentInChildren<MeshRenderer>().material;
-                UpdateOutlineMaterial(CBODY_TYPE_ASTEROID, material);
+                UpdateOutlineMaterial(Generation.HighlightableCBodyType.asteroid, material);
             }
         }
     }
 
-    public void UpdateOutlineMaterial(int cBodyType, Material material)
+    public void UpdateOutlineMaterial(Generation.HighlightableCBodyType cBodyType, Material material)
     {
         if (isOutlinesVisible && upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1)
         {
-            if (cBodyType == CBODY_TYPE_PLANET)
+            if (cBodyType == Generation.HighlightableCBodyType.planet)
             {
                 material.SetFloat("_NightVisionOutline", 0.3f * outlineFade);
             }
-            else if (cBodyType == CBODY_TYPE_MOON)
+            else if (cBodyType == Generation.HighlightableCBodyType.moon)
             {
                 material.SetFloat("_NightVisionOutline", 0.7f * outlineFade);
             }
-            else if (cBodyType == CBODY_TYPE_ASTEROID)
+            else if (cBodyType == Generation.HighlightableCBodyType.asteroid)
             {
                 material.SetFloat("_NightVisionOutline", 5f * outlineFade);
             }
@@ -2709,7 +2743,16 @@ public class Player : MonoBehaviour
 
     public void ToggleOutline()
     {
+        //Enabling
+        if (!isOutlinesVisible)
+        {
+            outlineActivatedTime = Time.time;
+        }
+
+        //Toggle
         isOutlinesVisible = !isOutlinesVisible;
+        
+        //Update shaders
         UpdateOutlines();
     }
     #endregion

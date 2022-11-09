@@ -88,6 +88,10 @@ public class UI : MonoBehaviour
     private readonly Color COLOR_UI_TRANSLUCENT_AMBER = new Color(1f, 0.75f, 0f, 0.5f); //new Color(1f, 0.34f, 0.2f, 0.5f);
     private readonly Color COLOR_UI_TRANSLUCENT_RED = new Color(1f, 0f, 0f, 0.5f);
 
+    //Abilities
+    public Transform abilities;
+    [System.NonSerialized] public Transform abilityEclipseVision;
+
     private void Awake()
     {
         //Get references
@@ -119,10 +123,14 @@ public class UI : MonoBehaviour
         weaponAlternateTitleText = weaponsFolder.Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
 
         tipText = canvas.transform.Find("HUD Bottom").Find("Tips").Find("Tip Text").GetComponent<TextMeshProUGUI>();
+
+        abilityEclipseVision = abilities.Find("Eclipse Vision");
     }
 
     private void Start()
     {
+        UpdateUIBindDisplays();
+
         //Waypoint
         waypointXMin = waypointImage.GetPixelAdjustedRect().width / 2;
         waypointXMax = Screen.width - waypointXMin;
@@ -1208,6 +1216,15 @@ public class UI : MonoBehaviour
             //Sprite
             weaponSelectedIcon.sprite = weaponSelectedIconNone;
         }
+    }
+
+    private void UpdateUIBindDisplays()
+    {
+        //Necessary to update the elements to reflect the player's settings on startup, otherwise they may be wrong if their settings are non-default
+
+        //UpdateWeapons(); //Can't update until player has spawned
+        control.ui.abilityEclipseVision.Find("Keybind").GetComponent<TextMeshProUGUI>().text = control.binds.GetBindAsPrettyString(control.binds.bindToggleOutline, true);
+        control.menu.MenuKeybindsUpdateBindText();
     }
     #endregion
 }

@@ -457,7 +457,10 @@ public class Asteroid : MonoBehaviour
             //Outline
             if (control.generation.playerSpawned)
             {
-                control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, modelObject.GetComponentInChildren<MeshRenderer>().material);
+                control.GetPlayerScript().UpdateOutlineMaterial(
+                    Generation.HighlightableCBodyType.asteroid,
+                    modelObject.GetComponentInChildren<MeshRenderer>().material
+                );
             }
 
             //Flags

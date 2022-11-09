@@ -96,6 +96,14 @@ public class Generation : MonoBehaviour
 
         public GameObject damageParticles;
 
+    //Eclipse Vision
+    public enum HighlightableCBodyType
+    {
+        planet,
+        moon,
+        asteroid
+    };
+
     //Colours
     private readonly string[,] COLOR_PALETTE = new string[10, 4]
     {
