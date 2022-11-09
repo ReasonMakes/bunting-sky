@@ -12,22 +12,24 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
     [System.NonSerialized] public Vector3 startVelocity;
     private readonly float DRAG = 3f;
 
-    private readonly float PROJECTILE_LIFETIME_DURATION = 3f;
-    [System.NonSerialized] public float timeSpentAlive;
-    [System.NonSerialized] public float timeAtWhichThisSelfDestructs;
+    private readonly float TIME_FROM_START_SUCK = 2.31f; //3f;
+    private readonly float TIME_FROM_START_EXPLODE = 3.028f; //3f;
+    [System.NonSerialized] public float timePoolSpawned;
     private readonly float MIN_GLOW_DISTANCE = 1f;
 
     public GameObject explosion;
     private readonly float EXPLOSION_RADIUS = 30f;
-    private readonly float EXPLOSION_PUSH_STRENGTH = 1f;
+    private readonly float EXPLOSION_PUSH_STRENGTH = 5000f; //1f;
+    private readonly float EXPLOSION_SUCK_STRENGTH = 5000f; //1f;
     private readonly float EXPLOSION_DURATION = 0.6f; //0.3f; //animation duration in seconds
+    [System.NonSerialized] public bool sucked = false;
     [System.NonSerialized] public bool exploded = false;
 
     private void Start()
     {
         //Ignore collisions with player
         Physics.IgnoreCollision(
-            transform.Find("Non-Emissive Model").GetComponent<MeshCollider>(),
+            transform.Find("Visible").Find("Model").Find("Non-Emissive Model").GetComponent<MeshCollider>(),
             control.GetPlayerTransform().Find("Player Collider").GetComponent<MeshCollider>()
         );
     }
@@ -40,38 +42,38 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
         rb.angularVelocity = Vector3.zero;
         rb.velocity = velocity;
         rb.AddTorque(100 * new Vector3(Random.value, Random.value, Random.value));
-        timeAtWhichThisSelfDestructs = PROJECTILE_LIFETIME_DURATION;
-        timeSpentAlive = 0f;
+        timePoolSpawned = Time.time;
         startVelocity = control.generation.playerPrefab.GetComponentInChildren<Rigidbody>().velocity;
-        exploded = false;
+        sucked = false;
     }
 
     private void Update()
     {
         if (!Menu.menuOpenAndGamePaused)
         {
-            //Make point light visible after awhile and invisible just before self-destruction
-            UpdateEmissionAndLuminosity();
+            //Make point light visible once far enough from player
+            EmissionAndLuminosityOffToOn();
             
-            //Raycast collisions
-            //UpdateCollisionDetection();
-
-            //Increment lifetime
-            timeSpentAlive += Time.deltaTime;
-
             //Drag relative to player velocity at instantiation time
-            rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, startVelocity, DRAG);
+            //rb.velocity = Control.GetVelocityDraggedRelative(rb.velocity, startVelocity, DRAG);
 
             //Deactivate self after lifetime expires
-            if (timeSpentAlive >= timeAtWhichThisSelfDestructs)
+            if (Time.time >= timePoolSpawned + TIME_FROM_START_SUCK)
+            {
+                Suck();
+            }
+            if (Time.time >= timePoolSpawned + TIME_FROM_START_EXPLODE)
             {
                 Explode();
             }
 
             //Explosion animation
-            if (exploded)
+            if (sucked)
             {
-                explosion.transform.localScale += (Vector3.one * EXPLOSION_RADIUS * 2f * (1f / transform.localScale.magnitude) * Time.deltaTime) / EXPLOSION_DURATION;
+                float explosionModelRadius = 1.72142f; //from Blender
+                //explosion.transform.localScale += (Vector3.one * EXPLOSION_RADIUS * 2f * (1f / transform.localScale.magnitude) * Time.deltaTime) / EXPLOSION_DURATION;
+                //explosion.transform.localScale = Vector3.one * (EXPLOSION_RADIUS / explosionModelRadius);
+                explosion.transform.localScale += Vector3.one * ((EXPLOSION_RADIUS * Time.deltaTime) / (explosionModelRadius * EXPLOSION_DURATION));
             }
         }
     }
@@ -86,17 +88,35 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
     }
     */
 
+    private void Suck()
+    {
+        if (!sucked)
+        {
+            //Turn off regular model excluding explosion shader
+            transform.Find("Visible").Find("Model").gameObject.SetActive(false);
+
+            //Suck
+            RaycastWeaponInteraction(false);
+
+            //Only run once
+            sucked = true;
+        }
+    }
+
     private void Explode()
     {
         if (!exploded)
         {
-            Invoke("DeactivateSelf", EXPLOSION_DURATION);
+            //Explode
+            DeactivateSelf();
+            //Invoke("DeactivateSelf", EXPLOSION_DURATION);
 
+            //Only run once
             exploded = true;
         }
     }
 
-    private void DeactivateSelf()
+    private void DeactivateSelf() //invoked
     {
         /*
         GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
@@ -104,16 +124,14 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
         explosion.GetComponent<PlayerWeaponSeismicChargeProjectileExplosion>().control = control;
         */
 
-        DealExplosionDamageAndForce();
-
-        SetEmissionAndLuminosity(false);
+        RaycastWeaponInteraction(true);
 
         explosion.transform.localScale = Vector3.zero;
         explosion.SetActive(false);
-        gameObject.SetActive(false);
+        transform.Find("Visible").gameObject.SetActive(false);
     }
 
-    private void DealExplosionDamageAndForce()
+    private void RaycastWeaponInteraction(bool explosion)
     {
         //Check for colliders in the area
         Collider[] collidersInRadius = Physics.OverlapSphere(transform.position, EXPLOSION_RADIUS);
@@ -134,6 +152,16 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
                     if (IsADamageableRaycastHit(hit) && distanceBetweenHitAndEpicentre < EXPLOSION_RADIUS)
                     {
+                        //Direction and force magnitude
+                        Vector3 directionFromEpicentreToHit = (hit.point - transform.position).normalized;
+                        float forceMag = EXPLOSION_PUSH_STRENGTH;
+                        if (!explosion)
+                        {
+                            //Suck
+                            directionFromEpicentreToHit = -directionFromEpicentreToHit;
+                            forceMag = EXPLOSION_SUCK_STRENGTH;
+                        }
+                        
                         //Asteroid
                         if (hit.transform.name == control.generation.asteroid.name + "(Clone)")
                         {
@@ -144,37 +172,49 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                             {
                                 //THIS RUNS FOUR TIMES BECAUSE IT IS HITTING THE TRIGGER COLLIDERS
 
-                                //Explosion push force
-                                //Vector3 directionFromEpicentreToHit = (hit.point - transform.position).normalized;
-                                //Vector3 finalForceVector = directionFromEpicentreToHit * EXPLOSION_PUSH_STRENGTH * (1f - (distanceBetweenHitAndEpicentre / EXPLOSION_RADIUS));
+                                //Force
+                                Vector3 finalForceVector = directionFromEpicentreToHit * EXPLOSION_PUSH_STRENGTH * (1f - (distanceBetweenHitAndEpicentre / EXPLOSION_RADIUS));
+                                asteroidScript.rb.AddForce(finalForceVector);
 
-                                //Explosion damage
-                                Vector3 directionHitFrom = (transform.position - hit.point).normalized;
-                                asteroidScript.Damage((byte)(1 + GetDamageAmount(hit.transform.position)), directionHitFrom, hit.point, true);
+                                //Damage
+                                if (explosion)
+                                {
+                                    Vector3 directionHitFrom = (transform.position - hit.point).normalized;
+                                    asteroidScript.Damage((byte)(1 + GetDamageAmount(hit.transform.position)), directionHitFrom, hit.point, true);
+                                }
                             }
                         }
                         else if (hit.transform.name == control.generation.enemy.name + "(Clone)")
                         {
-                            //Calculate the direction from the projectile to the collider hit point
-                            Vector3 direction = (transform.position - hit.point).normalized;
+                            Enemy enemyScript = hit.transform.GetComponent<Enemy>();
+
+                            //Force
+                            Vector3 finalForceVector = directionFromEpicentreToHit * EXPLOSION_PUSH_STRENGTH * (1f - (distanceBetweenHitAndEpicentre / EXPLOSION_RADIUS));
+                            enemyScript.rb.AddForce(finalForceVector);
 
                             //Damage
-                            Enemy enemyScript = hit.transform.GetComponent<Enemy>();
-                            enemyScript.Damage((byte)GetDamageAmount(hit.transform.position), direction, hit.point, true, true);
+                            if (explosion)
+                            {
+                                enemyScript.Damage((byte)GetDamageAmount(hit.transform.position), -directionFromEpicentreToHit, hit.point, true, true);
+                            }
                         }
                         else if (hit.transform.name == "Body")
                         {
-                            //Calculate the direction from the projectile to the collider hit point
-                            //Vector3 direction = (transform.position - hit.point).normalized;
+                            //Force
+                            Vector3 finalForceVector = directionFromEpicentreToHit * EXPLOSION_PUSH_STRENGTH * (1f - (distanceBetweenHitAndEpicentre / EXPLOSION_RADIUS));
+                            control.GetPlayerScript().rb.AddForce(finalForceVector);
 
                             //Damage
-                            control.GetPlayerScript().DamagePlayer(
-                                control.GetPlayerScript().vitalsHealth - GetDamageAmount(control.GetPlayerTransform().position),
-                                "seismic charge explosion",
-                                1.0f,
-                                (transform.position - control.GetPlayerTransform().position).normalized,
-                                true
-                            );
+                            if (explosion)
+                            {
+                                control.GetPlayerScript().DamagePlayer(
+                                    control.GetPlayerScript().vitalsHealth - GetDamageAmount(control.GetPlayerTransform().position),
+                                    "seismic charge explosion",
+                                    1.0f,
+                                    (transform.position - control.GetPlayerTransform().position).normalized,
+                                    true
+                                );
+                            }
                         }
                     }
                 }
@@ -268,24 +308,20 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
             }
 
             //Deactivate self
-            Explode();
+            Suck();
         }
     }
 
-    private void UpdateEmissionAndLuminosity()
+    private void EmissionAndLuminosityOffToOn()
     {
-        bool NotSelfDestructingYet = timeSpentAlive < timeAtWhichThisSelfDestructs - Time.deltaTime;
-        bool isFarEnoughAwayFromPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > MIN_GLOW_DISTANCE + (control.GetPlayerScript().GetComponent<Rigidbody>().velocity.magnitude / 25f);
+        bool notSucking = (Time.time < timePoolSpawned + TIME_FROM_START_SUCK);
+        bool farFromPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > MIN_GLOW_DISTANCE + (control.GetPlayerScript().GetComponent<Rigidbody>().velocity.magnitude / 25f);
 
         //Debug.LogFormat("{0}, {1}", NotSelfDestructingYet, isFarEnoughAwayFromPlayer);
 
-        SetEmissionAndLuminosity(NotSelfDestructingYet && isFarEnoughAwayFromPlayer);
-    }
-
-    private void SetEmissionAndLuminosity(bool isOn)
-    {
-        transform.Find("Emissive Model").gameObject.SetActive(isOn);
-        transform.Find("Point Light 1").gameObject.SetActive(isOn);
-        transform.Find("Point Light 2").gameObject.SetActive(isOn);
+        if (!transform.Find("Visible").gameObject.activeSelf)
+        {
+            transform.Find("Visible").gameObject.SetActive(notSucking && farFromPlayer);
+        }
     }
 }

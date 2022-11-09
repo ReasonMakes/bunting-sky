@@ -13,7 +13,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
     private readonly short POOL_LENGTH = 16;
     private short poolIndex = 0;
 
-    [System.NonSerialized] public readonly float PROJECTILE_SPEED = 100f;
+    [System.NonSerialized] public readonly float PROJECTILE_SPEED = 20f; //100f;
     
     [System.NonSerialized] public short clipSize;
     [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 2;
@@ -90,6 +90,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
     {
         //Pooling
         POOL[poolIndex].SetActive(true);
+        POOL[poolIndex].transform.Find("Visible").Find("Model").gameObject.SetActive(true);
         //Ignore collisions between the laser and the player (this does not seem necessary)
         //Physics.IgnoreCollision(weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Collider>(), transform.GetComponent<Collider>());
         //Reset weapon instance
@@ -126,6 +127,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
         clipRemaining--;
 
         //Play sound effect
+        //pt 1 regular weapon sound
         switch (player.soundSourceLaserArrayIndex)
         {
             case 0:
@@ -141,8 +143,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
                 player.soundSourceLaser3.Play();
                 break;
         }
-
-        //Play sound effect
+        //pt 2 explosion sound
         switch (player.soundSourceSeismicChargeArrayIndex)
         {
             case 0:

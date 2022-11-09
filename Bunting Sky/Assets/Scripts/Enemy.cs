@@ -189,7 +189,7 @@ public class Enemy : MonoBehaviour
                         if (
                             GetIfAimingAtPlayer()
                             && GetIfWillingToFire()
-                            && ((int)strength < (int)Strength.elite || control.GetPlayerScript().rb.velocity.magnitude > 1f) //elite+ difficulties don't vary their aim when the player stands still
+                            && control.GetPlayerScript().rb.velocity.magnitude > 1f
                         )
                         { 
                             destinationPosition += new Vector3(
@@ -474,7 +474,7 @@ public class Enemy : MonoBehaviour
             health = 6; //3;
             thrust = 2500f; //4e3f;
             torque = 600f;
-            inaccuracy = 1f; //2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+            inaccuracy = 0.5f; //1f; //2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 2f; //Time in seconds between bursts
             weaponFirePeriod = 0.25f; //Time in seconds between shots within the burst

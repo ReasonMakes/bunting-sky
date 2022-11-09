@@ -92,7 +92,7 @@ public class PlayerWeaponLaser : MonoBehaviour
         //RESET POOL INSTANCE
         POOL[poolIndex].SetActive(true);
 
-        //Ignore collisions between the laser and the player (this does not seem necessary)
+        //Ignore collisions between the laser and the player (we do this in projectile class)
         //Physics.IgnoreCollision(weaponLaserPool[WeaponLaserPoolIndex].GetComponent<Collider>(), transform.GetComponent<Collider>());
 
         //Position and rotation

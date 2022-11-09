@@ -50,6 +50,8 @@ public class Generation : MonoBehaviour
     public int asteroidsDetailed = 0;
     private int hitboxSwapMoonsChild = 0;
     private int hitboxSwapPlanetsChild = 0;
+    private readonly float SATELLITE_SWAP_DISTANCE = 120f; //70f
+    private readonly float PLANET_SWAP_DISTANCE = 170f;
 
     //Verse hierarchy
     public GameObject verseSpace;
@@ -203,7 +205,7 @@ public class Generation : MonoBehaviour
             Vector3.Distance(
             instancePlayer.transform.Find("Body").position,
             transformToSwap.position
-            ) < 40f
+            ) < SATELLITE_SWAP_DISTANCE
         );
 
         //Use proper colliders
@@ -223,7 +225,7 @@ public class Generation : MonoBehaviour
             Vector3.Distance(
             instancePlayer.transform.Find("Body").position,
             planetsChildTransformToSwap.position
-            ) < 170f
+            ) < PLANET_SWAP_DISTANCE
         );
 
         //Use proper colliders

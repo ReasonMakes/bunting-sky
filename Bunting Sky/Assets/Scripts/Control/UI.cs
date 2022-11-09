@@ -237,7 +237,7 @@ public class UI : MonoBehaviour
             if (tipAimNeedsHelpCertainty > TIP_AIM_THRESHOLD_CERTAINTY)
             {
                 SetTip(
-                    "Hold " + GetBindAsPrettyString(control.binds.bindAlignShipToReticle, true) + " to torque your ship in the direction you're looking!",
+                    "Hold " + control.binds.GetBindAsPrettyString(control.binds.bindAlignShipToReticle, true) + " to torque your ship in the direction you're looking!",
                     ref tipAimNeedsHelpCertainty
                 );
             }
@@ -277,48 +277,7 @@ public class UI : MonoBehaviour
         }
     }
 
-    public string GetBindAsPrettyString(short bind, bool addBrackets)
-    {
-        string pretty = "error";
-
-        if (bind >= 1000 && bind <= 1004)
-        {
-            if (bind == control.binds.MOUSE_PRIMARY)            { pretty = "mouse primary"; }
-            else if (bind == control.binds.MOUSE_SECONDARY)     { pretty = "mouse secondary"; }
-            else if (bind == control.binds.MOUSE_MIDDLE)        { pretty = "mouse middle"; }
-            else if (bind == control.binds.MOUSE_SCROLL_UP)     { pretty = "scroll up"; }
-            else if (bind == control.binds.MOUSE_SCROLL_DOWN)   { pretty = "scroll down"; }
-            else                                                { pretty = "unrecognized keycode"; }
-        }
-        else if (bind >= 48 && bind <= 57)
-        {
-            //Alpha-numerics, 0 through 9
-            pretty = (bind - 48).ToString();
-        }
-        else if (bind == 325)
-        {
-            pretty = "mouse middle";
-        }
-        else
-        {
-            //Convert from our proprietary binds saving format of short back to KeyCode and read as string
-            pretty = ((KeyCode)bind).ToString();
-
-            //Add spaces in between capitals (useful for binds like "LeftShift")
-            pretty = Control.InsertSpacesInFrontOfCapitals(pretty);
-
-            //Make all lowercase
-            pretty = pretty.ToLower();
-        }
-
-        //Surround with square brackets
-        if (addBrackets)
-        {
-            pretty = "[" + pretty + "]";
-        }
-        
-        return pretty;
-    }
+    
     #endregion
 
     public void ToggleMapView()
@@ -1218,14 +1177,14 @@ public class UI : MonoBehaviour
         if (playerScript.weaponSlotSelected == 0)
         {
             //SELECTING SLOT 0
-            weaponSelectedTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0, true);
-            weaponAlternateTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1, true);
+            weaponSelectedTitleText.text = playerScript.weaponSlot0.NAME + " " + control.binds.GetBindAsPrettyString(binds.bindSelectWeaponSlot0, true);
+            weaponAlternateTitleText.text = playerScript.weaponSlot1.NAME + " " + control.binds.GetBindAsPrettyString(binds.bindSelectWeaponSlot1, true);
         }
         else
         {
             //SELECTING SLOT 1
-            weaponSelectedTitleText.text = playerScript.weaponSlot1.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot1, true);
-            weaponAlternateTitleText.text = playerScript.weaponSlot0.NAME + " " + control.ui.GetBindAsPrettyString(binds.bindSelectWeaponSlot0, true);
+            weaponSelectedTitleText.text = playerScript.weaponSlot1.NAME + " " + control.binds.GetBindAsPrettyString(binds.bindSelectWeaponSlot1, true);
+            weaponAlternateTitleText.text = playerScript.weaponSlot0.NAME + " " + control.binds.GetBindAsPrettyString(binds.bindSelectWeaponSlot0, true);
         }
 
         //Ammo

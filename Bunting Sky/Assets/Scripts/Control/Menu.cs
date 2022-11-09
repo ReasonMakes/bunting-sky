@@ -790,34 +790,34 @@ public class Menu : MonoBehaviour
     }
 
     public void MenuKeybindsUpdateBindText() {
-        menuBindsThrustForward.text         = control.ui.GetBindAsPrettyString(control.binds.bindThrustForward, false);
-        menuBindsThrustLeft.text            = control.ui.GetBindAsPrettyString(control.binds.bindThrustLeft, false);
-        menuBindsThrustBackward.text        = control.ui.GetBindAsPrettyString(control.binds.bindThrustBackward, false);
-        menuBindsThrustRight.text           = control.ui.GetBindAsPrettyString(control.binds.bindThrustRight, false);
-        menuBindsThrustUp.text              = control.ui.GetBindAsPrettyString(control.binds.bindThrustUp, false);
-        menuBindsThrustDown.text            = control.ui.GetBindAsPrettyString(control.binds.bindThrustDown, false);
-        menuBindsAlignShipToReticle.text    = control.ui.GetBindAsPrettyString(control.binds.bindAlignShipToReticle, false);
-        menuBindsCheat1.text                = control.ui.GetBindAsPrettyString(control.binds.bindCheat1, false);
-        menuBindsCheat2.text                = control.ui.GetBindAsPrettyString(control.binds.bindCheat2, false);
-        menuBindsCycleMovementMode.text     = control.ui.GetBindAsPrettyString(control.binds.bindPanMap, false);
-        menuBindsCameraFreeLook.text        = control.ui.GetBindAsPrettyString(control.binds.bindCameraFreeLook, false);
-        menuBindsCameraZoomIn.text          = control.ui.GetBindAsPrettyString(control.binds.bindCameraZoomFollowDistIn, false);
-        menuBindsCameraZoomOut.text         = control.ui.GetBindAsPrettyString(control.binds.bindCameraZoomFollowDistOut, false);
-        menuBindsCameraZoomOptical.text     = control.ui.GetBindAsPrettyString(control.binds.bindCameraZoomFOV, false);
-        menuBindsSetTarget.text             = control.ui.GetBindAsPrettyString(control.binds.bindSetTarget, false);
-        menuBindsPrimaryFire.text           = control.ui.GetBindAsPrettyString(control.binds.bindPrimaryFire, false);
-        menuBindsPrimaryReload.text         = control.ui.GetBindAsPrettyString(control.binds.bindPrimaryReload, false);
-        menuBindsToggleSpotlight.text       = control.ui.GetBindAsPrettyString(control.binds.bindToggleSpotlight, false);
-        menuBindsToggleOutline.text         = control.ui.GetBindAsPrettyString(control.binds.bindToggleOutline, false);
-        menuBindsToggleMap.text             = control.ui.GetBindAsPrettyString(control.binds.bindToggleMap, false);
-        menuBindsToggleRefine.text          = control.ui.GetBindAsPrettyString(control.binds.bindToggleRefine, false);
-        menuBindsSelectWeapon1.text         = control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot0, false);
-        menuBindsSelectWeapon2.text         = control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1, false);
-        menuBindsToggleHUD.text             = control.ui.GetBindAsPrettyString(control.binds.bindToggleHUD, false);
-        menuBindsToggleFPS.text             = control.ui.GetBindAsPrettyString(control.binds.bindToggleFPS, false);
-        menuBindsSaveScreenshot.text        = control.ui.GetBindAsPrettyString(control.binds.bindSaveScreenshot, false);
-        menuBindsToggleMenu.text            = control.ui.GetBindAsPrettyString(control.binds.bindToggleMenu, false);
-        menuButtonResumeLabel.text          = "Resume " + control.ui.GetBindAsPrettyString(control.binds.bindToggleMenu, true);
+        menuBindsThrustForward.text         = control.binds.GetBindAsPrettyString(control.binds.bindThrustForward, false);
+        menuBindsThrustLeft.text            = control.binds.GetBindAsPrettyString(control.binds.bindThrustLeft, false);
+        menuBindsThrustBackward.text        = control.binds.GetBindAsPrettyString(control.binds.bindThrustBackward, false);
+        menuBindsThrustRight.text           = control.binds.GetBindAsPrettyString(control.binds.bindThrustRight, false);
+        menuBindsThrustUp.text              = control.binds.GetBindAsPrettyString(control.binds.bindThrustUp, false);
+        menuBindsThrustDown.text            = control.binds.GetBindAsPrettyString(control.binds.bindThrustDown, false);
+        menuBindsAlignShipToReticle.text    = control.binds.GetBindAsPrettyString(control.binds.bindAlignShipToReticle, false);
+        menuBindsCheat1.text                = control.binds.GetBindAsPrettyString(control.binds.bindCheat1, false);
+        menuBindsCheat2.text                = control.binds.GetBindAsPrettyString(control.binds.bindCheat2, false);
+        menuBindsCycleMovementMode.text     = control.binds.GetBindAsPrettyString(control.binds.bindPanMap, false);
+        menuBindsCameraFreeLook.text        = control.binds.GetBindAsPrettyString(control.binds.bindCameraFreeLook, false);
+        menuBindsCameraZoomIn.text          = control.binds.GetBindAsPrettyString(control.binds.bindCameraZoomFollowDistIn, false);
+        menuBindsCameraZoomOut.text         = control.binds.GetBindAsPrettyString(control.binds.bindCameraZoomFollowDistOut, false);
+        menuBindsCameraZoomOptical.text     = control.binds.GetBindAsPrettyString(control.binds.bindCameraZoomFOV, false);
+        menuBindsSetTarget.text             = control.binds.GetBindAsPrettyString(control.binds.bindSetTarget, false);
+        menuBindsPrimaryFire.text           = control.binds.GetBindAsPrettyString(control.binds.bindPrimaryFire, false);
+        menuBindsPrimaryReload.text         = control.binds.GetBindAsPrettyString(control.binds.bindPrimaryReload, false);
+        menuBindsToggleSpotlight.text       = control.binds.GetBindAsPrettyString(control.binds.bindToggleSpotlight, false);
+        menuBindsToggleOutline.text         = control.binds.GetBindAsPrettyString(control.binds.bindToggleOutline, false);
+        menuBindsToggleMap.text             = control.binds.GetBindAsPrettyString(control.binds.bindToggleMap, false);
+        menuBindsToggleRefine.text          = control.binds.GetBindAsPrettyString(control.binds.bindToggleRefine, false);
+        menuBindsSelectWeapon1.text         = control.binds.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot0, false);
+        menuBindsSelectWeapon2.text         = control.binds.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1, false);
+        menuBindsToggleHUD.text             = control.binds.GetBindAsPrettyString(control.binds.bindToggleHUD, false);
+        menuBindsToggleFPS.text             = control.binds.GetBindAsPrettyString(control.binds.bindToggleFPS, false);
+        menuBindsSaveScreenshot.text        = control.binds.GetBindAsPrettyString(control.binds.bindSaveScreenshot, false);
+        menuBindsToggleMenu.text            = control.binds.GetBindAsPrettyString(control.binds.bindToggleMenu, false);
+        menuButtonResumeLabel.text          = "Resume " + control.binds.GetBindAsPrettyString(control.binds.bindToggleMenu, true);
     }
 
     public void MenuKeybindsThurstForwardSet()

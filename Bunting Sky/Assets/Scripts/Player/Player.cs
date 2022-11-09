@@ -202,8 +202,8 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public TextMeshProUGUI warningUIText;
     private float warningUIFlashTime = 0f;
     private float warningUIFlashPosition = 0f;
-    private readonly float WARNING_UI_FLASH_RATE = 10f;
-    private float warningUIFlashTotalDuration = 5f; //This must be odd-numbered or it will not end smoothly (end while transparent)
+    private readonly float WARNING_UI_FLASH_RATE = 16f; //10f; //Must be even?
+    private float warningUIFlashTotalDuration = 5f; //SET PROCEDURALLY BY RATE - This must be odd-numbered or it will not end smoothly (end while transparent)
 
     //TUTORIAL
     private int tutorialLevel = 0; //Which tutorial tip should be displayed next?
@@ -581,11 +581,38 @@ public class Player : MonoBehaviour
                 transform.position += transform.forward * 150f;
             }
 
+            //Invulnerable
             if (binds.GetInputDown(binds.bindCheat2))
             {
-                tutorialLevel = 11;
+                //Invulnerable
+                healthInfiniteCheat = true;
             }
-            
+
+            ////Spawn bandit
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    //Invulnerable
+            //    //healthInfiniteCheat = true;
+            //
+            //    //Max cargo space
+            //    upgradeLevels[control.commerce.UPGRADE_CARGO_SPACE] = int.Parse(control.commerce.upgradeDictionary[control.commerce.UPGRADE_CARGO_SPACE, control.commerce.UPGRADE_MAX_LEVEL]);
+            //
+            //    //Spawn next enemy in order of difficulty
+            //    control.generation.EnemySpawn(transform.position + (transform.forward * 20f), enemyStengthToSpawn);
+            //    enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Control.GetEnumLength(typeof(Enemy.Strength)));
+            //}
+
+            //Unlock seismic charges
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+                weaponSlot1 = weaponSeismicCharges;
+            }
+
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    tutorialLevel = 11;
+            //}
 
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
@@ -641,26 +668,6 @@ public class Player : MonoBehaviour
             //{
             //    currency += 1000;
             //    control.ui.UpdateAllPlayerResourcesUI();
-            //}
-
-            ////Spawn bandit
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    //Invulnerable
-            //    healthInfiniteCheat = true;
-            //    //Max cargo space
-            //    upgradeLevels[control.commerce.UPGRADE_CARGO_SPACE] = int.Parse(control.commerce.upgradeDictionary[control.commerce.UPGRADE_CARGO_SPACE, control.commerce.UPGRADE_MAX_LEVEL]);
-            //
-            //    //Spawn next enemy in order of difficulty
-            //    control.generation.EnemySpawn(transform.position + (transform.forward * 20f), enemyStengthToSpawn);
-            //    enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Enum.GetNames(typeof(Enemy.Strength)).Length);
-            //}
-
-            ////Unlock seismic charges
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-            //    weaponSlot1 = weaponSeismicCharges;
             //}
 
             ////Spawn asteroid from pool
@@ -2793,11 +2800,13 @@ public class Player : MonoBehaviour
             string cause;
             if (isBanditLaser)
             {
-                cause = "bandit laser impact";
+                //cause = "bandit laser impact";
+                cause = "incoming fire";
             }
             else
             {
-                cause = "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv";
+                //cause = "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv";
+                cause = (int)impactDeltaV.magnitude + " Δv impact";
             }
 
             //Stun time

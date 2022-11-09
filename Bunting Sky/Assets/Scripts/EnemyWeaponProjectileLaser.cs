@@ -46,8 +46,8 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
 
     private void DeactivateSelf()
     {
-        //transform.Find("Emissive Model").gameObject.SetActive(false);
-        //transform.Find("Point Light").gameObject.SetActive(false);
+        transform.Find("Emissive Model").gameObject.SetActive(false);
+        transform.Find("Point Light").gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -74,44 +74,60 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
         LayerMask someLayerMask = -1;
         if (Physics.Raycast(transform.position, transform.right, out RaycastHit hit, raycastDistance, someLayerMask, QueryTriggerInteraction.Ignore))
         {
-            //Debug.Log("Laser hit object: " + hit.transform.name);
-
-            if (hit.transform.name == control.generation.asteroid.name + "(Clone)")
-            {
-                Asteroid asteroidScript = hit.transform.GetComponent<Asteroid>();
-
-                //Break apart asteroid
-                if (!asteroidScript.isDestroying)
-                {
-                    if (canDamage)
-                    {
-                        //Calculate the direction from the laser to the asteroid hit point
-                        Vector3 direction = (transform.position - hit.point).normalized;
-
-                        //Damage the asteroid
-                        asteroidScript.Damage(1, direction, hit.point, true);
-                    }
-                }
-            }
-            else if (hit.transform.name == control.generation.playerPrefab.name + "(Clone)")
-            {
-                if (canDamage)
-                {
-                    //Calculate the direction from the laser to the asteroid hit point
-                    //Vector3 direction = (transform.position - hit.point).normalized;
-
-                    //Damage the player
-                    //control.GetPlayerScript().DamagePlayer(control.GetPlayerScript().vitalsHealth - 1.0d, "enemy weapons fire", 1.0f);
-                }
-            }
-
-            //Can no longer deal damage
-            canDamage = false;
+            TryInteract(hit.transform, hit.point);
         }
     }
 
     void OnCollisionEnter(Collision collision)
     {
+        Debug.Log("Collision");
+        TryInteract(collision.transform, transform.position);
+    }
+
+    private void TryInteract(Transform transformWeHit, Vector3 hitPoint)
+    {
+        if (transformWeHit.name == control.generation.asteroid.name + "(Clone)")
+        {
+            Asteroid asteroidScript = transformWeHit.GetComponent<Asteroid>();
+
+            //Break apart asteroid
+            if (!asteroidScript.isDestroying)
+            {
+                if (canDamage)
+                {
+                    //Calculate the direction from the laser to the asteroid hit point
+                    Vector3 direction = (transform.position - hitPoint).normalized;
+
+                    //Damage the asteroid
+                    asteroidScript.Damage(1, direction, hitPoint, true);
+                }
+            }
+        }
+        else if (transformWeHit.name == "Body") //control.generation.playerPrefab.name + "(Clone)")
+        {
+            if (canDamage)
+            {
+                //Calculate the direction from the laser to the asteroid hit point
+                Vector3 direction = (transform.position - hitPoint).normalized;
+                float knockback = 200f;
+
+                //Force
+                control.GetPlayerScript().rb.AddForce(knockback * -direction);
+
+                //Damage
+                control.GetPlayerScript().DamagePlayer(
+                    control.GetPlayerScript().vitalsHealth - 1.0d,
+                    "incoming fire",
+                    1.0f,
+                    direction,
+                    true
+                );
+            }
+        }
+
+        //Can no longer deal damage
+        //canDamage = false;
+
         DeactivateSelf();
     }
 }

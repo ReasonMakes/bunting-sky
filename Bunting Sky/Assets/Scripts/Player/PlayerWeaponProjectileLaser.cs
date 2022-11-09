@@ -87,13 +87,14 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         TryInteract(collision.transform, transform.position);
-        DeactivateSelf();
     }
 
     private void TryInteract(Transform transformWeHit, Vector3 hitPoint)
     {
         //transform name
         //Vector3 collision point
+
+        
 
         if (transformWeHit.name == control.generation.asteroid.name + "(Clone)")
         {
@@ -128,7 +129,10 @@ public class PlayerWeaponProjectileLaser : MonoBehaviour
         }
 
         //Can no longer deal damage
-        canDamage = false;
+        //canDamage = false;
+
+        //Go inactive
+        DeactivateSelf();
     }
 
     private void UpdateEmissionAndLuminosity()
