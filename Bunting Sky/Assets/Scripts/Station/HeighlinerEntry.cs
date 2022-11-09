@@ -27,64 +27,36 @@ public class HeighlinerEntry : MonoBehaviour
         //Collision is with player
         if (other.gameObject.name == "Player Collider")
         {
-            //Debug.Log("Entered heighliner " + GetParentMoonName());
+            Player playerScript = control.GetPlayerScript();
 
-            if (control.generation.instancePlayer.transform.Find("Body").GetComponent<Player>().recentTeleport)
+            if (playerScript.recentTeleport)
             {
-                //Trying to teleport immediately after just teleporting
-                //----------------
-
-                //Debug.Log("Recent teleport detected; not teleporting again");
-
-                //Reset recent teleport detection (this will occur when arriving at the new heighliner as we teleport INTO the trigger volume that would otherwise teleport the player)
+                //Reset recent teleport detection (this will occur when arriving at the new heighliner as we teleport
+                //INTO the trigger volume that would otherwise teleport the player)
                 control.GetPlayerScript().recentTeleport = false;
             }
             else
             {
                 //Teleport
                 //----------------
-                //Debug.Log("Teleporting: " + GetParentMoonName() + " -> " + exitNode.GetComponentInChildren<HeighlinerEntry>().GetParentMoonName());
-
-                //Is discoverd
+                //Discovered
                 isDiscovered = true;
-
-                //Set exit node as discovered too
                 exitNode.GetComponentInChildren<HeighlinerEntry>().isDiscovered = true;
 
-                //Remember recent teleport
-                control.GetPlayerScript().recentTeleport = true;
+                //Tutorial
+                playerScript.tutorialHasUsedHeighliner = true;
+
+                //Remember recent teleport so we don't trigger the exit node teleporter
+                playerScript.recentTeleport = true;
 
                 //Ignore collision damage briefly to avoid glitch caused by (I think) floating point precision errors
-                control.GetPlayerScript().collisionDamageInvulnerabilityTemporary = 1f;
-
-                //Remap velocity to exit node's orientation
-                //Vector3 playerVelocityDirection = control.GetPlayerScript().rb.velocity.normalized;
-                float playerVelocityMagnitude = control.GetPlayerScript().rb.velocity.magnitude;
-                control.GetPlayerScript().rb.velocity = exitNode.transform.forward * playerVelocityMagnitude;
+                playerScript.collisionDamageInvulnerabilityTemporary = 1f;
 
                 //Teleport player to exit node
-                control.GetPlayerTransform().position = exitNode.transform.position;
+                playerScript.rb.position = exitNode.transform.position;
             }
         }
     }
-
-    //public string GetParentMoonName()
-    //{
-    //    //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
-    //    int siblingIndex = transform.parent.GetSiblingIndex();
-    //
-    //    //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
-    //    return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<NameCelestial>().title;
-    //}
-    //
-    //public Moon GetParentMoonScript()
-    //{
-    //    //This script is in a child object of the actual heighliner, so we need to work with parents and grandparents
-    //    int siblingIndex = transform.parent.GetSiblingIndex();
-    //
-    //    //The parent moon is always directly "above" the heighliner/station (siblingIndex - 1)
-    //    return transform.parent.parent.GetChild(siblingIndex - 1).gameObject.GetComponent<Moon>();
-    //}
 
     public bool Setup()
     {

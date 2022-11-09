@@ -21,7 +21,7 @@ public class PlayerWeaponLaser : MonoBehaviour
     [System.NonSerialized] public readonly float CLIP_COOLDOWN_DURATION = 1.2f; //1.5f; //reload period
     [System.NonSerialized] public float clipCooldownCurrent = 0f;
 
-    [System.NonSerialized] public readonly float SINGLE_COOLDOWN_DURATION = 0.09f; //0.07f; //0.1f; //0.01f; //0.185f; //0.2f; //firerate
+    [System.NonSerialized] public readonly float SINGLE_COOLDOWN_DURATION = 0.1f; //0.13f; //0.09f; //0.07f; //0.1f; //0.01f; //0.185f; //0.2f; //firerate
     [System.NonSerialized] public float singleCooldownCurrent = 0f;
 
     private void Start()

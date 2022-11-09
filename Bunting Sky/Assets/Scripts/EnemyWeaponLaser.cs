@@ -10,8 +10,8 @@ public class EnemyWeaponLaser : MonoBehaviour
 
     //This
     public GameObject enemyWeaponProjectileLaserPrefab;
-    private readonly List<GameObject> POOL = new List<GameObject>();
-    private readonly short POOL_LENGTH = 96;
+    [System.NonSerialized] public readonly List<GameObject> POOL = new List<GameObject>();
+    [System.NonSerialized] public readonly short POOL_LENGTH = 256; //96; //16;
     private short poolIndex = 0;
 
     [System.NonSerialized] public static readonly float PROJECTILE_SPEED = 50f; //80f; //120f;
@@ -38,12 +38,12 @@ public class EnemyWeaponLaser : MonoBehaviour
         }
     }
 
-    public void Fire()
+    public void Fire(Vector3 gimbalDirection)
     {
         //Pooling
         POOL[poolIndex].SetActive(true);
         //Pass owning enemy reference
-        POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().parentMeshCollider = GetComponent<Enemy>().modelObject.GetComponent<MeshCollider>();
+        POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().parentMeshCollider = GetComponent<Enemy>().model.GetComponent<MeshCollider>();
         //Reset weapon instance
         POOL[poolIndex].transform.position = transform.position; //transform.position + (transform.forward * 0.14f) - (transform.up * 0.015f);
         POOL[poolIndex].GetComponent<Rigidbody>().rotation = transform.rotation * Quaternion.Euler(90, 270, 0);
@@ -51,7 +51,7 @@ public class EnemyWeaponLaser : MonoBehaviour
         POOL[poolIndex].GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
 
         //Carry on velocity parent had
-        POOL[poolIndex].GetComponent<Rigidbody>().velocity = parentEnemyRb.velocity + (PROJECTILE_SPEED * transform.forward);
+        POOL[poolIndex].GetComponent<Rigidbody>().velocity = parentEnemyRb.velocity + (PROJECTILE_SPEED * gimbalDirection);
         //POOL[poolIndex].GetComponent<Rigidbody>().velocity = PROJECTILE_SPEED * transform.forward;
 
         POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().timeAtWhichThisSelfDestructs = projectileLifetimeDuration;

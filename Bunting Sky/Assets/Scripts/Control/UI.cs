@@ -215,9 +215,21 @@ public class UI : MonoBehaviour
 
         if (control.generation.playerSpawned)
         {
+            Player playerScript = control.GetPlayerScript();
+
             //AUTO TORQUING
-            //Don't recommend auto torquing if firing when fuel is empty OR if player is auto torquing
-            if (control.GetPlayerScript().vitalsFuel <= 0d || binds.GetInputDown(binds.bindAlignShipToReticle))
+            //Cancel tip?
+            bool isPlayerTargettingBandit = false;
+            if (playerScript.targetObject != null)
+            {
+                isPlayerTargettingBandit = (control.GetPlayerScript().targetObject.name == control.generation.enemy.name + "(Clone)");
+            }
+            if (
+                playerScript.vitalsFuel <= 0d
+                || binds.GetInputDown(binds.bindAlignShipToReticle)
+                || isPlayerTargettingBandit
+                || Time.time < playerScript.combatLastAggroTime + playerScript.COMBAT_PERIOD_THRESHOLD_TIMEOUT
+            )
             {
                 tipAimNeedsHelpCertainty = 0f;
             }
@@ -282,6 +294,10 @@ public class UI : MonoBehaviour
         {
             //Alpha-numerics, 0 through 9
             pretty = (bind - 48).ToString();
+        }
+        else if (bind == 325)
+        {
+            pretty = "mouse middle";
         }
         else
         {
@@ -818,16 +834,16 @@ public class UI : MonoBehaviour
             {
                 //Waypoint
                 waypointTextType.text = "Asteroid";
-                int size = hit.collider.gameObject.GetComponent<Asteroid>().size;
-                if (size == Asteroid.SIZE_SMALL)
+                Asteroid.Size size = hit.collider.gameObject.GetComponent<Asteroid>().size;
+                if (size == Asteroid.Size.small)
                 {
                     waypointTextTitle.text = "Small";
                 }
-                else if (size == Asteroid.SIZE_MEDIUM)
+                else if (size == Asteroid.Size.medium)
                 {
                     waypointTextTitle.text = "Medium";
                 }
-                else if (size == Asteroid.SIZE_LARGE)
+                else if (size == Asteroid.Size.large)
                 {
                     waypointTextTitle.text = "Large";
                 }
@@ -843,21 +859,34 @@ public class UI : MonoBehaviour
             else if (!displayMap && hit.collider.gameObject.name == control.generation.enemy.name + "(Clone)")
             {
                 //Waypoint
+                //Type
                 waypointTextType.text = "Bandit";
-                Enemy.Strength strength = hit.collider.gameObject.GetComponent<Enemy>().strength;
-                if (strength == Enemy.Strength.minor)
-                {
-                    waypointTextTitle.text = "Minor";
-                }
-                else if (strength == Enemy.Strength.major)
-                {
-                    waypointTextTitle.text = "Major";
-                }
-                else if (strength == Enemy.Strength.elite)
-                {
-                    waypointTextTitle.text = "Elite";
-                }
 
+                //Title
+                //Read enum variable as string
+                waypointTextTitle.text = hit.collider.gameObject.GetComponent<Enemy>().strength.ToString();
+                //Capitalize first letter
+                waypointTextTitle.text = waypointTextTitle.text.Substring(0, 1).ToUpper() + waypointTextTitle.text.Substring(1, waypointTextTitle.text.Length - 1);
+
+                //Enemy.Strength strength = hit.collider.gameObject.GetComponent<Enemy>().strength;
+                //if (strength == Enemy.Strength.minor)
+                //{
+                //    waypointTextTitle.text = "Minor";
+                //}
+                //else if (strength == Enemy.Strength.major)
+                //{
+                //    waypointTextTitle.text = "Major";
+                //}
+                //else if (strength == Enemy.Strength.elite)
+                //{
+                //    waypointTextTitle.text = "Elite";
+                //}
+                //else if (strength == Enemy.Strength.ultra)
+                //{
+                //    waypointTextTitle.text = "Ultra";
+                //}
+
+                //Body
                 waypointTextBody.text = GetDistanceAndDeltaVUI(hit.collider.gameObject, false);
 
                 //Console waypoint
@@ -1031,7 +1060,7 @@ public class UI : MonoBehaviour
 
     public void UpdatePlayerOreWaterText()
     {
-        resourcesTextWater.text = control.GetPlayerScript().ore[Asteroid.TYPE_WATER].ToString("F0") + " kg / " + control.GetPlayerScript().oreMax;
+        resourcesTextWater.text = control.GetPlayerScript().ore[(int)Asteroid.Type.water].ToString("F0") + " kg / " + control.GetPlayerScript().oreMax;
     }
 
     public void UpdateAllPlayerResourcesUI()
@@ -1040,9 +1069,9 @@ public class UI : MonoBehaviour
 
         //Update values and start animations on a resource if its value changed
         UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F0") + " ICC",                                                      playerScript.soundSourceCurrencyChange);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[Asteroid.TYPE_PLATINOID].ToString("F0") + " kg / " + playerScript.oreMax,          playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL].ToString("F0") + " kg / " + playerScript.oreMax,     playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[Asteroid.TYPE_WATER].ToString("F0") + " kg / " + playerScript.oreMax,              playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[(int)Asteroid.Type.platinoid].ToString("F0") + " kg / " + playerScript.oreMax,          playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[(int)Asteroid.Type.preciousMetal].ToString("F0") + " kg / " + playerScript.oreMax,     playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[(int)Asteroid.Type.water].ToString("F0") + " kg / " + playerScript.oreMax,              playerScript.soundSourceOreCollected);
 
         //Update console
         UpdatePlayerConsole();

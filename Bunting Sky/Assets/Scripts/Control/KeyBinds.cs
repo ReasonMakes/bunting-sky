@@ -18,6 +18,7 @@ public class KeyBinds : MonoBehaviour
     public readonly short MOUSE_PRIMARY = 1000;
     public readonly short MOUSE_SECONDARY = 1001;
     public readonly short MOUSE_MIDDLE = 1002;
+    public readonly short MOUSE_MIDDLE_ALTERNATIVE = 325;
     public readonly short MOUSE_SCROLL_UP = 1003;
     public readonly short MOUSE_SCROLL_DOWN = 1004;
 
@@ -290,16 +291,29 @@ public class KeyBinds : MonoBehaviour
     public bool GetInputDown(short inputCode)
     {
         //0 to 509 = KeyCode
-        //1000 to 1002 = Mouse code
+        //1000 to 1002 = Mouse button
+        //1003 and 1004 = Mouse scroll wheel
 
-        if(inputCode <= 509)
+        if (inputCode <= 509)
         {
             return Input.GetKeyDown((KeyCode)inputCode);
         }
-        else
+        else if (inputCode <= 1002)
         {
             //Subtract 1000 from the inputCode to format it to the 0, 1, 2 etc. codes expected for mouse input
-            return Input.GetMouseButtonDown((inputCode - 1000));
+            return Input.GetMouseButtonDown(inputCode - 1000);
+        }
+        else if (inputCode == MOUSE_SCROLL_UP)
+        {
+            return Input.mouseScrollDelta.y > 0;
+        }
+        else if (inputCode == MOUSE_SCROLL_DOWN)
+        {
+            return Input.mouseScrollDelta.y < 0;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -330,6 +344,49 @@ public class KeyBinds : MonoBehaviour
         {
             return false;
         }
+    }
+
+    public string GetBindAsPrettyString(short bind, bool addBrackets)
+    {
+        string pretty = "error";
+
+        if (bind >= 1000 && bind <= 1004)
+        {
+            if (bind == MOUSE_PRIMARY) { pretty = "mouse primary"; }
+            else if (bind == MOUSE_SECONDARY) { pretty = "mouse secondary"; }
+            else if (bind == MOUSE_MIDDLE) { pretty = "mouse middle"; }
+            else if (bind == MOUSE_SCROLL_UP) { pretty = "scroll up"; }
+            else if (bind == MOUSE_SCROLL_DOWN) { pretty = "scroll down"; }
+            else { pretty = "unrecognized keycode"; }
+        }
+        else if (bind == MOUSE_MIDDLE_ALTERNATIVE)
+        {
+            pretty = "mouse middle";
+        }
+        else if (bind >= 48 && bind <= 57)
+        {
+            //Alpha-numerics, 0 through 9
+            pretty = (bind - 48).ToString();
+        }
+        else
+        {
+            //Convert from our proprietary binds saving format of short back to KeyCode and read as string
+            pretty = ((KeyCode)bind).ToString();
+
+            //Add spaces in between capitals (useful for binds like "LeftShift")
+            pretty = Control.InsertSpacesInFrontOfCapitals(pretty);
+
+            //Make all lowercase
+            pretty = pretty.ToLower();
+        }
+
+        //Surround with square brackets
+        if (addBrackets)
+        {
+            pretty = "[" + pretty + "]";
+        }
+
+        return pretty;
     }
     #endregion
 }

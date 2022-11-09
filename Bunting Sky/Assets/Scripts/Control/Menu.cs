@@ -195,7 +195,7 @@ public class Menu : MonoBehaviour
 
     public void MenuRestartConfirmed()
     {
-        control.generation.GenerateGame(control.generation.GENERATION_TYPE_RESTARTED_GAME);
+        control.generation.GenerateGame(Generation.GenerationType.restarted);
         MenuToggle();
     }
     #endregion
@@ -457,7 +457,7 @@ public class Menu : MonoBehaviour
     {
         if (control.settings.refine)
         {
-            if (control.GetPlayerScript().ore[Asteroid.TYPE_WATER] >= control.GetPlayerScript().REFINERY_FUEL_OUT_RATE)
+            if (control.GetPlayerScript().ore[(int)Asteroid.Type.water] >= control.GetPlayerScript().REFINERY_FUEL_OUT_RATE)
             {
                 control.ui.SetTip("In-situ fuel refinery activated");
             }

@@ -11,7 +11,7 @@ public class Ore : MonoBehaviour
     public Material matGlowPlatinoid;
     public Material matGlowPreciousMetal;
     public Material matGlowWater;
-    public byte type; //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
+    [System.NonSerialized] public Asteroid.Type type = Asteroid.Type.claySilicate;
 
     //Auto-death & pooling
     //private float deathTime; //when to automatically absorb into the player and set as inactive, so that we don't have ore floating around forever
@@ -35,7 +35,7 @@ public class Ore : MonoBehaviour
     //Tractor beam
     public GameObject tractorBeam;
 
-    public void Enable(byte type, Vector3 parentVelocity)
+    public void Enable(Asteroid.Type type, Vector3 parentVelocity)
     {
         active = true;
 
@@ -48,7 +48,7 @@ public class Ore : MonoBehaviour
         this.parentVelocity = parentVelocity;
         this.type = type;
         //Assign material equal to type
-        switch (type) //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
+        switch ((int)type) //0 = ClaySilicate, 1 = Platinoids, 2 = PreciousMetal, 3 = Water
         {
             case 1:
                 GetComponent<MeshRenderer>().material = matGlowPlatinoid;
@@ -266,7 +266,7 @@ public class Ore : MonoBehaviour
         control.GetPlayerScript().tutorialHasCollectedOre = true;
 
         //Increment ore cargo
-        control.GetPlayerScript().ore[type] += 1.0d;
+        control.GetPlayerScript().ore[(int)type] += 1.0d;
 
         //Show tip if cargo full
         if (control.GetPlayerScript().GetTotalOre() > control.GetPlayerScript().oreMax - 1.0d) //no room for any more ore

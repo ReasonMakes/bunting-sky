@@ -50,8 +50,8 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public readonly float CAMERA_OFFSET_ROTATION_MAGNITUDE_MAX = 5f; //maximum positional camera shake allowed
     [System.NonSerialized] public readonly Vector2 CAMERA_SHAKE_WEAPON = new Vector2(0.0003f, 0.0016f); //camera shake a small weapon creates when fired
     private Vector3 cameraOffsetAcceleration = Vector3.zero;
-    private Vector3 acceleration = Vector3.zero;
-    private Vector3[] accelerationPrevious = new Vector3[37]; //15 < a < 50 //37 //30
+    [System.NonSerialized] public Vector3 acceleration = Vector3.zero;
+    [System.NonSerialized] public Vector3[] accelerationPrevious = new Vector3[37]; //15 < a < 50 //37 //30
     private Vector3 lastVelocity = Vector3.zero;
     #endregion
 
@@ -133,7 +133,7 @@ public class Player : MonoBehaviour
     public AudioClip songCombat;
     [System.NonSerialized] public float combatLastAggroTime = -1e5f; //The last time point where the player aggro'd an enemy
     [System.NonSerialized] public int nEnemiesAggrod = 0;
-    private readonly float COMBAT_PERIOD_THRESHOLD_TIMEOUT = 5f; //How much time in seconds the player can be out of combat before the combat flag times out, ending combat music, etc.
+    [System.NonSerialized] public readonly float COMBAT_PERIOD_THRESHOLD_TIMEOUT = 5f; //How much time in seconds the player can be out of combat before the combat flag times out, ending combat music, etc.
     private float musicPlayTime = 30f; //max time until first song plays
     private readonly float MUSIC_PLAY_QUEUE_TIME = 60f;
     private readonly float MUSIC_PLAY_QUEUE_VARIANCE_TIME = 60f;
@@ -226,6 +226,7 @@ public class Player : MonoBehaviour
     private bool tutorialHasPressedZoomInInMap = false;
     private bool tutorialHasPressedZoomOutInMap = false;
     private bool tutorialHasPressedPanMap = false;
+    private bool tutorialHasPressedSetTarget = false;
     [System.NonSerialized] public bool tipHasBoughtOutline = false;
     [System.NonSerialized] public bool tipHasUsedOutline = false;
     [System.NonSerialized] public bool tipHasBoughtRefinery = false;
@@ -582,15 +583,21 @@ public class Player : MonoBehaviour
 
             if (binds.GetInputDown(binds.bindCheat2))
             {
-                for (int i = 0; i < control.generation.planets.transform.childCount; i++)
-                {
-                    //Planet planetScript = control.generation.planets.transform.GetChild(i).GetComponent<Planet>();
-                    //HeighlinerEntry heighlinerScript = planetScript.heighliner0.GetComponentInChildren<HeighlinerEntry>();
-                    //heighlinerScript.mapLineModel.transform.Rotate(0f, 10f, 0f);
-                    //heighlinerScript.mapLineModel.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
-                    //heighlinerScript.mapLineModel.transform.rotation = heighlinerScript.mapLineModel.transform.parent.rotation;
-                }
+                tutorialLevel = 11;
             }
+            
+
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    for (int i = 0; i < control.generation.planets.transform.childCount; i++)
+            //    {
+            //        //Planet planetScript = control.generation.planets.transform.GetChild(i).GetComponent<Planet>();
+            //        //HeighlinerEntry heighlinerScript = planetScript.heighliner0.GetComponentInChildren<HeighlinerEntry>();
+            //        //heighlinerScript.mapLineModel.transform.Rotate(0f, 10f, 0f);
+            //        //heighlinerScript.mapLineModel.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+            //        //heighlinerScript.mapLineModel.transform.rotation = heighlinerScript.mapLineModel.transform.parent.rotation;
+            //    }
+            //}
 
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
@@ -639,7 +646,12 @@ public class Player : MonoBehaviour
             ////Spawn bandit
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
+            //    //Invulnerable
             //    healthInfiniteCheat = true;
+            //    //Max cargo space
+            //    upgradeLevels[control.commerce.UPGRADE_CARGO_SPACE] = int.Parse(control.commerce.upgradeDictionary[control.commerce.UPGRADE_CARGO_SPACE, control.commerce.UPGRADE_MAX_LEVEL]);
+            //
+            //    //Spawn next enemy in order of difficulty
             //    control.generation.EnemySpawn(transform.position + (transform.forward * 20f), enemyStengthToSpawn);
             //    enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Enum.GetNames(typeof(Enemy.Strength)).Length);
             //}
@@ -822,11 +834,11 @@ public class Player : MonoBehaviour
             //Fuel increment (in-situ refinery)
             bool missingEnoughFuel = vitalsFuel < vitalsFuelMax - REFINERY_FUEL_OUT_RATE;
             bool hasUpgrade = upgradeLevels[control.commerce.UPGRADE_REFINERY] >= 1;
-            bool hasEnoughOre = ore[Asteroid.TYPE_WATER] >= REFINERY_ORE_WATER_IN_RATE;
+            bool hasEnoughOre = ore[(int)Asteroid.Type.water] >= REFINERY_ORE_WATER_IN_RATE;
             bool enoughTimeHasPassed = Time.time > refineryTimeAtLastRefine + REFINERY_TIME_BETWEEN_REFINES;
             if (missingEnoughFuel && hasUpgrade && hasEnoughOre && enoughTimeHasPassed && control.settings.refine)
             {
-                ore[Asteroid.TYPE_WATER] -= REFINERY_ORE_WATER_IN_RATE;
+                ore[(int)Asteroid.Type.water] -= REFINERY_ORE_WATER_IN_RATE;
                 vitalsFuel += REFINERY_FUEL_OUT_RATE;
                 control.ui.UpdatePlayerOreWaterText();
                 refineryTimeAtLastRefine = Time.time;
@@ -919,7 +931,7 @@ public class Player : MonoBehaviour
             if (tipHasBoughtOutline && !tipHasUsedOutline)
             {
                 control.ui.SetTip(
-                    "Toggle eclipse vision with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleOutline, true)
+                    "Toggle eclipse vision with " + binds.GetBindAsPrettyString(control.binds.bindToggleOutline, true)
                 );
 
                 if (binds.GetInputDown(binds.bindToggleOutline))
@@ -933,13 +945,13 @@ public class Player : MonoBehaviour
                 if (weaponSlotSelected == 0)
                 {
                     control.ui.SetTip(
-                        "Select seismic charges with " + control.ui.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1, true)
+                        "Select seismic charges with " + binds.GetBindAsPrettyString(control.binds.bindSelectWeaponSlot1, true)
                     );
                 }
                 else
                 {
                     control.ui.SetTip(
-                        "Fire a seismic charge with " + control.ui.GetBindAsPrettyString(control.binds.bindPrimaryFire, true)
+                        "Fire a seismic charge with " + binds.GetBindAsPrettyString(control.binds.bindPrimaryFire, true)
                     );
                 }
 
@@ -951,7 +963,7 @@ public class Player : MonoBehaviour
                 control.ui.SetTip(
                     "The in-situ fuel refinery processes water ice from your cargo bay directly into usable fuel"
                     + "\nYou must have water ice in your cargo bay and the refinery toggled on for it to work"
-                    + "\nToggle refinery with " + control.ui.GetBindAsPrettyString(control.binds.bindToggleRefine, true)
+                    + "\nToggle refinery with " + binds.GetBindAsPrettyString(control.binds.bindToggleRefine, true)
                 );
 
                 if (binds.GetInputDown(binds.bindToggleRefine))
@@ -1023,9 +1035,12 @@ public class Player : MonoBehaviour
                     }
 
                     //Position the target ghost in the trajectory of the target
-                    targetObjectLeadGhost.transform.position = control.GetPredictedTrajectoryWithProjectileLeading(
-                        transform.position, rb.velocity, weaponSelectedProjectileSpeed, 1f,
-                        targetObject.transform.position, targetObject.GetComponentInChildren<Rigidbody>().velocity, targetLastForceAdded, targetObject.GetComponentInChildren<Rigidbody>().mass
+                    targetObjectLeadGhost.transform.position = control.GetLeadPosition(
+                        transform.position, rb.velocity, lastForceAdded, rb.mass,
+                        weaponSelectedProjectileSpeed, 1f,
+                        targetObject.transform.position, targetObject.GetComponentInChildren<Rigidbody>().velocity, targetLastForceAdded,
+                        targetObject.GetComponentInChildren<Rigidbody>().mass,
+                        false
                     );
 
                     //Align 2D UI element
@@ -1094,68 +1109,68 @@ public class Player : MonoBehaviour
         //Tutorial
         if (!isDestroyed && control.settings.tutorial && tutorialTime <= Time.time)
         {
+            string confirmedInputColor = "#ffff00ff"; //yellow
+
             //Sequential tutorial items
             if (tutorialLevel == 0)
             {
-                string confirmedInputColor = "#ffff00ff"; //yellow
-
                 string forward;
                 if (tutorialHasPressedForward) {
-                    forward = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustForward, true) + "</color>";
+                    forward = "<color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindThrustForward, true) + "</color>";
                 }
                 else
                 {
-                    forward = control.ui.GetBindAsPrettyString(binds.bindThrustForward, true);
+                    forward = binds.GetBindAsPrettyString(binds.bindThrustForward, true);
                 }
 
                 string left;
                 if (tutorialHasPressedLeft)
                 {
-                    left = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustLeft, true) + "</color>";
+                    left = "<color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindThrustLeft, true) + "</color>";
                 }
                 else
                 {
-                    left = control.ui.GetBindAsPrettyString(binds.bindThrustLeft, true);
+                    left = binds.GetBindAsPrettyString(binds.bindThrustLeft, true);
                 }
 
                 string backward;
                 if (tutorialHasPressedBackward)
                 {
-                    backward = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustBackward, true) + "</color>";
+                    backward = "<color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindThrustBackward, true) + "</color>";
                 }
                 else
                 {
-                    backward = control.ui.GetBindAsPrettyString(binds.bindThrustBackward, true);
+                    backward = binds.GetBindAsPrettyString(binds.bindThrustBackward, true);
                 }
 
                 string right;
                 if (tutorialHasPressedRight)
                 {
-                    right = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustRight, true) + "</color>";
+                    right = "<color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindThrustRight, true) + "</color>";
                 }
                 else
                 {
-                    right = control.ui.GetBindAsPrettyString(binds.bindThrustRight, true);
+                    right = binds.GetBindAsPrettyString(binds.bindThrustRight, true);
                 }
 
                 string down;
                 if (tutorialHasPressedDown)
                 {
-                    down = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustDown, true) + "</color>";
+                    down = "<color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindThrustDown, true) + "</color>";
                 }
                 else
                 {
-                    down = control.ui.GetBindAsPrettyString(binds.bindThrustDown, true);
+                    down = binds.GetBindAsPrettyString(binds.bindThrustDown, true);
                 }
 
                 string up;
                 if (tutorialHasPressedUp)
                 {
-                    up = "<color=" + confirmedInputColor + ">" + control.ui.GetBindAsPrettyString(binds.bindThrustUp, true) + "</color>";
+                    up = "<color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindThrustUp, true) + "</color>";
                 }
                 else
                 {
-                    up = control.ui.GetBindAsPrettyString(binds.bindThrustUp, true);
+                    up = binds.GetBindAsPrettyString(binds.bindThrustUp, true);
                 }
 
                 control.ui.SetTip(
@@ -1185,7 +1200,7 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 1)
             {
                 control.ui.SetTip(
-                    "You can skip this tutorial in Menu > Settings (press " + control.ui.GetBindAsPrettyString(binds.bindToggleMenu, true) + "), if you desire",
+                    "You can skip this tutorial in Menu > Settings (press " + binds.GetBindAsPrettyString(binds.bindToggleMenu, true) + "), if you desire",
                     TUTORIAL_TIP_DURATION * 0.6f
                 );
                 IncrementTutorial(TUTORIAL_TIP_DURATION * 0.8f);
@@ -1193,7 +1208,7 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 2)
             {
                 control.ui.SetTip(
-                    "If you forget a keybind or wish to change one, go to Menu > Keybinds (press " + control.ui.GetBindAsPrettyString(binds.bindToggleMenu, true) + ")",
+                    "If you forget a keybind or wish to change one, go to Menu > Keybinds (press " + binds.GetBindAsPrettyString(binds.bindToggleMenu, true) + ")",
                     TUTORIAL_TIP_DURATION
                 );
                 IncrementTutorial(TUTORIAL_TIP_DURATION);
@@ -1201,7 +1216,7 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 3)
             {
                 control.ui.SetTip(
-                    "Mine asteroids for valuable materials\nFire your weapon with " + control.ui.GetBindAsPrettyString(binds.bindPrimaryFire, true),
+                    "Mine asteroids for valuable materials\nFire your weapon with " + binds.GetBindAsPrettyString(binds.bindPrimaryFire, true),
                     0f
                 );
 
@@ -1261,7 +1276,7 @@ public class Player : MonoBehaviour
             {
                 control.ui.SetTip(
                     "Whether mining or in combat, targetting assists aiming"
-                    + "\nTarget what you're looking at with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget, true),
+                    + "\nTarget what you're looking at with " + binds.GetBindAsPrettyString(binds.bindSetTarget, true),
                     0f
                 );
 
@@ -1283,37 +1298,29 @@ public class Player : MonoBehaviour
             }
             else if (tutorialLevel == 8 && tutorialMoonVisitedID1 != -1 && tutorialMoonVisitedID2 != -1) //visited 2 moons
             {
-                if (!tutorialHasZoomedIn && !tutorialHasZoomedOut)
+                control.ui.SetTip(
+                    "Zoom in/out with " + binds.GetBindAsPrettyString(binds.bindCameraZoomFollowDistIn, true) + "/" + binds.GetBindAsPrettyString(binds.bindCameraZoomFollowDistOut, true),
+                    0f
+                );
+
+                if (binds.GetInputDown(binds.bindCameraZoomFollowDistIn))
                 {
-                    control.ui.SetTip(
-                        "Zoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistIn, true) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistOut, true),
-                        0f
-                    );
-
-                    if (binds.GetInputDown(binds.bindCameraZoomFollowDistIn))
-                    {
-                        tutorialHasZoomedIn = true;
-                    }
-                    if (binds.GetInputDown(binds.bindCameraZoomFollowDistOut))
-                    {
-                        tutorialHasZoomedOut = true;
-                    }
-
-                    if (tutorialHasZoomedIn && tutorialHasZoomedOut)
-                    {
-                        IncrementTutorial(0f);
-                    }
+                    tutorialHasZoomedIn = true;
                 }
-                else
+                if (binds.GetInputDown(binds.bindCameraZoomFollowDistOut))
                 {
-                    //Instant increment if the player already knows how to do it
-                    tutorialLevel++;
+                    tutorialHasZoomedOut = true;
+                }
+
+                if (tutorialHasZoomedIn || tutorialHasZoomedOut)
+                {
+                    IncrementTutorial(0f);
                 }
             }
             else if (tutorialLevel == 9)
             {
                 control.ui.SetTip(
-                    "Third-person can be useful in combinationg with free-look " + control.ui.GetBindAsPrettyString(binds.bindCameraFreeLook, true) + "\nThis allows you to see beside & behind your ship while travelling through the void\nBut first-person is best for mining and for combat",
+                    "Third-person can be useful in combinationg with free-look " + binds.GetBindAsPrettyString(binds.bindCameraFreeLook, true) + "\nThis allows you to see beside & behind your ship while travelling through the void\nBut first-person is best for mining and for combat",
                     TUTORIAL_TIP_DURATION
                 );
 
@@ -1326,7 +1333,7 @@ public class Player : MonoBehaviour
             {
                 //Hasn't visited a heighliner, and has visited several moons
                 control.ui.SetTip(
-                    "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap, true),
+                    "Open your map with " + binds.GetBindAsPrettyString(binds.bindToggleMap, true),
                     0f
                 );
 
@@ -1340,31 +1347,73 @@ public class Player : MonoBehaviour
             {
                 if (UI.displayMap)
                 {
+                    string targetString;
+                    if (tutorialHasPressedSetTarget)
+                    {
+                        targetString = "You can use the map to set targets too. Hover over a celestial body and press <color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindSetTarget, true) + "</color>";
+                    }
+                    else
+                    {
+                        targetString = "You can use the map to set targets just as you would outside of it, with " + binds.GetBindAsPrettyString(binds.bindSetTarget, true);
+                    }
+
+                    string zoomInString;
+                    if (tutorialHasPressedZoomInInMap)
+                    {
+                        zoomInString = "\nZoom in/out with <color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindCameraZoomFollowDistIn, true) + "</color>";
+                    }
+                    else
+                    {
+                        zoomInString = "\nZoom in and out with " + binds.GetBindAsPrettyString(binds.bindCameraZoomFollowDistIn, true);
+                    }
+
+                    string zoomOutString;
+                    if (tutorialHasPressedZoomOutInMap)
+                    {
+                        zoomOutString = "<color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindCameraZoomFollowDistOut, true) + "</color>";
+                    }
+                    else
+                    {
+                        zoomOutString = binds.GetBindAsPrettyString(binds.bindCameraZoomFollowDistOut, true);
+                    }
+
+                    string panMapString;
+                    if (tutorialHasPressedPanMap)
+                    {
+                        panMapString = "\nPan around the map with <color=" + confirmedInputColor + ">" + binds.GetBindAsPrettyString(binds.bindPanMap, true) + "</color>";
+                    }
+                    else
+                    {
+                        panMapString = "\nPan around the map with " + binds.GetBindAsPrettyString(binds.bindPanMap, true);
+                    }
+
                     control.ui.SetTip(
-                        "You can use the map to set targets just as you would outside of it, with " + control.ui.GetBindAsPrettyString(binds.bindSetTarget, true)
-                        + "\nZoom in/out with " + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistIn, true) + "/" + control.ui.GetBindAsPrettyString(binds.bindCameraZoomFollowDistOut, true)
-                        + "\nPan around the map with " + control.ui.GetBindAsPrettyString(binds.bindPanMap, true),
-                        TUTORIAL_TIP_DURATION
+                        targetString
+                        + zoomInString + " and " + zoomOutString
+                        + panMapString,
+                        0f
                     );
 
                     //Show this tutorial tip until the player demonstrates understanding
+                    if (binds.GetInput(binds.bindSetTarget)) { tutorialHasPressedSetTarget = true; }
                     if (binds.GetInput(binds.bindCameraZoomFollowDistIn)) { tutorialHasPressedZoomInInMap = true; }
                     if (binds.GetInput(binds.bindCameraZoomFollowDistOut)) { tutorialHasPressedZoomOutInMap = true; }
                     if (binds.GetInput(binds.bindPanMap)) { tutorialHasPressedPanMap = true; }
                     if (
-                           tutorialHasPressedZoomInInMap
+                           tutorialHasPressedSetTarget
+                        && tutorialHasPressedZoomInInMap
                         && tutorialHasPressedZoomOutInMap
                         && tutorialHasPressedPanMap
                     )
                     {
-                        IncrementTutorial(TUTORIAL_TIP_DURATION);
+                        IncrementTutorial(0f);
                     }
                 }
                 else
                 {
                     //If the player closes their map without looking, explain again
                     control.ui.SetTip(
-                        "Open your map with " + control.ui.GetBindAsPrettyString(binds.bindToggleMap, true),
+                        "Open your map with " + binds.GetBindAsPrettyString(binds.bindToggleMap, true),
                         0f
                     );
                 }
@@ -1372,7 +1421,16 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 12 && !tutorialHasUsedHeighliner)
             {
                 control.ui.SetTip(
-                    "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around moons - like space stations",
+                    "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around planets",
+                    TUTORIAL_TIP_DURATION + 2f
+                );
+
+                IncrementTutorial();
+            }
+            else if (tutorialLevel == 13 && tutorialHasUsedHeighliner)
+            {
+                control.ui.SetTip(
+                    "Going through heighliners updates your map.\n(Open map with " + binds.GetBindAsPrettyString(binds.bindToggleMap, true) + ")",
                     TUTORIAL_TIP_DURATION + 2f
                 );
 
@@ -1414,7 +1472,7 @@ public class Player : MonoBehaviour
 
     public double GetTotalOre()
     {
-        return ore[Asteroid.TYPE_PLATINOID] + ore[Asteroid.TYPE_PRECIOUS_METAL] + ore[Asteroid.TYPE_WATER];
+        return ore[(int)Asteroid.Type.platinoid] + ore[(int)Asteroid.Type.preciousMetal] + ore[(int)Asteroid.Type.water];
     }
 
     private void FixedUpdate()
@@ -1561,11 +1619,12 @@ public class Player : MonoBehaviour
             if (transformCurrentlyChecking.gameObject.name == control.generation.asteroid.name + "(Clone)")
             {
                 //Ensure the asteroid is the correct size and not a clay-silicate asteroid
+                Asteroid asteroidScript = transformCurrentlyChecking.GetComponentInChildren<Asteroid>();
                 if (
-                    transformCurrentlyChecking.GetComponentInChildren<Asteroid>().type != Asteroid.TYPE_CLAY_SILICATE
+                    asteroidScript.type != Asteroid.Type.claySilicate
                     && (
-                        transformCurrentlyChecking.GetComponentInChildren<Asteroid>().size == Asteroid.SIZE_MEDIUM
-                        || transformCurrentlyChecking.GetComponentInChildren<Asteroid>().size == Asteroid.SIZE_LARGE
+                        asteroidScript.size == Asteroid.Size.medium
+                        || asteroidScript.size == Asteroid.Size.large
                     )
                 )
                 {
@@ -1653,13 +1712,14 @@ public class Player : MonoBehaviour
             {
                 //The transform that we are currently checking
                 Transform transformToCheck = hierarchy.GetChild(i);
+                Asteroid asteroidScript = transformToCheck.GetComponent<Asteroid>();
 
                 //Only accept if not destroyed/destroying, and if not brand new
                 if (
-                    !transformToCheck.GetComponent<Asteroid>().isDestroyed
-                    && !transformToCheck.GetComponent<Asteroid>().isDestroying
-                    && transformToCheck.GetComponent<Asteroid>().size != Asteroid.SIZE_SMALL //never drag relative to small asteroids
-                    && Time.time >= transformToCheck.GetComponent<Asteroid>().timeDraggableRelative
+                    !asteroidScript.isDestroyed
+                    && !asteroidScript.isDestroying
+                    && asteroidScript.size != Asteroid.Size.small //never drag relative to small asteroids
+                    && Time.time >= asteroidScript.timeDraggableRelative
                 )
                 {
                     //The distance to this particular asteroid from the player position
@@ -2307,7 +2367,6 @@ public class Player : MonoBehaviour
         }
         accelerationSmoothed /= 1f + accelerationPrevious.Length; //adding one because acceleration is not a part of the accelerationPrevious array
 
-
         //Generate offset for the camera to use
         float cameraOffsetProportionalToAcceleration = 0.000003f;
         cameraOffsetAcceleration = accelerationSmoothed * cameraOffsetProportionalToAcceleration; //negative acceleration so we move back when we accelerate forward
@@ -2740,17 +2799,24 @@ public class Player : MonoBehaviour
             {
                 cause = "over-tolerance impact of " + (int)impactDeltaV.magnitude + " Δv";
             }
-            
+
+            //Stun time
+            float stunTime = (float)damageToDeal;
+            if (isBanditLaser)
+            {
+                stunTime = 0.75f;
+            }
+
             //Damage the player
             DamagePlayer(
                 newHealthAmount,
                 cause,
-                (float)damageToDeal,
+                stunTime,
                 (collision.collider.transform.position - transform.position).normalized,
                 true
             );
         }
-        else
+        else if (collisionDamageInvulnerabilityTemporary <= 0f)
         {
             //Play sound effect
             soundSourceCollision.volume = SOUND_IMPACT_VOLUME_INSIGNIFICANT * control.settings.volumeAll; //insignificant impacts are quieter

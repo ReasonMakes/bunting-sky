@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 public class Asteroid : MonoBehaviour
 {
@@ -25,23 +24,38 @@ public class Asteroid : MonoBehaviour
     [System.NonSerialized] public bool isSeparating = true;
     private readonly float INTERSECTING_REPEL_TELEPORT_STEP_DIST = 0.3f; //0.03f;
 
-    [System.NonSerialized] public int size;
-    [System.NonSerialized] public readonly static int SIZE_SMALL = 0;
-    [System.NonSerialized] public readonly static int SIZE_MEDIUM = 1;
-    [System.NonSerialized] public readonly static int SIZE_LARGE = 2;
-    [System.NonSerialized] public readonly static int SIZE_LENGTH = 3;
+    //[System.NonSerialized] public int size;
+    //[System.NonSerialized] public readonly static int SIZE_SMALL = 0;
+    //[System.NonSerialized] public readonly static int SIZE_MEDIUM = 1;
+    //[System.NonSerialized] public readonly static int SIZE_LARGE = 2;
+    //[System.NonSerialized] public readonly static int SIZE_LENGTH = 3;
+    public enum Size
+    {
+        small,
+        medium,
+        large
+    };
+    [System.NonSerialized] public Size size = Size.small;
     private GameObject modelGroup;
     [System.NonSerialized] public GameObject modelObject;
     public GameObject modelGroupSizeSmall;
     public GameObject modelGroupSizeMedium;
     public GameObject modelGroupSizeLarge;
 
-    [System.NonSerialized] public byte type = 0;
-    [System.NonSerialized] public static readonly byte TYPE_CLAY_SILICATE = 0;
-    [System.NonSerialized] public static readonly byte TYPE_PLATINOID = 1;
-    [System.NonSerialized] public static readonly byte TYPE_PRECIOUS_METAL = 2;
-    [System.NonSerialized] public static readonly byte TYPE_WATER = 3;
-    [System.NonSerialized] public static readonly byte TYPE_LENGTH = 4; //how many types there are
+    //[System.NonSerialized] public byte type = 0;
+    //[System.NonSerialized] public static readonly byte TYPE_CLAY_SILICATE = 0;
+    //[System.NonSerialized] public static readonly byte TYPE_PLATINOID = 1;
+    //[System.NonSerialized] public static readonly byte TYPE_PRECIOUS_METAL = 2;
+    //[System.NonSerialized] public static readonly byte TYPE_WATER = 3;
+    //[System.NonSerialized] public static readonly byte TYPE_LENGTH = 4; //how many types there are
+    public enum Type
+    {
+        claySilicate,
+        platinoid,
+        preciousMetal,
+        water
+    };
+    [System.NonSerialized] public Type type = Type.claySilicate;
     public Material matClaySilicate;
     public Material matPlatinoid;
     public Material matPreciousMetal;
@@ -169,30 +183,31 @@ public class Asteroid : MonoBehaviour
         isSeparating = false;
     }
 
-    public static int GetRandomSize()
+    public static Size GetRandomSize()
     {
         //Randomly choose size
-        switch (Random.Range(0, 2 + 1)) //int range is exclusive, so have to add 1 to the max value
+        switch (Random.Range(0, Control.GetEnumLength(typeof(Size)))) //max is exclusive
         {
             case 0:
-                return SIZE_SMALL;
+                return Size.small;
             case 1:
-                return SIZE_MEDIUM;
+                return Size.medium;
             case 2:
-                return SIZE_LARGE;
+                return Size.large;
             default:
-                return -1;
+                Debug.LogError("Asteroid GetRandomSize() defaulted");
+                return Size.small;
         }
     }
 
     //THIS MUST BE CALLED BEFORE TYPE IS SET
-    public void SetSize(int size)
+    public void SetSize(Size size)
     {
         //Set the internal field for size
         this.size = size;
 
         //Modify attributes based on size
-        if (this.size == SIZE_SMALL)
+        if (this.size == Size.small)
         {
             modelGroup = modelGroupSizeSmall;
             rb.mass = 2f; //0.2f;
@@ -201,7 +216,7 @@ public class Asteroid : MonoBehaviour
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 1f;
             health = (byte)Random.Range(1, 3);
         }
-        else if (this.size == SIZE_MEDIUM)
+        else if (this.size == Size.medium)
         {
             modelGroup = modelGroupSizeMedium;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 150;
@@ -210,7 +225,7 @@ public class Asteroid : MonoBehaviour
             rb.mass = 14f; //1.0f;
             health = (byte)Random.Range(3, 5); //Random.Range(2, 5);
         }
-        else if (this.size == SIZE_LARGE)
+        else if (this.size == Size.large)
         {
             modelGroup = modelGroupSizeLarge;
             GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 250;
@@ -234,7 +249,7 @@ public class Asteroid : MonoBehaviour
     }
 
     //SIZE MUST BE SET BEFORE TYPE CAN BE
-    public void SetType(byte typeToSetAs)
+    public void SetType(Type typeToSetAs)
     {
         if (modelGroup == null) Debug.LogError("Error: must set asteroid size before setting type");
 
@@ -242,19 +257,19 @@ public class Asteroid : MonoBehaviour
         type = typeToSetAs;
 
         //Assign material equal to type
-        if (type == TYPE_CLAY_SILICATE)
+        if (type == Type.claySilicate)
         {
             modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matClaySilicate;
         }
-        else if (type == TYPE_PLATINOID)
+        else if (type == Type.platinoid)
         {
             modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matPlatinoid; 
         }
-        else if (type == TYPE_PRECIOUS_METAL)
+        else if (type == Type.preciousMetal)
         {
             modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matPreciousMetal;
         }
-        else if(type == TYPE_WATER)
+        else if(type == Type.water)
         {
             modelObject.transform.GetChild(0).GetComponent<MeshRenderer>().material = matWater;
         }
@@ -262,15 +277,18 @@ public class Asteroid : MonoBehaviour
         GetComponent<ParticlesDamageRock>().SetParticleSystemDamageColour(modelObject.transform.GetChild(0), GetComponent<ParticlesDamageRock>().saturationDefault);
     }
 
-    public static byte GetRandomType()
+    public static Type GetRandomType()
     {
-        return (byte)Random.Range(1, TYPE_LENGTH);
+        return (Type)Random.Range(
+            0,
+            Control.GetEnumLength(typeof(Type))
+        );
     }
 
-    public static byte GetRandomTypeExcluding(byte typeToExclude)
+    public static Type GetRandomTypeExcluding(Type typeToExclude)
     {
         //Start with the excluded type otherwise the loop will not run
-        byte type = typeToExclude;
+        Type type = typeToExclude;
 
         //Loop until the type we generate is different from the type to exclude
         while (type == typeToExclude)
@@ -314,11 +332,11 @@ public class Asteroid : MonoBehaviour
             GetComponent<ParticlesDamageRock>().EmitDamageParticles(7, Vector3.zero, position, true);
 
             //Send small asteroids flying in direction of hit normal
-            if (size == SIZE_LARGE)
+            if (size == Size.large)
             {
                 SpawnClusterSmallFlyingTowardImpactNormal(direction, 3, 6);
             }
-            else if (size == SIZE_MEDIUM)
+            else if (size == Size.medium)
             {
                 SpawnClusterSmallFlyingTowardImpactNormal(direction, 0, 2);
             }
@@ -335,7 +353,7 @@ public class Asteroid : MonoBehaviour
             //Update player tutorial bool
             if (
                 !control.GetPlayerScript().tutorialHasMinedAsteroid
-                && type == TYPE_CLAY_SILICATE
+                && type == Type.claySilicate
                 && control.GetPlayerScript().upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] <= 0 //hasn't unlocked seismic charges yet (as those deal splash damage, often to clay-silicates)
             )
             {
@@ -350,9 +368,9 @@ public class Asteroid : MonoBehaviour
             BeginDestroying();
 
             //Spawn smaller asteroids
-            if (size == SIZE_LARGE)
+            if (size == Size.large)
             {
-                if (oreDrop && type != TYPE_CLAY_SILICATE)
+                if (oreDrop && type != Type.claySilicate)
                 {
                     for (int i = 0; i < Random.Range(5, 9 + 1); i++)
                     {
@@ -360,13 +378,13 @@ public class Asteroid : MonoBehaviour
                     }
                 }
 
-                SpawnClusterFromPoolAndPassRigidbodyValues(SIZE_MEDIUM, 2, 3);
+                SpawnClusterFromPoolAndPassRigidbodyValues(Size.medium, 2, 3);
 
-                SpawnClusterFromPoolAndPassRigidbodyValues(SIZE_SMALL, 3, 6);
+                SpawnClusterFromPoolAndPassRigidbodyValues(Size.small, 3, 6);
             }
-            else if (size == SIZE_MEDIUM)
+            else if (size == Size.medium)
             {
-                if (oreDrop && type != TYPE_CLAY_SILICATE)
+                if (oreDrop && type != Type.claySilicate)
                 {
                     for (int i = 0; i < Random.Range(3, 6 + 1); i++)
                     {
@@ -374,11 +392,11 @@ public class Asteroid : MonoBehaviour
                     }
                 }
 
-                SpawnClusterFromPoolAndPassRigidbodyValues(SIZE_SMALL, 2, 4);
+                SpawnClusterFromPoolAndPassRigidbodyValues(Size.small, 2, 4);
             }
-            else if (size == SIZE_SMALL)
+            else if (size == Size.small)
             {
-                if (oreDrop && type != TYPE_CLAY_SILICATE)
+                if (oreDrop && type != Type.claySilicate)
                 {
                     for (int i = 0; i < Random.Range(1, 2 + 1); i++)
                     {
@@ -388,7 +406,7 @@ public class Asteroid : MonoBehaviour
             }
 
             //Clay-silicate asteroids have a low chance to drop SOME material
-            if (type == TYPE_CLAY_SILICATE)
+            if (type == Type.claySilicate)
             {
                 if (Random.value <= 0.20f)
                 {
@@ -482,7 +500,7 @@ public class Asteroid : MonoBehaviour
         targetCollider2.enabled = enabled;
     }
 
-    public void EnableInPool(Vector3 position, int size, byte type)
+    public void EnableInPool(Vector3 position, Size size, Type type)
     {
         SetSize(size);
         SetType(type);
@@ -500,7 +518,7 @@ public class Asteroid : MonoBehaviour
         SetPoolStatus(false);
     }
 
-    public void SpawnClusterFromPoolAndPassRigidbodyValues(int asteroidsSizes, int minCount, int maxCount)
+    public void SpawnClusterFromPoolAndPassRigidbodyValues(Size size, int minCount, int maxCount)
     {
         for (int i = 0; i < Random.Range(minCount, maxCount + 1); i++)
         {
@@ -511,7 +529,7 @@ public class Asteroid : MonoBehaviour
             //Spawn the new asteroid(s) from pool
             GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
                 position,
-                asteroidsSizes,
+                size,
                 type
             );
 
@@ -536,7 +554,7 @@ public class Asteroid : MonoBehaviour
             //Spawn the new asteroid(s) from pool
             GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
                 position,
-                Asteroid.SIZE_SMALL,
+                Size.small,
                 type
             );
 

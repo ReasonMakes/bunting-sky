@@ -9,13 +9,15 @@ public class Generation : MonoBehaviour
     //Control
     public Control control;
 
-    private int newGameTypeQueued = -1; //none
-
     //Generation type
-    [System.NonSerialized] public readonly int GENERATION_TYPE_NONE = -1;
-    [System.NonSerialized] public readonly int GENERATION_TYPE_NEW_GAME = 0;
-    [System.NonSerialized] public readonly int GENERATION_TYPE_LOADED_GAME = 1;
-    [System.NonSerialized] public readonly int GENERATION_TYPE_RESTARTED_GAME = 2;
+    public enum GenerationType
+    {
+        none,
+        newGame,
+        loaded,
+        restarted
+    };
+    private GenerationType newGameTypeQueued = GenerationType.none;
 
     //Player
     public GameObject playerPrefab;
@@ -25,29 +27,29 @@ public class Generation : MonoBehaviour
     [System.NonSerialized] public int playerPlanetIndex = 0; //planetary system the player is currently in
 
     //CBodies
-    private readonly int MOONS_RANGE_LOW = 4; //6;
-    private readonly int MOONS_RANGE_HIGH = 10; //10;
+    private readonly int MOONS_RANGE_LOW = 1; //4; //6;
+    private readonly int MOONS_RANGE_HIGH = 5; //4; //10;
     [System.NonSerialized] public readonly float MOONS_DISTANCE_OUT = 300f;
     [System.NonSerialized] public readonly float MOONS_SPACING_BASE_MAX = 50f;
     [System.NonSerialized] public readonly float MOONS_SPACING_POWER = 1.5f;
-    private float maxMoonDist;
 
     private readonly int PLANETS_RANGE_LOW = 3; //6;
     private readonly int PLANETS_RANGE_HIGH = 5; //10;
-    private float planetsSpacingBaseMax;
-    private float PLANETS_SPACING_POWER = 1f;
-    private float maxPlanetDist;
+    private readonly float PLANET_DISTANCE_OUT = 3600f;
+    private readonly float PLANET_DISTANCE_OUT_NOISE = 500f;
 
-    private readonly int CLUSTER_TYPE_VOID_CLUMP       = 0;
-    private readonly int CLUSTER_TYPE_PLANET_RINGS     = 1;
-    private readonly int CLUSTER_TYPE_PLANET_CLUMP     = 2;
-    private readonly int CLUSTER_TYPE_MOON_RINGS       = 3;
-    private readonly int CLUSTER_TYPE_MOON_CLUMP       = 4;
+    private enum ClusterType
+    {
+        voidClump,
+        planetRing,
+        planetClump,
+        moonRing,
+        moonClump
+    };
+
     public int asteroidsDetailed = 0;
-
     private int hitboxSwapMoonsChild = 0;
     private int hitboxSwapPlanetsChild = 0;
-    private int performanceModeSwapAsteroidsChild = 0;
 
     //Verse hierarchy
     public GameObject verseSpace;
@@ -109,20 +111,11 @@ public class Generation : MonoBehaviour
 
     private void Start()
     {
-        //Max distances, minus some padding
-        maxMoonDist = MOONS_DISTANCE_OUT + (MOONS_RANGE_HIGH * Mathf.Pow(MOONS_SPACING_BASE_MAX, MOONS_SPACING_POWER));
-        planetsSpacingBaseMax = maxMoonDist * 0.25f;
-        maxPlanetDist = maxMoonDist + Mathf.Pow(planetsSpacingBaseMax, PLANETS_SPACING_POWER);
-
-        //maxMoonDist = MOONS_DISTANCE_OUT + (MOONS_RANGE_HIGH * Mathf.Pow(MOONS_SPACING_BASE_MAX, MOONS_SPACING_POWER)) - 500f;
-        //planetsSpacingBaseMax = maxMoonDist;
-        //maxPlanetDist = maxMoonDist + Mathf.Pow(planetsSpacingBaseMax, PLANETS_SPACING_POWER) - 1000f;
-
         //Auto load
         TryLoadGameElseNewGame();
 
         //Auto saving
-        InvokeRepeating("SaveGame", control.AUTO_SAVE_FREQUENCY, control.AUTO_SAVE_FREQUENCY);
+        //InvokeRepeating("SaveGame", control.AUTO_SAVE_FREQUENCY, control.AUTO_SAVE_FREQUENCY);
     }
     #endregion
 
@@ -133,14 +126,11 @@ public class Generation : MonoBehaviour
         //Debug.Log(asteroidsEnabled.transform.childCount);
 
         //Wait to generate new game (otherwise we will be spawning asteroids at the same time we are destroying them!)
-        if (newGameTypeQueued != GENERATION_TYPE_NONE && asteroidsEnabled.transform.childCount == 0)
+        if (newGameTypeQueued != GenerationType.none && asteroidsEnabled.transform.childCount == 0)
         {
             GenerateGameNew(newGameTypeQueued);
-            newGameTypeQueued = GENERATION_TYPE_NONE;
+            newGameTypeQueued = GenerationType.none;
         }
-
-        //Checks one object per type per frame to avoid lag spikes
-        SwapHitboxes();
 
         //Slow update
         if (Time.frameCount % 10 == 0)
@@ -148,18 +138,18 @@ public class Generation : MonoBehaviour
             SlowUpdate();
         }
 
-        //Very slow update
-        if (Time.frameCount % control.settings.targetFPS == 0) //Every 1 second
-        {
-            VerySlowUpdate();
-        }
+        ////Very slow update
+        //if (Time.frameCount % control.settings.targetFPS == 0) //Every 1 second
+        //{
+        //    VerySlowUpdate();
+        //}
     }
 
     private void SlowUpdate()
     {
         //AFTER GENERATION COMPLETE
         //Setup all heighliners' map models and rotations
-        if (heighlinerExitNodesSet >= nPlanetsPlanned * 2 && !heighlinersSetup)
+        if (!heighlinersSetup && heighlinerExitNodesSet >= nPlanetsPlanned * 2)
         {
             bool loopSuccess = true;
 
@@ -180,6 +170,9 @@ public class Generation : MonoBehaviour
 
             heighlinersSetup = loopSuccess;
         }
+
+        //Checks one object per type per frame to avoid lag spikes
+        SwapHitboxes();
 
         //Performance mode swaps
         if (playerSpawned)
@@ -296,10 +289,10 @@ public class Generation : MonoBehaviour
     }
     #endregion
 
-    public void GenerateGame(int generationType)
+    public void GenerateGame(GenerationType generationType)
     {
         //Destroy the previous game's objects
-        if (generationType == GENERATION_TYPE_RESTARTED_GAME)
+        if (generationType == GenerationType.restarted)
         {
             GenerateGameDestroyPreviousGame();
         }
@@ -308,7 +301,7 @@ public class Generation : MonoBehaviour
         newGameTypeQueued = generationType;
     }
 
-    private void GenerateGameNew(int generationType)
+    private void GenerateGameNew(GenerationType generationType)
     {
         //Asteroids
         AsteroidPoolPopulate(1500);
@@ -399,25 +392,25 @@ public class Generation : MonoBehaviour
         }
 
         //Set light range
-        instanceStarHome.GetComponentInChildren<Light>().range = maxPlanetDist * 2f;
+        instanceStarHome.GetComponentInChildren<Light>().range = PLANET_DISTANCE_OUT * 2f;
     }
     #endregion
 
     #region Planets
-    private void PlanetarySystemClusterSpawn(int nPlanets, int generationType)
+    private void PlanetarySystemClusterSpawn(int nPlanets, GenerationType generationType)
     {
         //Spawn all planetary systems
 
         //Get positions for each planetary system
         Vector3[] position = new Vector3[nPlanets];
-        position = GenerateOrbitalPositionsWithReservedAngles(nPlanets, (int)(nPlanets * 1.5f), 2f, 3600f, 500f); //3000f //3800f old distanceOut
+        position = GenerateOrbitalPositionsWithReservedAngles(nPlanets, (int)(nPlanets * 1.5f), 2f, PLANET_DISTANCE_OUT, PLANET_DISTANCE_OUT_NOISE); //3000f //3800f old distanceOut
 
         //Spawn each planetary system
         for (int planetaryIndex = 0; planetaryIndex < nPlanets; planetaryIndex++)
         {
             Vector3 positionToSpawnThisPlanet = position[planetaryIndex];
             positionToSpawnThisPlanet.y += Random.value * 100f; //offset the vertical axis
-            PlanetarySystemSpawnAndPlayerSpawn(
+            PlanetarySystemSpawn(
                 generationType,
                 planetaryIndex, nPlanets, positionToSpawnThisPlanet,
                 null,
@@ -498,27 +491,32 @@ public class Generation : MonoBehaviour
         return positions;
     }
 
-    private GameObject PlanetarySystemSpawnAndPlayerSpawn(
-        int generationType,
+    private GameObject PlanetarySystemSpawn(
+        GenerationType generationType,
         int planetarySystemIndex, int nPlanets, Vector3 position, string titleOverride,
         bool spawnAsteroids
         )
     {
+        //Includes possibly spawning the player
+
         //Colour scheme
         int colorPaletteIndex = Random.Range(0, COLOR_PALETTE.GetLength(0));
 
-        //PLANET
+        //Planet
         GameObject instancePlanet = PlanetSpawn(position, planetarySystemIndex, titleOverride, colorPaletteIndex);
 
-        //PLANETARY SYSTEM BODIES
-        if (generationType != GENERATION_TYPE_LOADED_GAME)
+        //System bodies
+        if (generationType != GenerationType.loaded)
         {
             //Moons
             int nMoons;
-            if (planetarySystemIndex == 0)
+            if (control.settings.tutorial && planetarySystemIndex == 0)
             {
-                //Home system will always have a stable number of moons
-                nMoons = 5; //3 minimum to complete the tutorial
+                //If tutorial settings is ON then we always generate minimum number needed to complete tutorial,
+                //                              but no more than that so that we encourage the player to travel
+                //Tutorial automatically turns itself off upon completion, so replays will have more random start systems
+                //3 minimum to complete the tutorial
+                nMoons = 3; //5; //Random.Range(3, MOONS_RANGE_HIGH + 1);
             }
             else
             {
@@ -578,15 +576,15 @@ public class Generation : MonoBehaviour
 
                 //Asteroid belt guaranteed at player's spawn planet
                 //The player's spawn system only has simple resources - the player must travel elsewhere to collect new resource types
-                byte asteroidType = Asteroid.TYPE_WATER;
+                Asteroid.Type asteroidType = Asteroid.Type.water;
                 if (Random.value > 0.5f)
                 {
-                    asteroidType = Asteroid.TYPE_PLATINOID;
+                    asteroidType = Asteroid.Type.platinoid;
                 }
                 if (spawnAsteroids)
                 {
                     AsteroidPoolSpawnCluster(
-                        CLUSTER_TYPE_PLANET_RINGS,
+                        ClusterType.planetRing,
                         asteroidType,
                         position,
                         false
@@ -595,9 +593,9 @@ public class Generation : MonoBehaviour
 
                 //One minor bandit is guaranteed to spawn at the player's spawn planet
                 EnemySpawnCluster(
-                    CLUSTER_TYPE_PLANET_CLUMP,
+                    ClusterType.planetClump,
                     position,
-                    Enemy.STRENGTH_MINOR.ToString()
+                    ((int)Enemy.Strength.minor).ToString()
                 );
             }
             else
@@ -611,7 +609,7 @@ public class Generation : MonoBehaviour
                     if (spawnAsteroids)
                     {
                         AsteroidPoolSpawnCluster(
-                            CLUSTER_TYPE_PLANET_RINGS,
+                            ClusterType.planetRing,
                             Asteroid.GetRandomType(),
                             position,
                             false
@@ -624,44 +622,45 @@ public class Generation : MonoBehaviour
                 if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
                 {
                     float roll = Random.value;
-                    if (roll <= 0.5f)
+                    if (roll >= 0.5f)
                     {
                         EnemySpawnCluster(
-                            CLUSTER_TYPE_PLANET_CLUMP,
+                            ClusterType.planetClump,
                             position,
-                              Enemy.STRENGTH_MAJOR.ToString()
-                            + Enemy.STRENGTH_MINOR.ToString()
+                              ((int)Enemy.Strength.major).ToString()
+                            + ((int)Enemy.Strength.major).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
                         );
                     }
-                    else if (roll <= 0.7f)
+                    else if (roll >= 0.2f)
                     {
                         EnemySpawnCluster(
-                            CLUSTER_TYPE_PLANET_CLUMP,
+                            ClusterType.planetClump,
                             position,
-                              Enemy.STRENGTH_MAJOR.ToString()
-                            + Enemy.STRENGTH_MAJOR.ToString()
-                            + Enemy.STRENGTH_MINOR.ToString()
-                            + Enemy.STRENGTH_MINOR.ToString()
+                              ((int)Enemy.Strength.major).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
                         );
                     }
-                    else if (roll <= 0.9f)
+                    else if (roll >= 0.1f)
                     {
                         EnemySpawnCluster(
-                            CLUSTER_TYPE_PLANET_CLUMP,
+                            ClusterType.planetClump,
                             position,
-                              Enemy.STRENGTH_ELITE.ToString()
-                            + Enemy.STRENGTH_MAJOR.ToString()
-                            + Enemy.STRENGTH_MINOR.ToString()
-                            + Enemy.STRENGTH_MINOR.ToString()
+                              ((int)Enemy.Strength.elite).ToString()
+                            + ((int)Enemy.Strength.major).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
                         );
                     }
                     else
                     {
                         EnemySpawnCluster(
-                            CLUSTER_TYPE_PLANET_CLUMP,
+                            ClusterType.planetClump,
                             position,
-                              Enemy.STRENGTH_ELITE.ToString()
-                            + Enemy.STRENGTH_ELITE.ToString()
+                              ((int)Enemy.Strength.ultra).ToString()
+                            + ((int)Enemy.Strength.elite).ToString()
+                            + ((int)Enemy.Strength.elite).ToString()
                         );
                     }
                 }
@@ -803,8 +802,8 @@ public class Generation : MonoBehaviour
                 {
                     //Player spawn moon - water asteroids only but GUARANTEED valuables
                     AsteroidPoolSpawnCluster(
-                        CLUSTER_TYPE_MOON_RINGS,
-                        Asteroid.TYPE_WATER,
+                        ClusterType.moonRing,
+                        Asteroid.Type.water,
                         instanceMoonPosition,
                         true
                     );
@@ -814,13 +813,13 @@ public class Generation : MonoBehaviour
                     if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
                     {
                         //Player spawn SYSTEM - water and platinoid only
-                        byte asteroidType = Asteroid.TYPE_WATER;
+                        Asteroid.Type asteroidType = Asteroid.Type.water;
                         if (Random.value > 0.5f)
                         {
-                            asteroidType = Asteroid.TYPE_PLATINOID;
+                            asteroidType = Asteroid.Type.platinoid;
                         }
                         AsteroidPoolSpawnCluster(
-                            CLUSTER_TYPE_MOON_RINGS,
+                            ClusterType.moonRing,
                             asteroidType,
                             instanceMoonPosition,
                             false
@@ -831,7 +830,7 @@ public class Generation : MonoBehaviour
                 {
                     //All other systems - any asteroid type
                     AsteroidPoolSpawnCluster(
-                        CLUSTER_TYPE_MOON_RINGS,
+                        ClusterType.moonRing,
                         Asteroid.GetRandomType(),
                         instanceMoonPosition,
                         false
@@ -940,7 +939,7 @@ public class Generation : MonoBehaviour
     #endregion
 
     #region Player
-    private void PlayerSpawn(int generationType, Vector3 position)
+    private void PlayerSpawn(GenerationType generationType, Vector3 position)
     {
         //Remember that the player has spawned. This must be placed at the top of this method otherwise the player's own functions will null reference on the player itself!
         playerSpawned = true;
@@ -955,7 +954,7 @@ public class Generation : MonoBehaviour
 
         Player playerScript = instancePlayer.GetComponentInChildren<Player>();
 
-        if (generationType == GENERATION_TYPE_NEW_GAME || generationType == GENERATION_TYPE_RESTARTED_GAME)
+        if (generationType == GenerationType.newGame || generationType == GenerationType.restarted)
         {
             playerScript.vitalsHealth = playerScript.vitalsHealthMax;
             playerScript.vitalsFuel = playerScript.vitalsFuelMax * 0.75d;
@@ -1019,7 +1018,7 @@ public class Generation : MonoBehaviour
         UpdateAsteroidPoolHierarchyCount();
     }
 
-    public GameObject AsteroidPoolSpawn(Vector3 position, int size, byte type)
+    public GameObject AsteroidPoolSpawn(Vector3 position, Asteroid.Size size, Asteroid.Type type)
     {
         //Spawn a single asteroid from the pool (move an asteroid from disabled to enabled)
 
@@ -1075,16 +1074,16 @@ public class Generation : MonoBehaviour
         }
     }
 
-    private void AsteroidPoolSpawnCluster(int clusterType, byte oreType, Vector3 position, bool guaranteeValuables)
+    private void AsteroidPoolSpawnCluster(ClusterType clusterType, Asteroid.Type oreType, Vector3 position, bool guaranteeValuables)
     {
 
-        if (clusterType == CLUSTER_TYPE_PLANET_RINGS || clusterType == CLUSTER_TYPE_MOON_RINGS)
+        if (clusterType == ClusterType.planetRing || clusterType == ClusterType.moonRing)
         {
             int nAsteroids = 0;
             float chancePercentOfValuableType = 0f;
             float radius = 0f;
             
-            if (clusterType == CLUSTER_TYPE_PLANET_RINGS)
+            if (clusterType == ClusterType.planetRing)
             {
                 radius = 250f; //200 //170
                 nAsteroids = 100; //70;
@@ -1097,7 +1096,7 @@ public class Generation : MonoBehaviour
                     chancePercentOfValuableType = Random.Range(0f, 30f); //10f;
                 }
             }
-            else if (clusterType == CLUSTER_TYPE_MOON_RINGS)
+            else if (clusterType == ClusterType.moonRing)
             {
                 radius = 70f; //60
                 nAsteroids = 40; //70;
@@ -1122,7 +1121,7 @@ public class Generation : MonoBehaviour
                 float instanceAsteroidRadius = radius + (Random.Range(0f, 2f * radiusRandomness) - radiusRandomness);
 
                 //Pick whether clay-silicate or valuable
-                byte oreToSpawnAs = Asteroid.TYPE_CLAY_SILICATE;
+                Asteroid.Type oreToSpawnAs = Asteroid.Type.claySilicate;
                 if (Control.GetTrueForPercentOfIndices(i, nAsteroids, chancePercentOfValuableType))
                 {
                     oreToSpawnAs = oreType;
@@ -1135,7 +1134,7 @@ public class Generation : MonoBehaviour
                         0f, //this needs to be 0f because we are already ADDING to the moonar position - if we were to set this to position.y we would be doubling the y position!
                         Mathf.Sin(Mathf.Deg2Rad * angle) * instanceAsteroidRadius
                     ),
-                    Random.Range(0, Asteroid.SIZE_LENGTH),
+                    (Asteroid.Size)Random.Range(0, Control.GetEnumLength(typeof(Asteroid.Size))),
                     oreToSpawnAs
                 );
 
@@ -1178,7 +1177,7 @@ public class Generation : MonoBehaviour
         oreDisabled.name = "Disabled (" + oreDisabled.transform.childCount + ")";
     }
 
-    public GameObject OrePoolSpawn(Vector3 position, byte type, Vector3 parentVelocity)
+    public GameObject OrePoolSpawn(Vector3 position, Asteroid.Type type, Vector3 parentVelocity)
     {
         GameObject instanceOre = null;
 
@@ -1203,19 +1202,19 @@ public class Generation : MonoBehaviour
         return instanceOre;
     }
 
-    public void OrePoolSpawnWithTraits(Vector3 position, Rigidbody rbInherit, byte type)
+    public void OrePoolSpawnWithTraits(Vector3 position, Rigidbody rbInherit, Asteroid.Type type)
     {
         //Clay-silicate asteroids drop a mixture
-        byte typeToSpawn = type;
-        if (type == Asteroid.TYPE_CLAY_SILICATE)
+        Asteroid.Type typeToSpawn = type;
+        if (type == Asteroid.Type.claySilicate)
         {
             if (Random.value <= 0.75f)
             {
-                typeToSpawn = Asteroid.TYPE_PLATINOID;
+                typeToSpawn = Asteroid.Type.platinoid;
             }
             else
             {
-                typeToSpawn = Asteroid.TYPE_WATER;
+                typeToSpawn = Asteroid.Type.water;
             }
         }
 
@@ -1246,7 +1245,7 @@ public class Generation : MonoBehaviour
         ));
     }
 
-    private void EnemySpawnCluster(int clusterType, Vector3 position, string list)
+    private void EnemySpawnCluster(ClusterType clusterType, Vector3 position, string list)
     {
         //clusterType - an enum of several spawn patterns
         //position - where that spawn pattern will centre around
@@ -1257,39 +1256,37 @@ public class Generation : MonoBehaviour
         int amount = list.Length;
         
         //Spawn pattern
-        if (clusterType == CLUSTER_TYPE_PLANET_CLUMP)
+        if (clusterType == ClusterType.planetClump)
         {
             //Position - where around the planet will the cluster be?
             float radiusFromPlanet = 150f;
             float angleFromPlanet = Random.value * 360f;
-            Vector3 positionFromPlanet = position + new Vector3(
+            Vector3 clusterCenterPosition = position + new Vector3(
                 Mathf.Cos(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet,
                 position.y,
                 Mathf.Sin(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet
             );
 
-            if (amount == 1)
-            {
-                //Don't bother calculating offsets if there will only be one bandit spawned
-                EnemySpawn(positionFromPlanet, (Enemy.Strength)control.GetIntFromStringIndex(list, 0));
-            }
-            else
+            Vector3 clusterPosition = clusterCenterPosition;
+            if (amount > 1)
             {
                 for (int i = 0; i < amount; i++)
                 {
                     //Position - where within the cluster will this bandit be?
                     float radiusFromCluster = 10f;
                     float angleFromCluster = Random.value * 360f;
-                    Vector3 positionFromCluster = positionFromPlanet + new Vector3(
+                    Vector3 clusterOffsetPosition = clusterCenterPosition + new Vector3(
                         Mathf.Cos(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster,
-                        positionFromPlanet.y + Random.Range(5f, 15f),
+                        clusterCenterPosition.y + Random.Range(5f, 15f),
                         Mathf.Sin(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster
                     );
 
-                    //Spawn the bandit
-                    EnemySpawn(positionFromCluster, (Enemy.Strength)control.GetIntFromStringIndex(list, i));
+                    clusterPosition = clusterOffsetPosition;
                 }
             }
+
+            //Don't bother calculating offsets if there will only be one bandit spawned
+            EnemySpawn(clusterPosition, (Enemy.Strength)control.GetIntFromStringIndex(list, 0));
         }
     }
 
@@ -1508,7 +1505,7 @@ public class Generation : MonoBehaviour
         if (data == null || control.IS_EDITOR || true) //the true keyword here disables loading ALWAYS - we want to temporarily disable until it's fixed
         {
             //Debug.Log("No save exists; generating new game");
-            GenerateGame(GENERATION_TYPE_NEW_GAME);
+            GenerateGame(GenerationType.newGame);
         }
         else
         {

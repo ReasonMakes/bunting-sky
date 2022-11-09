@@ -127,10 +127,13 @@ public class Control : MonoBehaviour
          * The player will be placed in the centre at (0,0,0) and all verse objects will move with the player so that the distances between them remain the same
          */
 
-        Vector3 playerOldDistanceOut = generation.instancePlayer.transform.Find("Body").position;
+        //Vector3 playerOldDistanceOut = generation.instancePlayer.transform.Find("Body").position;
+        Vector3 playerOldDistanceOut = GetPlayerTransform().position;
 
         //Player
-        generation.instancePlayer.transform.Find("Body").position = Vector3.zero;
+        //generation.instancePlayer.transform.Find("Body").position = Vector3.zero;
+        //GetPlayerScript().rb.position = Vector3.zero;
+        GetPlayerTransform().position = Vector3.zero;
 
         //Verse space
         generation.verseSpace.transform.position -= playerOldDistanceOut;
@@ -364,41 +367,62 @@ public class Control : MonoBehaviour
         //int strength = (int)list[i] - (int)'0';
         //int strength = 51 - 48; //'0' is encoded as 48 in ASCII
         //int strength = 3;
-        return (int)str[index] - (int)'0';
+        int returnInt = (int)str[index] - (int)'0';
+        return returnInt;
     }
     #endregion
 
-    public Vector3 GetPredictedTrajectoryWithProjectileLeading(
-        Vector3 shooterPosition, Vector3 shooterVelocity, float shooterProjectileSpeed,
-        float manualLeadMultiplier,
-        Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetLastForceAdded, float targetMass
+    public Vector3 GetLeadPosition(
+        Vector3 shooterPosition, Vector3 shooterVelocity, Vector3 shooterLastForceAdded, float shooterMass,
+        float shooterProjectileSpeed, float manualLeadMultiplier,
+        Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetLastForceAdded, float targetMass,
+        bool isAccurateBandit
     )
     {
+        //Position
+        Vector3 leadPosition = targetPosition;
         //Delta V
         Vector3 deltaV = targetVelocity - shooterVelocity;
 
-        //Target position
-        Vector3 predictedTrajectory = targetPosition;
-
+        //SPEED
         //Time until the projectiles hit the target
         //t = d/v; time in seconds it will take the weapon projectile to be at the target destination
         float timeToTarget = Vector3.Magnitude(targetPosition - shooterPosition) / shooterProjectileSpeed;
 
         //Lead speed + manual modification
-        predictedTrajectory += (deltaV * (timeToTarget * manualLeadMultiplier));
+        leadPosition += (deltaV * (timeToTarget * manualLeadMultiplier));
 
-        //Lead acceleration
+        //ACCELERATION
         //F = ma -> a = F/m
         Vector3 targetAcceleration = targetLastForceAdded / targetMass;
-        //displacement = velocity * deltaTime + (1/2)​(acceleration)(deltaTime^2)
-        Vector3 displacementFromAcceleration = (deltaV * Time.deltaTime) + ((targetAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
-        predictedTrajectory += displacementFromAcceleration;
 
-        //Lead change in thrust direction (for if player is thrusting in a circle around the enemy)
-        //YET TO BE IMPLEMENTED
+        //JERK (delta acceleration)
+        //Vector3 jerk = Vector3.zero;
+        //float jerkWeight = 50e3f; //10f;
+        //if (isAccurateBandit)
+        //{
+        //    Player p = GetPlayerScript();
+        //    for (int i = p.accelerationPrevious.Length; i > 1; i--) //> 1 because we count up from 0, so index is offset from length
+        //    {
+        //        //Final - initial = delta
+        //        jerk += p.accelerationPrevious[i - 1] - p.accelerationPrevious[i - 2]; //-1 because we count up from 0, so index is offset from length
+        //    }
+        //    //Average
+        //    jerk /= p.accelerationPrevious.Length;
+        //}
+
+        //DISPLACEMENT
+        //displacement = velocity * deltaTime + (1/2)​(acceleration)(deltaTime^2)
+        Vector3 targetDisplacementFromAcceleration = (deltaV * Time.deltaTime) + ((targetAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
+        //Vector3 targetDisplacementFromAcceleration = (deltaV * Time.deltaTime) + (((targetAcceleration + (jerk * jerkWeight)) * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
+        leadPosition += targetDisplacementFromAcceleration;
+
+        //Displacement from the shooter's own acceleration
+        Vector3 shooterAcceleration = shooterLastForceAdded / shooterMass;
+        leadPosition += (deltaV * Time.deltaTime) + ((shooterAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f); 
 
         //Return prediction
-        return predictedTrajectory;
+        return leadPosition;
     }
 
     public bool GetIfPointLiesWithinTriangle(Vector2 point, Vector2 triVertex1, Vector2 triVertex2, Vector2 triVertex3)
@@ -438,5 +462,10 @@ public class Control : MonoBehaviour
         //Debug.Log(hex + " = " + color);
 
         return color;
+    }
+
+    public static int GetEnumLength(Type enumType)
+    {
+        return Enum.GetNames(enumType).Length;
     }
 }

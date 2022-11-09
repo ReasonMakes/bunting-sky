@@ -149,7 +149,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_MAX_LEVEL] = "10";
         upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_MAX_LEVEL] = "1";
         upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_MAX_LEVEL] = "2";
-        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_MAX_LEVEL] = "2";
+        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_MAX_LEVEL] = "1";
     }
 
     //MENU
@@ -196,15 +196,15 @@ public class Commerce : MonoBehaviour
         TextMeshProUGUI sellAllWaterPrice           = menuButtonSellAllWater.transform.parent.Find("Price").GetComponent<TextMeshProUGUI>();
 
         //Interactable
-        menuButtonSellAllPlatinoid.interactable     = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0;
-        menuButtonSellAllPreciousMetal.interactable = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0;
-        menuButtonSellAllWater.interactable         = playerScript.ore[Asteroid.TYPE_WATER] > 0.0;
+        menuButtonSellAllPlatinoid.interactable     = playerScript.ore[(int)Asteroid.Type.platinoid] > 0.0;
+        menuButtonSellAllPreciousMetal.interactable = playerScript.ore[(int)Asteroid.Type.preciousMetal] > 0.0;
+        menuButtonSellAllWater.interactable         = playerScript.ore[(int)Asteroid.Type.water] > 0.0;
 
         //Display
         //Text
-        sellAllPlatinoidText.text       = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
-        sellAllPreciousMetalText.text   = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
-        sellAllWaterText.text           = playerScript.ore[Asteroid.TYPE_WATER] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllPlatinoidText.text       = playerScript.ore[(int)Asteroid.Type.platinoid] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllPreciousMetalText.text   = playerScript.ore[(int)Asteroid.Type.preciousMetal] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
+        sellAllWaterText.text           = playerScript.ore[(int)Asteroid.Type.water] > 0.0 ? "Sell all" : "Sell all\n(none in cargo)";
 
         //Price
         sellAllPlatinoidPrice.text      = "$" + pricePlatinoid + " / kg";
@@ -212,14 +212,14 @@ public class Commerce : MonoBehaviour
         sellAllWaterPrice.text          = "$" + priceWater + " / kg";
 
         //Colour
-        sellAllPlatinoidText.color      = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
-        sellAllPlatinoidPrice.color     = playerScript.ore[Asteroid.TYPE_PLATINOID] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPlatinoidText.color      = playerScript.ore[(int)Asteroid.Type.platinoid] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPlatinoidPrice.color     = playerScript.ore[(int)Asteroid.Type.platinoid] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
-        sellAllPreciousMetalText.color  = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
-        sellAllPreciousMetalPrice.color = playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPreciousMetalText.color  = playerScript.ore[(int)Asteroid.Type.preciousMetal] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllPreciousMetalPrice.color = playerScript.ore[(int)Asteroid.Type.preciousMetal] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
-        sellAllWaterText.color          = playerScript.ore[Asteroid.TYPE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
-        sellAllWaterPrice.color         = playerScript.ore[Asteroid.TYPE_WATER] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllWaterText.color          = playerScript.ore[(int)Asteroid.Type.water] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
+        sellAllWaterPrice.color         = playerScript.ore[(int)Asteroid.Type.water] > 0.0 ? Control.colorTextEnabled : Control.colorTextDisabled;
 
         //UPGRADE
         //Interactable
@@ -476,8 +476,8 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.GetPlayerScript();
 
-        playerScript.currency += playerScript.ore[Asteroid.TYPE_PLATINOID] * pricePlatinoid;
-        playerScript.ore[Asteroid.TYPE_PLATINOID] = 0.0;
+        playerScript.currency += playerScript.ore[(int)Asteroid.Type.platinoid] * pricePlatinoid;
+        playerScript.ore[(int)Asteroid.Type.platinoid] = 0.0;
 
         playerScript.tutorialHasUsedStation = true;
 
@@ -488,8 +488,8 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        playerScript.currency += playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] * pricePreciousMetal;
-        playerScript.ore[Asteroid.TYPE_PRECIOUS_METAL] = 0.0;
+        playerScript.currency += playerScript.ore[(int)Asteroid.Type.preciousMetal] * pricePreciousMetal;
+        playerScript.ore[(int)Asteroid.Type.preciousMetal] = 0.0;
 
         playerScript.tutorialHasUsedStation = true;
 
@@ -500,8 +500,8 @@ public class Commerce : MonoBehaviour
     {
         Player playerScript = control.generation.instancePlayer.GetComponentInChildren<Player>();
 
-        playerScript.currency += playerScript.ore[Asteroid.TYPE_WATER] * priceWater;
-        playerScript.ore[Asteroid.TYPE_WATER] = 0.0;
+        playerScript.currency += playerScript.ore[(int)Asteroid.Type.water] * priceWater;
+        playerScript.ore[(int)Asteroid.Type.water] = 0.0;
 
         playerScript.tutorialHasUsedStation = true;
 
