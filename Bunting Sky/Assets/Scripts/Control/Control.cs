@@ -468,4 +468,15 @@ public class Control : MonoBehaviour
     {
         return Enum.GetNames(enumType).Length;
     }
+
+    public Vector3 GetRandomDirection()
+    {
+        //Return a vector with cardinal directions each ranging from -1 to 1, normalized
+
+        return new Vector3(
+            (UnityEngine.Random.value * 2f) - 1f,
+            (UnityEngine.Random.value * 2f) - 1f,
+            (UnityEngine.Random.value * 2f) - 1f
+        ).normalized;
+    }
 }

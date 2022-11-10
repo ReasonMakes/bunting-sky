@@ -192,11 +192,7 @@ public class Enemy : MonoBehaviour
                             && control.GetPlayerScript().rb.velocity.magnitude > 1f
                         )
                         { 
-                            destinationPosition += new Vector3(
-                                (Random.value - 0.5f) * destinationOffsetMagnitude,
-                                (Random.value - 0.5f) * destinationOffsetMagnitude,
-                                (Random.value - 0.5f) * destinationOffsetMagnitude
-                            );
+                            destinationPosition += destinationOffsetMagnitude * control.GetRandomDirection();
                         }
                     }
                     else
@@ -474,7 +470,7 @@ public class Enemy : MonoBehaviour
             health = 6; //3;
             thrust = 2500f; //4e3f;
             torque = 600f;
-            inaccuracy = 0.5f; //1f; //2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+            inaccuracy = 0.25f; //0.5f; //1f; //2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 2f; //Time in seconds between bursts
             weaponFirePeriod = 0.25f; //Time in seconds between shots within the burst
@@ -492,7 +488,7 @@ public class Enemy : MonoBehaviour
             health = 12; //6;
             thrust = 8e3f;
             torque = 16e3f; //10e3f;
-            inaccuracy = 0.1f; //0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+            inaccuracy = 0.05f; //0.1f; //0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 2f; //Time in seconds between bursts
             weaponFirePeriod = 0.1f; //Time in seconds between shots within the burst
@@ -511,7 +507,7 @@ public class Enemy : MonoBehaviour
             //thrust = 10e3f;
             thrust = control.GetPlayerScript().THRUST;
             torque = 30e3f; //25e3f; //18e3f; //16e3f; //12e3f;
-            inaccuracy = 0.1f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
+            inaccuracy = 0.05f; //0.1f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             //weaponReloadPeriod = 1f; //Time in seconds between bursts
             //weaponReloadPeriod = control.GetPlayerScript().playerWeaponLaser.CLIP_COOLDOWN_DURATION; //Time in seconds between bursts
@@ -537,7 +533,7 @@ public class Enemy : MonoBehaviour
             thrust = control.GetPlayerScript().THRUST;
             torque = 33e3f;
 
-            inaccuracy = 0.07f; //0.0f;
+            inaccuracy = 0.035f; //0.07f; //0.0f;
 
             weaponReloadPeriod = 1f;
             weaponFirePeriod = 0.007f;
@@ -626,7 +622,7 @@ public class Enemy : MonoBehaviour
                 for (int i = 0; i < Random.Range(oreDropMin, oreDropMax + 1); i++)
                 {
                     control.generation.OrePoolSpawnWithTraits(
-                        transform.position + (ORE_POSITION_OFFSET_RANDOM_MAGNITUDE * new Vector3(Random.value, Random.value, Random.value)),
+                        transform.position + (ORE_POSITION_OFFSET_RANDOM_MAGNITUDE * control.GetRandomDirection()),
                         rb,
                         oreDropType
                     );

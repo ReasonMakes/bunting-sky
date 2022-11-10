@@ -1048,12 +1048,7 @@ public class Generation : MonoBehaviour
             //float torqueMagnitude = Random.Range(0f, torqueMagnitudeRangeMax) * ((0.5f * Mathf.Sin(((control.TAU / 2f) * Random.value) - (control.TAU / 4f))) + 0.5f); //biased toward middle of range
             //float torqueMagnitude = Mathf.Pow(30f, 2f) * Mathf.Sqrt(Random.value);
             float torqueMagnitude = Mathf.Pow(Random.value, 1f / 4f) * (150f * instanceAsteroid.GetComponent<Asteroid>().rb.mass); //120f; //60f;
-            Vector3 torqueDirection = new Vector3(
-                Random.value,
-                Random.value,
-                Random.value
-            ).normalized;
-            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(torqueMagnitude * torqueDirection);
+            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(torqueMagnitude * control.GetRandomDirection());
 
             //Remember movement
             Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
@@ -1230,7 +1225,7 @@ public class Generation : MonoBehaviour
 
         //Pool spawning
         GameObject instanceOre = control.generation.OrePoolSpawn(
-            position + (0.8f * new Vector3(Random.value, Random.value, Random.value)),
+            position + (0.8f * control.GetRandomDirection()),
             typeToSpawn,
             rbInherit.velocity
         );
@@ -1244,15 +1239,11 @@ public class Generation : MonoBehaviour
 
         //Add random forces
         float ejectionForce = 2e3f;
-        instanceOreRb.AddForce(ejectionForce * new Vector3(
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value),
-            0.5f + (0.5f * Random.value)
-        ));
+        instanceOreRb.AddForce(ejectionForce * control.GetRandomDirection());
         instanceOreRb.AddTorque(
             Random.Range(0f, 7000f) //Random.Range(3000f, 7000f) //5000f
-            * new Vector3(Random.value, Random.value, Random.value
-        ));
+            * control.GetRandomDirection()
+        );
     }
 
     private void EnemySpawnCluster(ClusterType clusterType, Vector3 position, string list)

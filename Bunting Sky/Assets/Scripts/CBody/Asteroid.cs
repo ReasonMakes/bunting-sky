@@ -163,7 +163,7 @@ public class Asteroid : MonoBehaviour
                             //Ensure we have a direction, even if spawning exactly inside each other by chance
                             if (repelDir == Vector3.zero)
                             {
-                                repelDir = new Vector3(Random.value, Random.value, Random.value);
+                                repelDir = control.GetRandomDirection();
                             }
 
                             //Repel
@@ -527,7 +527,7 @@ public class Asteroid : MonoBehaviour
         {
             //Offset spawned asteroids randomly
             float offsetMagnitude = 1.5f; //3f; //4f //1.2f
-            Vector3 position = transform.position + (offsetMagnitude * new Vector3(Random.value, Random.value, Random.value));
+            Vector3 position = transform.position + (offsetMagnitude * control.GetRandomDirection());
 
             //Spawn the new asteroid(s) from pool
             GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
@@ -552,7 +552,7 @@ public class Asteroid : MonoBehaviour
         {
             //Offset spawned asteroids randomly
             float offsetMagnitude = 0.2f; //4f //1.2f
-            Vector3 position = transform.position + (offsetMagnitude * new Vector3(Random.value, Random.value, Random.value));
+            Vector3 position = transform.position + (offsetMagnitude * control.GetRandomDirection());
 
             //Spawn the new asteroid(s) from pool
             GameObject instanceAsteroid = control.generation.AsteroidPoolSpawn(
@@ -584,11 +584,7 @@ public class Asteroid : MonoBehaviour
             iaRb.AddForce(magnitude * direction);
 
             //Add torque
-            rb.AddTorque(100f * new Vector3(
-                Random.value,
-                Random.value,
-                Random.value
-            ));
+            rb.AddTorque(100f * control.GetRandomDirection());
         }
     }
 
@@ -661,38 +657,20 @@ public class Asteroid : MonoBehaviour
         {
             //Chance for very fast asteroid
             float magnitude = Random.Range(2e3f, 3e3f);
-            Vector3 direction = new Vector3(
-                0.5f + (0.5f * Random.value),
-                0.5f + (0.5f * Random.value),
-                0.5f + (0.5f * Random.value)
-            ).normalized;
-            rb.AddForce(direction * magnitude);
+            rb.AddForce(magnitude * control.GetRandomDirection());
         }
         else if (roll <= rollMedium)
         {
             //Chance for very fast asteroid
             float magnitude = Random.Range(200f, 300f);
-            Vector3 direction = new Vector3(
-                0.5f + (0.5f * Random.value),
-                0.5f + (0.5f * Random.value),
-                0.5f + (0.5f * Random.value)
-            ).normalized;
-            rb.AddForce(direction * magnitude);
+            rb.AddForce(magnitude * control.GetRandomDirection());
         }
         else
         {
             //Regular force
-            rb.AddForce(25f * new Vector3(
-                0.5f + (0.5f * Random.value),
-                0.5f + (0.5f * Random.value),
-                0.5f + (0.5f * Random.value)
-            ));
+            rb.AddForce(25f * control.GetRandomDirection());
         }
         
-        rb.AddTorque(100f * new Vector3(
-            Random.value,
-            Random.value,
-            Random.value
-        ));
+        rb.AddTorque(100f * control.GetRandomDirection());
     }
 }

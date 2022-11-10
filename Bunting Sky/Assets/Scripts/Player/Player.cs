@@ -382,8 +382,8 @@ public class Player : MonoBehaviour
         soundSourceOreCollected.clip = soundClipOreCollected;
 
         //AUDIO
-        //Play the first song 0 to 30 seconds after startup
-        musicPlayTime = Time.time + UnityEngine.Random.Range(0f, musicPlayTime);
+        //Play the first song shortly after startup
+        musicPlayTime = Time.time + 5f + UnityEngine.Random.Range(0f, musicPlayTime);
 
         //Init sounds (this is unnecessary)
         soundSourceRocket.clip = soundClipRocket;
