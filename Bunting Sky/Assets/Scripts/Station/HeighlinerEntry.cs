@@ -82,7 +82,7 @@ public class HeighlinerEntry : MonoBehaviour
                 1f,                //height
                 distanceToExitNode //length
             );
-            mapLineModel.transform.localScale /= 40f;
+            mapLineModel.transform.localScale /= (10f * control.GetVectorAverageComponents(transform.parent.localScale)); //the plane mesh is 10 units, so we factor that in too
             
             //Offset position to be in between the two objects
             mapLineModel.transform.position = (transform.position + exitNode.transform.position)/2f;

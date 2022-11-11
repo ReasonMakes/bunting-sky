@@ -69,7 +69,7 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
     //Thrust
     private Vector3 thrustVector;
-    [System.NonSerialized] public readonly float THRUST = 13e3f; //10e3f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
+    [System.NonSerialized] public readonly float THRUST = 13e3f * 0.6666666666666666666f; //13e3f; //10e3f; //12000f; //16e3f; //4e4f; //4e3f; //3e3f; //8416.65825f;
     private float thrustEngineWarmupMultiplier = 1f;
     private float thrustEngineWarmupMultiplierMax;
     private readonly float THRUST_REDUCTION_TO_COMPENSATE_NO_DRAG_MULTIPLIER = 0.1f; //How much thrust you have with matchVelocity setting turned off as compared to normal
@@ -111,7 +111,7 @@ public class Player : MonoBehaviour
     private Transform closestMoonOrMoonChildTransform;
     private float distToClosestAsteroid = 100f;
     private Transform closestAsteroidTransformToDragRelativeTo;
-    private readonly float DRAG = 3f; //Drag amount for all drag modes
+    private readonly float DRAG = 2f; //3f; //Drag amount for all drag modes
 
     //Movement: heighliner teleports
     [System.NonSerialized] public bool recentTeleport = false;
@@ -130,8 +130,8 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public int nEnemiesAggrod = 0;
     [System.NonSerialized] public readonly float COMBAT_PERIOD_THRESHOLD_TIMEOUT = 5f; //How much time in seconds the player can be out of combat before the combat flag times out, ending combat music, etc.
     private float musicPlayTime = 30f; //max time until first song plays
-    private readonly float MUSIC_PLAY_QUEUE_TIME = 60f;
-    private readonly float MUSIC_PLAY_QUEUE_VARIANCE_TIME = 60f;
+    private readonly float MUSIC_PLAY_QUEUE_TIME = 30f; //time in seconds AFTER the previous song finishes playing before the next song plays
+    private readonly float MUSIC_PLAY_QUEUE_VARIANCE_TIME = 90f; //random variance in time between songs
     [System.NonSerialized] public readonly float SOUND_MUSIC_VOLUME = 0.04f;
     private bool firstSong = true;
 
@@ -142,7 +142,7 @@ public class Player : MonoBehaviour
     private readonly float SOUND_ROCKET_VOLUME_DELTA_RATE = 0.2f; //0.1f;
     private readonly float SOUND_ROCKET_PITCH_MAX = 1.5f;
     private readonly float SOUND_ROCKET_PITCH_DELTA_RATE = 0.2f;
-    private readonly float SOUND_IMPACT_VOLUME_SIGNIFICANT = 0.067f;
+    [System.NonSerialized] public readonly float SOUND_IMPACT_VOLUME_SIGNIFICANT = 0.067f;
     private readonly float SOUND_IMPACT_VOLUME_INSIGNIFICANT = 0.027f;
     [System.NonSerialized] public readonly float SOUND_LASER_FIRE_VOLUME = 0.017f;
     [System.NonSerialized] public readonly float SOUND_LASER_RELOAD_VOLUME = 0.075f; //0.06f; //0.03f; //0.0175f; //0.02f;
@@ -313,7 +313,7 @@ public class Player : MonoBehaviour
     [System.NonSerialized] public readonly int SKYBOX_STARS_COUNT = 400;
 
     //Debug
-    private Enemy.Strength enemyStengthToSpawn = Enemy.Strength.minor;
+    private Enemy.Strength enemyStengthToSpawn = Enemy.Strength.major;
     #endregion
 
     #region Start
@@ -568,20 +568,20 @@ public class Player : MonoBehaviour
         //}
 
         //Cheats enabled only while in editor
-        if (control.IS_EDITOR)
+        if (control.IS_EDITOR || true)
         {
-            //Teleport forward
-            if (binds.GetInputDown(binds.bindCheat1))
-            {
-                transform.position += transform.forward * 150f;
-            }
+            ////Teleport forward
+            //if (binds.GetInputDown(binds.bindCheat1))
+            //{
+            //    transform.position += transform.forward * 150f;
+            //}
 
-            //Eclipse vision upgrade
-            if (binds.GetInputDown(binds.bindCheat2))
-            {
-                upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
-                UpdateUpgrades();
-            }
+            ////Eclipse vision upgrade
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
+            //    UpdateUpgrades();
+            //}
 
             ////Invulnerable
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -590,26 +590,27 @@ public class Player : MonoBehaviour
             //    healthInfiniteCheat = true;
             //}
 
-            ////Spawn bandit
+            //Spawn bandit
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                //Spawn next enemy in order of difficulty
+                control.generation.EnemySpawn(transform.position + (transform.forward * 30f), enemyStengthToSpawn);
+                enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Control.GetEnumLength(typeof(Enemy.Strength)));
+            }
+
+            ////Unlock max cargo space
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
-            //    //Invulnerable
-            //    //healthInfiniteCheat = true;
-            //
             //    //Max cargo space
             //    upgradeLevels[control.commerce.UPGRADE_CARGO_SPACE] = int.Parse(control.commerce.upgradeDictionary[control.commerce.UPGRADE_CARGO_SPACE, control.commerce.UPGRADE_MAX_LEVEL]);
-            //
-            //    //Spawn next enemy in order of difficulty
-            //    control.generation.EnemySpawn(transform.position + (transform.forward * 20f), enemyStengthToSpawn);
-            //    enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Control.GetEnumLength(typeof(Enemy.Strength)));
             //}
 
-            ////Unlock seismic charges
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
-            //    weaponSlot1 = weaponSeismicCharges;
-            //}
+            //Unlock seismic charges
+            if (binds.GetInputDown(binds.bindCheat2))
+            {
+                upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] = 1;
+                weaponSlot1 = weaponSeismicCharges;
+            }
 
             //if (binds.GetInputDown(binds.bindCheat2))
             //{
@@ -1317,8 +1318,12 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 7)
             {
                 control.ui.SetTip(
-                    "Different asteroid types may be found around other celestial bodies, but beware:\nbandits may be looking to steal your cargo, your ship, and your life\nGood luck, pilot",
-                    TUTORIAL_TIP_DURATION + 3f
+                    //"Different asteroid types may be found around other celestial bodies, but beware:\nbandits may be looking to steal your cargo, your ship, and your life\nGood luck, pilot",
+                    "Explore the system to discover more valuable asteroids"
+                    + "\nVisit new stations for varying ore prices and upgrade offers"
+                    + "\nBut beware: bandits may be looking to steal your cargo and your life!"
+                    + "\nGood luck, pilot",
+                    TUTORIAL_TIP_DURATION * 3f
                 );
                 IncrementTutorial();
             }
@@ -1346,7 +1351,7 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 9)
             {
                 control.ui.SetTip(
-                    "Third-person can be useful in combinationg with free-look " + binds.GetBindAsPrettyString(binds.bindCameraFreeLook, true) + "\nThis allows you to see beside & behind your ship while travelling through the void\nBut first-person is best for mining and for combat",
+                    "Third-person can be useful in combination with free-look " + binds.GetBindAsPrettyString(binds.bindCameraFreeLook, true) + "\nThis allows you to see beside & behind your ship while travelling through the void\nBut first-person is best for mining and for combat",
                     TUTORIAL_TIP_DURATION
                 );
 
@@ -1380,7 +1385,7 @@ public class Player : MonoBehaviour
                     }
                     else
                     {
-                        targetString = "You can use the map to set targets just as you would outside of it, with " + binds.GetBindAsPrettyString(binds.bindSetTarget, true);
+                        targetString = "You can use the map to set targets too. Hover over a celestial body and press " + binds.GetBindAsPrettyString(binds.bindSetTarget, true);
                     }
 
                     string zoomInString;
@@ -2589,30 +2594,25 @@ public class Player : MonoBehaviour
     private void PlayMusic()
     {
         //Select the track
-        if (firstSong)
+        if (firstSong && control.settings.tutorial)
         {
-            float songToPlay = UnityEngine.Random.value;
-            if (songToPlay >= 0f && songToPlay < 0.5f)
-            {
-                music.clip = songDrifting;
-            }
-            else
-            {
-                music.clip = songLifeSupportFailure;
-            }
-
+            //Only force the first song to be manually curated if the tutorial is enabled
+            music.clip = songHoghmanTransfer;
             firstSong = false;
         }
         else
         {
-            if (music.clip == songLifeSupportFailure)
+            //Play a random song, but avoid the same song twice
+            AudioClip nextSong = music.clip;
+            for(int i = 0; i < 100; i++)
             {
-                music.clip = songDrifting;
+                nextSong = GetNextSong();
+                if (nextSong != music.clip)
+                {
+                    break;
+                }
             }
-            else
-            {
-                music.clip = songLifeSupportFailure;
-            }
+            music.clip = nextSong;
         }
 
         //Play the track
@@ -2624,6 +2624,27 @@ public class Player : MonoBehaviour
         
         //Queue another song for after the current one finishes
         musicPlayTime = Time.time + music.clip.length + UnityEngine.Random.Range(MUSIC_PLAY_QUEUE_TIME, MUSIC_PLAY_QUEUE_TIME + MUSIC_PLAY_QUEUE_VARIANCE_TIME);
+    }
+
+    private AudioClip GetNextSong()
+    {
+        float roll = UnityEngine.Random.value;
+        if (roll >= 0.7f)
+        {
+            return songDrifting;
+        }
+        else if (roll >= 0.4f)
+        {
+            return songHoghmanTransfer;
+        }
+        else if (roll >= 0.1f)
+        {
+            return songLifeSupportFailure;
+        }
+        else
+        {
+            return songWeWereHere;
+        }
     }
 
     private void AdjustRocketSound()
@@ -2798,7 +2819,7 @@ public class Player : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         //COLLISION PROPERTIES
-        //Was it a weapon?
+        //Was it a weapon? Although bandit interactions are normally handled by the projectile class, sometimes a collision occurs first (is this actually true?)
         bool isBanditLaser = (collision.collider.name == control.generation.enemy.GetComponent<EnemyWeaponLaser>().enemyWeaponProjectileLaserPrefab.GetComponentInChildren<MeshCollider>().name);
 
         //Collision speed
@@ -2917,8 +2938,9 @@ public class Player : MonoBehaviour
                 EmitParticles(1, directionDamageCameFrom, false);
             }
 
-            if (vitalsHealth <= 0f)
+            if (vitalsHealth <= 0d)
             {
+                vitalsHealth = 0d;
                 //Kill
                 DestroyPlayer();
             }

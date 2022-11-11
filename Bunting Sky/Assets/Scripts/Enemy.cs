@@ -403,7 +403,8 @@ public class Enemy : MonoBehaviour
                 }
 
                 //Fire
-                GetComponent<EnemyWeaponLaser>().Fire(gimbalDirection);
+                bool isTracer = (weaponBurstIndex % tracerInterval == 0);
+                GetComponent<EnemyWeaponLaser>().Fire(gimbalDirection, isTracer);
 
                 if (weaponBurstIndex <= 1)
                 {
@@ -469,7 +470,7 @@ public class Enemy : MonoBehaviour
         {
             health = 6; //3;
             thrust = 2500f; //4e3f;
-            torque = 600f;
+            torque = 600f; //60f; //600f;
             inaccuracy = 0.25f; //0.5f; //1f; //2f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 2f; //Time in seconds between bursts
@@ -487,7 +488,7 @@ public class Enemy : MonoBehaviour
         {
             health = 12; //6;
             thrust = 8e3f;
-            torque = 16e3f; //10e3f;
+            torque = 10e3f; //3000f; //200f; //16e3f; //10e3f;
             inaccuracy = 0.05f; //0.1f; //0.25f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             weaponReloadPeriod = 2f; //Time in seconds between bursts
@@ -495,7 +496,7 @@ public class Enemy : MonoBehaviour
             weaponMagSize = 12; //Total shots per burst
 
             distanceThresholdLessThanToStrafe = 30f;
-            tracerInterval = 3;
+            tracerInterval = 2;
 
             oreDropMin = 20;
             oreDropMax = 30;
@@ -506,12 +507,12 @@ public class Enemy : MonoBehaviour
             health = 8; //need less HP than majors because they are much harder to hit due to speed AND due to having to dodge their shots //10hp is player default; 20hp is player max health after upgrading hull strength
             //thrust = 10e3f;
             thrust = control.GetPlayerScript().THRUST;
-            torque = 30e3f; //25e3f; //18e3f; //16e3f; //12e3f;
+            torque = 20e3f; //500f; //30e3f; //25e3f; //18e3f; //16e3f; //12e3f;
             inaccuracy = 0.05f; //0.1f; //"inaccuracy" (some randomness actually helps to account for destination change during projectile travel time)
 
             //weaponReloadPeriod = 1f; //Time in seconds between bursts
             //weaponReloadPeriod = control.GetPlayerScript().playerWeaponLaser.CLIP_COOLDOWN_DURATION; //Time in seconds between bursts
-            weaponReloadPeriod = 1f; //0.7f; //Time in seconds between bursts
+            weaponReloadPeriod = 1.2f; //1f; //0.7f; //Time in seconds between bursts
             //weaponInternalBurstCooldown = 0.03f; //0.05f //Time in seconds between shots within the burst
             //weaponInternalBurstCooldown = 1f - Mathf.Max(1f, 2f * control.GetPlayerScript().upgradeLevels[control.commerce.UPGRADE_FIRERATE]);
             weaponFirePeriod = 0.01f;
@@ -531,11 +532,11 @@ public class Enemy : MonoBehaviour
 
             distanceThresholdLessThanToStrafe = 1f;
             thrust = control.GetPlayerScript().THRUST;
-            torque = 33e3f;
+            torque = 20e3f; //500f; //33e3f;
 
             inaccuracy = 0.035f; //0.07f; //0.0f;
 
-            weaponReloadPeriod = 1f;
+            weaponReloadPeriod = 1.2f; //1f;
             weaponFirePeriod = 0.007f;
             weaponMagSize = 4 * (control.GetPlayerScript().playerWeaponLaser.CLIP_SIZE_STARTER * int.Parse(control.commerce.upgradeDictionary[control.commerce.UPGRADE_DUAL_BATTERIES, control.commerce.UPGRADE_MAX_LEVEL]));
             tracerInterval = 5;
@@ -575,6 +576,9 @@ public class Enemy : MonoBehaviour
         modelGroup = (int)strength;
         model = transform.Find("Model").GetChild(modelGroup).gameObject;
         model.SetActive(true);
+        //Adjust torque to scale of model
+        //torque *= control.GetAverageOfVectorComponents(model.transform.localScale) * control.GetAverageOfVectorComponents(transform.Find("Model").localScale);
+        torque *= control.GetVectorAverageComponents(transform.Find("Model").localScale);
 
         //Mesh collider
         model.GetComponent<MeshCollider>().sharedMesh = model.transform.GetChild(0).GetComponent<MeshFilter>().mesh;

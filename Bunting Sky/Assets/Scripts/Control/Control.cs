@@ -411,6 +411,9 @@ public class Control : MonoBehaviour
         //    jerk /= p.accelerationPrevious.Length;
         //}
 
+        //TORQUE delay
+        //todo
+
         //DISPLACEMENT
         //displacement = velocity * deltaTime + (1/2)​(acceleration)(deltaTime^2)
         Vector3 targetDisplacementFromAcceleration = (deltaV * Time.deltaTime) + ((targetAcceleration * Mathf.Pow(Time.deltaTime, 2f)) / 2f);
@@ -474,9 +477,31 @@ public class Control : MonoBehaviour
         //Return a vector with cardinal directions each ranging from -1 to 1, normalized
 
         return new Vector3(
-            (UnityEngine.Random.value * 2f) - 1f,
-            (UnityEngine.Random.value * 2f) - 1f,
-            (UnityEngine.Random.value * 2f) - 1f
+            GetRandomNeg1ToPos1(),
+            GetRandomNeg1ToPos1(),
+            GetRandomNeg1ToPos1()
         ).normalized;
+    }
+
+    public float GetRandomNeg1ToPos1()
+    {
+        return (UnityEngine.Random.value * 2f) - 1f;
+    }
+
+    public float GetRandomPositiveOrNegative()
+    {
+        if (UnityEngine.Random.value >= 0.5f)
+        {
+            return 1f;
+        }
+        else
+        {
+            return -1f;
+        }
+    }
+
+    public float GetVectorAverageComponents(Vector3 vector)
+    {
+        return (vector.x + vector.y + vector.z) / 3f;
     }
 }

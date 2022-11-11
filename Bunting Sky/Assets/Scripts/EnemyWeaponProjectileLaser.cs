@@ -39,12 +39,12 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
             //Deactivate self after lifetime expires
             if (timeSpentAlive >= timeAtWhichThisSelfDestructs)
             {
-                DeactivateSelf();
+                SetDisabled();
             }
         }
     }
 
-    private void DeactivateSelf()
+    private void SetDisabled()
     {
         transform.Find("Emissive Model").gameObject.SetActive(false);
         transform.Find("Point Light").gameObject.SetActive(false);
@@ -80,7 +80,7 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Collision");
+        //Although interactions are normally handled by the raycast, collisions DO sometimes still occur
         TryInteract(collision.transform, transform.position);
     }
 
@@ -122,12 +122,21 @@ public class EnemyWeaponProjectileLaser : MonoBehaviour
                     direction,
                     true
                 );
+
+                //Shake camera
+                control.GetPlayerScript().CameraShakeAdd(new Vector2(control.GetPlayerScript().CAMERA_OFFSET_POSITION_MAGNITUDE_MAX, control.GetPlayerScript().CAMERA_OFFSET_ROTATION_MAGNITUDE_MAX));
+
+                //Play sound effect
+                control.GetPlayerScript().soundSourceCollision.volume = control.GetPlayerScript().SOUND_IMPACT_VOLUME_SIGNIFICANT * control.settings.volumeAll; //we need to adjust the volume here because we lower it when the impact is insignificant
+                control.GetPlayerScript().soundSourceCollision.pitch = UnityEngine.Random.Range(0.8f, 1.2f);
+                control.GetPlayerScript().soundSourceCollision.Play();
+
             }
         }
 
         //Can no longer deal damage
         //canDamage = false;
 
-        DeactivateSelf();
+        SetDisabled();
     }
 }

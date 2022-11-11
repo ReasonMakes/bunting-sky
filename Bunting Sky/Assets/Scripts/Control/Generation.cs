@@ -628,12 +628,13 @@ public class Generation : MonoBehaviour
                 }
 
                 //Bandits
-                float nPercentEnemies = 50f;
+                float nPercentEnemies = 85f; //50f;
                 if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
                 {
                     float roll = Random.value;
-                    if (roll >= 0.5f)
+                    if (roll >= 0.65f) //35% chance
                     {
+                        //Standard squad
                         EnemySpawnCluster(
                             ClusterType.planetClump,
                             position,
@@ -643,17 +644,10 @@ public class Generation : MonoBehaviour
                             + ((int)Enemy.Strength.minor).ToString()
                         );
                     }
-                    else if (roll >= 0.2f)
+                    
+                    else if (roll >= 0.4f) //25% chance
                     {
-                        EnemySpawnCluster(
-                            ClusterType.planetClump,
-                            position,
-                              ((int)Enemy.Strength.major).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                        );
-                    }
-                    else if (roll >= 0.1f)
-                    {
+                        //Elite squad
                         EnemySpawnCluster(
                             ClusterType.planetClump,
                             position,
@@ -663,14 +657,29 @@ public class Generation : MonoBehaviour
                             + ((int)Enemy.Strength.minor).ToString()
                         );
                     }
-                    else
+                    else if (roll >= 0.15f) //25% chance
                     {
+                        //Strike team
                         EnemySpawnCluster(
                             ClusterType.planetClump,
                             position,
                               ((int)Enemy.Strength.ultra).ToString()
                             + ((int)Enemy.Strength.elite).ToString()
                             + ((int)Enemy.Strength.elite).ToString()
+                        );
+                    }
+                    else //15% chance
+                    {
+                        //Hoard of minors
+                        EnemySpawnCluster(
+                            ClusterType.planetClump,
+                            position,
+                              ((int)Enemy.Strength.minor).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
+                            + ((int)Enemy.Strength.minor).ToString()
                         );
                     }
                 }
@@ -738,6 +747,9 @@ public class Generation : MonoBehaviour
         //Update outline
         //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_PLANET, instancePlanet.GetComponentInChildren<MeshRenderer>().material);
 
+        //Pass control ref
+        instancePlanet.GetComponent<Planet>().control = control;
+
         //Put in hierarchy
         instancePlanet.transform.parent = planets.transform;
 
@@ -760,8 +772,7 @@ public class Generation : MonoBehaviour
 
         //Set color/tint
         Color tint = control.GetColorFromHexString(COLOR_PALETTE[colorPaletteIndex, 0]);
-        instancePlanet.transform.Find("Model").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
-        instancePlanet.transform.Find("AtmosphereOutside").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
+        instancePlanet.GetComponent<Planet>().tint = tint;
 
         return instancePlanet;
     }
@@ -879,9 +890,6 @@ public class Generation : MonoBehaviour
 
         //Give control reference
         instanceMoon.GetComponent<Moon>().control = control;
-
-        //Spin
-        instanceMoon.GetComponent<Rigidbody>().AddTorque(Vector3.up * 6e5f * Random.Range(1f, 2f));
 
         //Update outline
         //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_MOON, instanceMoon.GetComponentInChildren<MeshRenderer>().material);
@@ -1146,7 +1154,7 @@ public class Generation : MonoBehaviour
                 //Randomly move up/down relative the stellar plane
                 instanceAsteroid.transform.position = new Vector3(
                     instanceAsteroid.transform.position.x,
-                    instanceAsteroid.transform.position.y + (Random.value * heightRandomness),
+                    instanceAsteroid.transform.position.y + (control.GetRandomNeg1ToPos1() * heightRandomness),
                     instanceAsteroid.transform.position.z
                 );
 
@@ -1264,7 +1272,7 @@ public class Generation : MonoBehaviour
             float angleFromPlanet = Random.value * 360f;
             Vector3 clusterCenterPosition = position + new Vector3(
                 Mathf.Cos(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet,
-                position.y,
+                10f, //we are ADDING to the position - the y has already been set
                 Mathf.Sin(Mathf.Deg2Rad * angleFromPlanet) * radiusFromPlanet
             );
 
@@ -1278,16 +1286,25 @@ public class Generation : MonoBehaviour
                     float angleFromCluster = Random.value * 360f;
                     Vector3 clusterOffsetPosition = clusterCenterPosition + new Vector3(
                         Mathf.Cos(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster,
-                        clusterCenterPosition.y + Random.Range(5f, 15f),
+                        clusterCenterPosition.y + (Random.Range(5f, 15f) * control.GetRandomPositiveOrNegative()),
                         Mathf.Sin(Mathf.Deg2Rad * angleFromCluster) * radiusFromCluster
                     );
 
                     clusterPosition = clusterOffsetPosition;
+
+                    //Spawn
+                    EnemySpawn(clusterPosition, (Enemy.Strength)control.GetIntFromStringIndex(list, i));
+
+                    //Debug.Log("Position " + position + ": " + list + ", list" + "[" + i + "] = " + control.GetIntFromStringIndex(list, i) + " = " + (Enemy.Strength)control.GetIntFromStringIndex(list, i));
                 }
             }
+            else
+            {
+                //Spawn - don't bother calculating offsets if there will only be one bandit spawned
+                EnemySpawn(clusterPosition, (Enemy.Strength)control.GetIntFromStringIndex(list, 0));
 
-            //Don't bother calculating offsets if there will only be one bandit spawned
-            EnemySpawn(clusterPosition, (Enemy.Strength)control.GetIntFromStringIndex(list, 0));
+                //Debug.Log("Position " + position + ": " + list + ", list" + "[" + 0 + "] = " + control.GetIntFromStringIndex(list, 0) + " = " + (Enemy.Strength)control.GetIntFromStringIndex(list, 0));
+            }
         }
     }
 

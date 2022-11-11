@@ -31,6 +31,10 @@ public class Moon : MonoBehaviour
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageEmitCount = 2500;
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageShapeRadius = 13f;
         GetComponent<ParticlesDamageRock>().partSysShurikenDamageSizeMultiplier = 5f;
+
+        //Spin
+        //rb.AddTorque(2000f * rb.mass * ((Random.value * 2f) - 1f) * Vector3.up);
+        rb.angularVelocity = 0.1f * ((Random.value * 2f) - 1f) * Vector3.up;
     }
 
     private void Update()

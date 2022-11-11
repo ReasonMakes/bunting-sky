@@ -13,7 +13,7 @@ public class PlayerWeaponSeismicCharge : MonoBehaviour
     private readonly short POOL_LENGTH = 16;
     private short poolIndex = 0;
 
-    [System.NonSerialized] public readonly float PROJECTILE_SPEED = 20f; //100f;
+    [System.NonSerialized] public readonly float PROJECTILE_SPEED = 12f; //20f; //100f;
     
     [System.NonSerialized] public short clipSize;
     [System.NonSerialized] public readonly short CLIP_SIZE_STARTER = 2;

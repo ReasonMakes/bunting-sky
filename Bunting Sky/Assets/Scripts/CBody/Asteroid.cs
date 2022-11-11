@@ -352,7 +352,8 @@ public class Asteroid : MonoBehaviour
         {
             //Update player tutorial bool
             if (
-                !control.GetPlayerScript().tutorialHasMinedAsteroid
+                control.settings.tutorial
+                && !control.GetPlayerScript().tutorialHasMinedAsteroid
                 && type == Type.claySilicate
                 && control.GetPlayerScript().upgradeLevels[control.commerce.UPGRADE_SEISMIC_CHARGES] <= 0 //hasn't unlocked seismic charges yet (as those deal splash damage, often to clay-silicates)
             )

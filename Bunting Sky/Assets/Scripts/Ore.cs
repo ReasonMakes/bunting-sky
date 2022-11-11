@@ -128,7 +128,10 @@ public class Ore : MonoBehaviour
                             //Tractor beam active
                             AttractToPlayerCargoBay(distanceBetweenOreAndPlayer);
                         }
-                        if (Time.time >= nextSlowUpdateCall && Time.time < stopRepellingTime)
+                        if (
+                            Time.time >= nextSlowUpdateCall
+                            //&& Time.time < stopRepellingTime
+                        )
                         {
                             RepelFromOtherOre();
                             nextSlowUpdateCall = Time.time + SLOW_UPDATE_PERIOD;

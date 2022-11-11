@@ -38,7 +38,7 @@ public class EnemyWeaponLaser : MonoBehaviour
         }
     }
 
-    public void Fire(Vector3 gimbalDirection)
+    public void Fire(Vector3 gimbalDirection, bool isTracer)
     {
         //Pooling
         POOL[poolIndex].SetActive(true);
@@ -57,6 +57,12 @@ public class EnemyWeaponLaser : MonoBehaviour
         POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().timeAtWhichThisSelfDestructs = projectileLifetimeDuration;
         POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().timeSpentAlive = 0f;
         POOL[poolIndex].GetComponent<EnemyWeaponProjectileLaser>().canDamage = true;
+
+        //Tracer (emission)
+        if (isTracer)
+        {
+            POOL[poolIndex].transform.Find("Emissive Model").gameObject.SetActive(true);
+        }
 
         //Iterate through list
         if (poolIndex < POOL_LENGTH - 1)

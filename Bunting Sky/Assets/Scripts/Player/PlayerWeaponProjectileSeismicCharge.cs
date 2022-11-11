@@ -12,16 +12,16 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
     [System.NonSerialized] public Vector3 startVelocity;
     private readonly float DRAG = 3f;
 
-    private readonly float TIME_FROM_START_SUCK = 2.31f; //3f;
+    private readonly float TIME_FROM_START_SUCK = 1.65f; //1.8f; //2.31f; //3f;
     private readonly float TIME_FROM_START_EXPLODE = 3.028f; //3f;
     [System.NonSerialized] public float timePoolSpawned;
-    private readonly float MIN_GLOW_DISTANCE = 1f;
+    //private readonly float MIN_GLOW_DISTANCE = 1000f; //5f; //1f;
 
     public GameObject explosion;
     private readonly float EXPLOSION_RADIUS = 30f;
-    private readonly float EXPLOSION_PUSH_STRENGTH = 5000f; //1f;
-    private readonly float EXPLOSION_SUCK_STRENGTH = 5000f; //1f;
-    private readonly float EXPLOSION_DURATION = 0.6f; //0.3f; //animation duration in seconds
+    private readonly float EXPLOSION_PUSH_STRENGTH = 10e3f; //5e3f; //1f;
+    private readonly float EXPLOSION_SUCK_STRENGTH = 10e3f; //5e3f; //1f;
+    private readonly float IMPLOSION_ANIMATION_DURATION = 0.05f; //0.25f; //time in seconds for the implosion animation
     [System.NonSerialized] public bool sucked = false;
     [System.NonSerialized] public bool exploded = false;
 
@@ -70,10 +70,25 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
             //Explosion animation
             if (sucked)
             {
-                float explosionModelRadius = 1.72142f; //from Blender
-                //explosion.transform.localScale += (Vector3.one * EXPLOSION_RADIUS * 2f * (1f / transform.localScale.magnitude) * Time.deltaTime) / EXPLOSION_DURATION;
-                //explosion.transform.localScale = Vector3.one * (EXPLOSION_RADIUS / explosionModelRadius);
-                explosion.transform.localScale += Vector3.one * ((EXPLOSION_RADIUS * Time.deltaTime) / (explosionModelRadius * EXPLOSION_DURATION));
+                float animationModelRadius = 1.72142f; //from Blender
+
+                float timeSinceSuckStarted = Time.time - (timePoolSpawned + TIME_FROM_START_SUCK);
+                float suckDuration = TIME_FROM_START_EXPLODE - TIME_FROM_START_SUCK;
+
+                if (timeSinceSuckStarted <= suckDuration)
+                {
+                    //Explosion animation
+                    float suckUnitInterval = timeSinceSuckStarted / suckDuration;
+                    explosion.transform.localScale = Vector3.one * (EXPLOSION_RADIUS * suckUnitInterval / animationModelRadius);
+                }
+                else
+                {
+                    //Implosion animation
+                    float timeSinceImplosionStarted = Time.time - (timePoolSpawned + TIME_FROM_START_EXPLODE);
+                    float implodeUnitInterval = timeSinceImplosionStarted / IMPLOSION_ANIMATION_DURATION;
+                    implodeUnitInterval = 1f - implodeUnitInterval;
+                    explosion.transform.localScale = Vector3.one * (EXPLOSION_RADIUS * implodeUnitInterval / animationModelRadius);
+                }
             }
         }
     }
@@ -92,9 +107,6 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
     {
         if (!sucked)
         {
-            //Turn off regular model excluding explosion shader
-            transform.Find("Visible").Find("Model").gameObject.SetActive(false);
-
             //Suck
             RaycastWeaponInteraction(false);
 
@@ -107,16 +119,22 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
     {
         if (!exploded)
         {
+            //Turn off emission model for next use
+            transform.Find("Visible").Find("Model").Find("Emissive Model").gameObject.SetActive(false);
+
+            //Turn off regular model excluding explosion shader
+            transform.Find("Visible").Find("Model").gameObject.SetActive(false);
+
             //Explode
-            DeactivateSelf();
-            //Invoke("DeactivateSelf", EXPLOSION_DURATION);
+            //SetDisabled();
+            Invoke("SetDisabled", IMPLOSION_ANIMATION_DURATION);
 
             //Only run once
             exploded = true;
         }
     }
 
-    private void DeactivateSelf() //invoked
+    private void SetDisabled() //invoked
     {
         /*
         GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
@@ -131,7 +149,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
         transform.Find("Visible").gameObject.SetActive(false);
     }
 
-    private void RaycastWeaponInteraction(bool explosion)
+    private void RaycastWeaponInteraction(bool dealDamage)
     {
         //Check for colliders in the area
         Collider[] collidersInRadius = Physics.OverlapSphere(transform.position, EXPLOSION_RADIUS);
@@ -155,7 +173,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                         //Direction and force magnitude
                         Vector3 directionFromEpicentreToHit = (hit.point - transform.position).normalized;
                         float forceMag = EXPLOSION_PUSH_STRENGTH;
-                        if (!explosion)
+                        if (!dealDamage)
                         {
                             //Suck
                             directionFromEpicentreToHit = -directionFromEpicentreToHit;
@@ -177,7 +195,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                                 asteroidScript.rb.AddForce(finalForceVector);
 
                                 //Damage
-                                if (explosion)
+                                if (dealDamage)
                                 {
                                     Vector3 directionHitFrom = (transform.position - hit.point).normalized;
                                     asteroidScript.Damage((byte)(1 + GetDamageAmount(hit.transform.position)), directionHitFrom, hit.point, true);
@@ -193,7 +211,7 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                             enemyScript.rb.AddForce(finalForceVector);
 
                             //Damage
-                            if (explosion)
+                            if (dealDamage)
                             {
                                 enemyScript.Damage((byte)GetDamageAmount(hit.transform.position), -directionFromEpicentreToHit, hit.point, true, true);
                             }
@@ -205,10 +223,12 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
                             control.GetPlayerScript().rb.AddForce(finalForceVector);
 
                             //Damage
-                            if (explosion)
+                            if (dealDamage)
                             {
+                                double amountToDamagePlayer = GetDamageAmount(control.GetPlayerTransform().position);
+
                                 control.GetPlayerScript().DamagePlayer(
-                                    control.GetPlayerScript().vitalsHealth - GetDamageAmount(control.GetPlayerTransform().position),
+                                    control.GetPlayerScript().vitalsHealth - amountToDamagePlayer,
                                     "seismic charge explosion",
                                     1.0f,
                                     (transform.position - control.GetPlayerTransform().position).normalized,
@@ -230,7 +250,9 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
         double splashFactor = (EXPLOSION_RADIUS - distanceToVictim) / EXPLOSION_RADIUS;
         double splashDamage = 5.0d * splashFactor;
 
-        return baseDamage + splashDamage;
+        double finalDamage = baseDamage + splashDamage;
+
+        return finalDamage;
     }
 
     private bool StringIsAnAsteroidModel(string name)
@@ -314,14 +336,16 @@ public class PlayerWeaponProjectileSeismicCharge : MonoBehaviour
 
     private void EmissionAndLuminosityOffToOn()
     {
-        bool notSucking = (Time.time < timePoolSpawned + TIME_FROM_START_SUCK);
-        bool farFromPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > MIN_GLOW_DISTANCE + (control.GetPlayerScript().GetComponent<Rigidbody>().velocity.magnitude / 25f);
+        bool aboutToSuck = (Time.time >= timePoolSpawned + (TIME_FROM_START_SUCK / 4f));
+        //bool farFromPlayer = Vector3.Distance(transform.position, control.GetPlayerTransform().position) > MIN_GLOW_DISTANCE + (control.GetPlayerScript().GetComponent<Rigidbody>().velocity.magnitude / 25f);
 
         //Debug.LogFormat("{0}, {1}", NotSelfDestructingYet, isFarEnoughAwayFromPlayer);
 
-        if (!transform.Find("Visible").gameObject.activeSelf)
+        GameObject emissiveModel = transform.Find("Visible").Find("Model").Find("Emissive Model").gameObject;
+        if (!emissiveModel.activeSelf)
         {
-            transform.Find("Visible").gameObject.SetActive(notSucking && farFromPlayer);
+            //emissiveModel.SetActive(aboutToSuck || farFromPlayer);
+            emissiveModel.SetActive(aboutToSuck);
         }
     }
 }

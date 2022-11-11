@@ -141,6 +141,18 @@ public class Menu : MonoBehaviour
             DisableAllSubMenus();
         }
 
+        //Update tip text
+        if (menuOpenAndGamePaused)
+        {
+            //Avoid being obstructed by the menu
+            control.ui.tipText.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector3(0f, 115f, 0f);
+        }
+        else
+        {
+            //Reset tip text position
+            control.GetPlayerScript().DecideWhichModelsToRender();
+        }
+
         //Toggle game pause
         Time.timeScale = System.Convert.ToByte(!menuOpenAndGamePaused);
 

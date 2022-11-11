@@ -468,16 +468,6 @@ public class UI : MonoBehaviour
         waypointTextType.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + waypointTextBody.fontSize + waypointTextTitle.fontSize + waypointTextType.fontSize);
         waypointTextTitle.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + waypointTextBody.fontSize + waypointTextTitle.fontSize);
         waypointTextBody.transform.position = new Vector2(waypointUIPos.x + WAYPOINT_X_OFFSET, waypointUIPos.y + WAYPOINT_Y_OFFSET + waypointTextBody.fontSize);
-
-        //Set as target too if LMB
-        if (binds.GetInputDown(binds.bindSetTarget))
-        {
-            //Target
-            SetPlayerTargetObject(hit.collider.transform.gameObject);
-
-            //Console
-            UpdateTargetConsole();
-        }
     }
 
     public void UpdateTargetConsole()
@@ -621,12 +611,28 @@ public class UI : MonoBehaviour
 
         if (control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject == null)
         {
+            //control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject = objectToTarget;
+
+            //if (!renderTarget)
+            //{
+            //    targetImage.gameObject.SetActive(true);
+            //    renderTarget = true;
+            //}
+
             control.generation.instancePlayer.GetComponentInChildren<Player>().targetObject = objectToTarget;
 
-            if (!renderTarget)
+            if (objectToTarget == null)
             {
-                targetImage.gameObject.SetActive(true);
-                renderTarget = true;
+                targetImage.gameObject.SetActive(false);
+                renderTarget = false;
+            }
+            else
+            {
+                if (!renderTarget)
+                {
+                    targetImage.gameObject.SetActive(true);
+                    renderTarget = true;
+                }
             }
         }
         else
@@ -695,12 +701,16 @@ public class UI : MonoBehaviour
             waypointRaycastDirection = Camera.main.transform.forward;
         }
 
+        //Raycast for waypoint AND target
+        RaycastHit rayHit = new RaycastHit();
         if (Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, maxDist))
         {
             RaycastHit hit = new RaycastHit();
             Physics.Raycast(waypointRaycastOrigin, waypointRaycastDirection, out hit, maxDist);
             //Debug.DrawRay(waypointRaycastOrigin, waypointRaycastDirection * hit.distance, Color.green, Time.deltaTime, false);
+            rayHit = hit; //to use with target later
 
+            //Waypoint
             if (hit.collider.gameObject.name == control.generation.star.name + "(Clone)")
             {
                 //Waypoint
@@ -880,20 +890,29 @@ public class UI : MonoBehaviour
             consoleTargetInfoText.text = "\n";
         }
 
-        //Don't render when in first-person
-        //if (!control.GetPlayerScript().isDestroyed && Player.firstPerson)
-        //{
-        //    renderWaypoint = false;
-        //    waypointImage.gameObject.SetActive(true);
-        //}
-        //else
-        //{
-        //    waypointImage.gameObject.SetActive(renderWaypoint);
-        //}
         waypointImage.gameObject.SetActive(renderWaypoint);
         waypointTextType.gameObject.SetActive(renderWaypoint);
         waypointTextTitle.gameObject.SetActive(renderWaypoint);
         waypointTextBody.gameObject.SetActive(renderWaypoint);
+
+        //Target
+        if (binds.GetInputDown(binds.bindSetTarget))
+        {
+            //Target
+            if (rayHit.collider == null)
+            {
+                SetPlayerTargetObject(null);
+            }
+            else
+            {
+                SetPlayerTargetObject(rayHit.collider.gameObject);
+            }
+
+            if (renderTarget)
+            {
+                UpdateTargetConsole();
+            }
+        }
 
         //Target
         if (renderTarget)
