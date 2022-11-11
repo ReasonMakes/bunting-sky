@@ -43,12 +43,19 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public bool updatePlayerResourcesUIAnimations = true;
     [System.NonSerialized] public Image resourcesImageCurrency;
     [System.NonSerialized] public Image resourcesImagePlatinoid;
-    [System.NonSerialized] public Image resourcesImagePreciousMetal;
+    [System.NonSerialized] public Image resourcesImagePreciousMetals;
     [System.NonSerialized] public Image resourcesImageWater;
     [System.NonSerialized] public TextMeshProUGUI resourcesTextCurrency;
     [System.NonSerialized] public TextMeshProUGUI resourcesTextPlatinoid;
-    [System.NonSerialized] public TextMeshProUGUI resourcesTextPreciousMetal;
+    [System.NonSerialized] public TextMeshProUGUI resourcesTextPreciousMetals;
     [System.NonSerialized] public TextMeshProUGUI resourcesTextWater;
+    [System.NonSerialized] public TextMeshProUGUI resourcesTextTotalOre;
+    [System.NonSerialized] public Image resourcesFillPlatinoid;
+    [System.NonSerialized] public Image resourcesFillPreciousMetals;
+    [System.NonSerialized] public Image resourcesFillWater;
+    [System.NonSerialized] public Transform resourcesWater;
+    [System.NonSerialized] public Transform resourcesPlatinoid;
+    [System.NonSerialized] public Transform resourcesPreciousMetals;
 
     //Player weapons
     [System.NonSerialized] public Image weaponCooldown;
@@ -107,13 +114,24 @@ public class UI : MonoBehaviour
 
         Transform resourcesFolder = canvas.transform.Find("HUD Top-Left").Find("Resources");
         resourcesImageCurrency = resourcesFolder.Find("Currency").GetComponent<Image>();
-        resourcesImagePlatinoid = resourcesFolder.Find("Platinoid").GetComponent<Image>();
-        resourcesImagePreciousMetal = resourcesFolder.Find("Precious Metals").GetComponent<Image>();
-        resourcesImageWater = resourcesFolder.Find("Water").GetComponent<Image>();
         resourcesTextCurrency = resourcesFolder.Find("Currency Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextPlatinoid = resourcesFolder.Find("Platinoid Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextPreciousMetal = resourcesFolder.Find("Precious Metals Text").GetComponent<TextMeshProUGUI>();
-        resourcesTextWater = resourcesFolder.Find("Water Text").GetComponent<TextMeshProUGUI>();
+
+        resourcesWater =        resourcesFolder.Find("Total Ore").Find("Water");
+        resourcesFillWater =    resourcesWater.Find("Fill").GetComponent<Image>();
+        resourcesImageWater =   resourcesWater.Find("Icon").GetComponent<Image>();
+        resourcesTextWater =    resourcesWater.Find("Text").GetComponent<TextMeshProUGUI>();
+
+        resourcesPlatinoid =        resourcesFolder.Find("Total Ore").Find("Platinoid");
+        resourcesFillPlatinoid =    resourcesPlatinoid.Find("Fill").GetComponent<Image>();
+        resourcesImagePlatinoid =   resourcesPlatinoid.Find("Icon").GetComponent<Image>();
+        resourcesTextPlatinoid =    resourcesPlatinoid.Find("Text").GetComponent<TextMeshProUGUI>();
+
+        resourcesPreciousMetals =       resourcesFolder.Find("Total Ore").Find("Precious Metals");
+        resourcesFillPreciousMetals =   resourcesPreciousMetals.Find("Fill").GetComponent<Image>();
+        resourcesImagePreciousMetals =  resourcesPreciousMetals.Find("Icon").GetComponent<Image>();
+        resourcesTextPreciousMetals =   resourcesPreciousMetals.Find("Text").GetComponent<TextMeshProUGUI>();
+
+        resourcesTextTotalOre =   resourcesFolder.Find("Total Ore Text").GetComponent<TextMeshProUGUI>();
 
         Transform weaponsFolder = canvas.transform.Find("HUD Bottom-Right").Find("Weapons");
         weaponCooldown = weaponsFolder.Find("Cooldown").GetComponent<Image>();
@@ -1054,10 +1072,52 @@ public class UI : MonoBehaviour
         Player playerScript = control.GetPlayerScript();
 
         //Update values and start animations on a resource if its value changed
-        UpdatePlayerResourceUI(ref resourcesTextCurrency,       ref resourcesImageCurrency,         playerScript.currency.ToString("F0") + " ICC",                                                      playerScript.soundSourceCurrencyChange);
-        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,      ref resourcesImagePlatinoid,        playerScript.ore[(int)Asteroid.Type.platinoid].ToString("F0") + " kg / " + playerScript.oreMax,          playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextPreciousMetal,  ref resourcesImagePreciousMetal,    playerScript.ore[(int)Asteroid.Type.preciousMetal].ToString("F0") + " kg / " + playerScript.oreMax,     playerScript.soundSourceOreCollected);
-        UpdatePlayerResourceUI(ref resourcesTextWater,          ref resourcesImageWater,            playerScript.ore[(int)Asteroid.Type.water].ToString("F0") + " kg / " + playerScript.oreMax,              playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextCurrency,           ref resourcesImageCurrency,         playerScript.currency,                                  playerScript.soundSourceCurrencyChange);
+        UpdatePlayerResourceUI(ref resourcesTextPlatinoid,          ref resourcesImagePlatinoid,        playerScript.ore[(int)Asteroid.Type.platinoid],         playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextPreciousMetals,     ref resourcesImagePreciousMetals,   playerScript.ore[(int)Asteroid.Type.preciousMetal],     playerScript.soundSourceOreCollected);
+        UpdatePlayerResourceUI(ref resourcesTextWater,              ref resourcesImageWater,            playerScript.ore[(int)Asteroid.Type.water],             playerScript.soundSourceOreCollected);
+
+        //Fills within mixed fill bar
+        resourcesFillWater.GetComponent<Image>().fillAmount = (float)(playerScript.ore[(int)Asteroid.Type.water] / control.GetPlayerScript().oreMax);
+        resourcesFillPlatinoid.GetComponent<Image>().fillAmount = (float)(playerScript.ore[(int)Asteroid.Type.platinoid] / control.GetPlayerScript().oreMax);
+        resourcesFillPreciousMetals.GetComponent<Image>().fillAmount = (float)(playerScript.ore[(int)Asteroid.Type.preciousMetal] / control.GetPlayerScript().oreMax);
+
+        //Positions within mixed fill bar
+        resourcesPlatinoid.GetComponent<RectTransform>().anchoredPosition =         new Vector3(384f * resourcesFillWater.GetComponent<Image>().fillAmount, 0f, 0f);
+        resourcesPreciousMetals.GetComponent<RectTransform>().anchoredPosition =    new Vector3((384f * resourcesFillPlatinoid.GetComponent<Image>().fillAmount) + resourcesPlatinoid.GetComponent<RectTransform>().anchoredPosition.x, 0f, 0f);
+
+        //Total ore text
+        resourcesTextTotalOre.text = control.GetPlayerScript().GetTotalOre() + " kg / " + playerScript.oreMax + " kg";
+
+        //Text colours
+        //Currency
+        float resourceValueRelative = (float)control.GetPlayerScript().currency / Mathf.Max(control.commerce.PRICE_REFUEL, control.commerce.PRICE_REPAIR);
+        if (resourceValueRelative >= 3f)
+        {
+            resourcesTextCurrency.color = COLOR_UI_TRANSLUCENT_WHITE;
+        }
+        else if (resourceValueRelative >= 1f)
+        {
+            resourcesTextCurrency.color = COLOR_UI_TRANSLUCENT_AMBER;
+        }
+        else
+        {
+            resourcesTextCurrency.color = COLOR_UI_TRANSLUCENT_RED;
+        }
+        //Max ore
+        resourceValueRelative = (float)(control.GetPlayerScript().GetTotalOre() / control.GetPlayerScript().oreMax);
+        if (resourceValueRelative <= 0.5f)
+        {
+            resourcesTextTotalOre.color = COLOR_UI_TRANSLUCENT_WHITE;
+        }
+        else if (resourceValueRelative <= 0.75f)
+        {
+            resourcesTextTotalOre.color = COLOR_UI_TRANSLUCENT_AMBER;
+        }
+        else
+        {
+            resourcesTextTotalOre.color = COLOR_UI_TRANSLUCENT_RED;
+        }
 
         //Update console
         UpdatePlayerConsole();
@@ -1066,59 +1126,43 @@ public class UI : MonoBehaviour
         UpdateAllPlayerResourcesUIAnimations();
     }
 
-    private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, string textNew, AudioSource clip)
+    private void UpdatePlayerResourceUI(ref TextMeshProUGUI textMeshCurrent, ref Image image, double amount, AudioSource clip)
     {
-        float growAmount = 3f;
-
-        if (textMeshCurrent.text != textNew)
+        if (amount > 0d || image == resourcesImageCurrency)
         {
-            //Play sound
-            clip.Play();
+            image.gameObject.SetActive(true);
+            textMeshCurrent.gameObject.SetActive(true);
 
-            //Update text
-            textMeshCurrent.text = textNew;
-
-            //Start animation (grow)
-            image.rectTransform.sizeDelta = new Vector2(
-                (image.sprite.rect.width / 2) * growAmount,
-                (image.sprite.rect.height / 2) * growAmount
-            );
-        }
-
-        //Update colour relative to limit
-        //Currency
-        if (textMeshCurrent == resourcesTextCurrency)
-        {
-            float resourceValueUnitInterval = (float)control.GetPlayerScript().currency / Mathf.Max(control.commerce.PRICE_REFUEL, control.commerce.PRICE_REPAIR);
-            if (resourceValueUnitInterval >= 3f)
+            string textNew;
+            if (image == resourcesImageCurrency)
             {
-                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_WHITE;
-            }
-            else if (resourceValueUnitInterval >= 1f)
-            {
-                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_AMBER;
+                textNew = amount.ToString("F0") + " ICC";
             }
             else
             {
-                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_RED;
+                textNew = amount.ToString("F0") + " kg";
+            }
+
+            if (textMeshCurrent.text != textNew)
+            {
+                //Play sound
+                clip.Play();
+
+                //Update text
+                textMeshCurrent.text = textNew;
+
+                //Start animation (grow)
+                float growAmount = 3f;
+                image.rectTransform.sizeDelta = new Vector2(
+                    (image.sprite.rect.width / 2) * growAmount,
+                    (image.sprite.rect.height / 2) * growAmount
+                );
             }
         }
-        //Ore
-        if (textMeshCurrent == resourcesTextPlatinoid || textMeshCurrent == resourcesTextPreciousMetal || textMeshCurrent == resourcesTextWater)
+        else
         {
-            float resourceValueUnitInterval = (float)(control.GetPlayerScript().GetTotalOre() / control.GetPlayerScript().oreMax);
-            if (resourceValueUnitInterval < 0.5f)
-            {
-                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_WHITE;
-            }
-            else if (resourceValueUnitInterval < 0.75f)
-            {
-                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_AMBER;
-            }
-            else
-            {
-                textMeshCurrent.color = COLOR_UI_TRANSLUCENT_RED;
-            }
+            image.gameObject.SetActive(false);
+            textMeshCurrent.gameObject.SetActive(false);
         }
     }
 
@@ -1130,7 +1174,7 @@ public class UI : MonoBehaviour
         //Animate
         UpdatePlayerResourcesUIAnimation(ref resourcesImageCurrency);
         UpdatePlayerResourcesUIAnimation(ref resourcesImagePlatinoid);
-        UpdatePlayerResourcesUIAnimation(ref resourcesImagePreciousMetal);
+        UpdatePlayerResourcesUIAnimation(ref resourcesImagePreciousMetals);
         UpdatePlayerResourcesUIAnimation(ref resourcesImageWater);
     }
 
@@ -1172,7 +1216,7 @@ public class UI : MonoBehaviour
         consoleCargoText.text =
                      "Currency: " + resourcesTextCurrency.text
             + "\n" + "Platinoid: " + resourcesTextPlatinoid.text
-            + "\n" + "Precious metal: " + resourcesTextPreciousMetal.text
+            + "\n" + "Precious metal: " + resourcesTextPreciousMetals.text
             + "\n" + "Water ice: " + resourcesTextWater.text;
     }
     #endregion

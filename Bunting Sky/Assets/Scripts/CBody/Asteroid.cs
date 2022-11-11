@@ -362,7 +362,10 @@ public class Asteroid : MonoBehaviour
             }
             else
             {
-                control.GetPlayerScript().tutorialHasMinedAsteroid = true;
+                if (type != Type.claySilicate)
+                {
+                    control.GetPlayerScript().tutorialHasMinedAsteroid = true;
+                }
             }
 
             //Destroy

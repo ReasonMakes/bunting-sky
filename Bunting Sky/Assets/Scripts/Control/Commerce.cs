@@ -107,18 +107,18 @@ public class Commerce : MonoBehaviour
 
         //Price
         upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_PRICE] = UPGRADE_PRICE_MAX.ToString();
-        upgradeDictionary[UPGRADE_FUEL_EFFICIENCY,          UPGRADE_PRICE] = "500";
-        upgradeDictionary[UPGRADE_TITAN_FUEL_TANK,          UPGRADE_PRICE] = "2000";
-        upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_PRICE] = "750";
-        upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_PRICE] = "1000";
-        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_PRICE] = "2000";
-        upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_PRICE] = "4000";;
-        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_PRICE] = "5000";
-        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_PRICE] = "1000";
-        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_PRICE] = "500";
-        upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_PRICE] = "2000";
-        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_PRICE] = "2000";
-        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_PRICE] = "4000";
+        upgradeDictionary[UPGRADE_FUEL_EFFICIENCY,          UPGRADE_PRICE] = "2000"; //"500";
+        upgradeDictionary[UPGRADE_TITAN_FUEL_TANK,          UPGRADE_PRICE] = "250"; //"2000";
+        upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_PRICE] = "750"; //"750";
+        upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_PRICE] = "1500"; //"1000";
+        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_PRICE] = "2500"; //"2000";
+        upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_PRICE] = "1000"; //"4000";;
+        upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_PRICE] = "1000"; //"5000";
+        upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_PRICE] = "500"; //"1000";
+        upgradeDictionary[UPGRADE_CARGO_SPACE,              UPGRADE_PRICE] = "250"; //"500";
+        upgradeDictionary[UPGRADE_ACCELERATION,             UPGRADE_PRICE] = "4000"; //"2000";
+        upgradeDictionary[UPGRADE_TORQUE_FORCE,             UPGRADE_PRICE] = "1500"; //"2000";
+        upgradeDictionary[UPGRADE_FIRERATE,                 UPGRADE_PRICE] = "1000"; //"4000";
 
         //Description
         upgradeDictionary[UPGRADE_SOLD_OUT,                 UPGRADE_DESCRIPTION] = "Item is out of stock";
@@ -126,7 +126,7 @@ public class Commerce : MonoBehaviour
         upgradeDictionary[UPGRADE_TITAN_FUEL_TANK,          UPGRADE_DESCRIPTION] = "1.5x larger fuel tank made of lighter material, resulting in the same weight";
         upgradeDictionary[UPGRADE_REINFORCED_HULL,          UPGRADE_DESCRIPTION] = "Doubles outer hull integrity";
         upgradeDictionary[UPGRADE_RAPTOR_ENGINES,           UPGRADE_DESCRIPTION] = "Increases maximum forward thrust output by 1.5x";
-        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_DESCRIPTION] = "Doubles the mining laser's maximum ammunition per cycle";
+        upgradeDictionary[UPGRADE_DUAL_BATTERIES,           UPGRADE_DESCRIPTION] = "Doubles the Nariman's maximum ammunition per cycle";
         upgradeDictionary[UPGRADE_REFINERY,                 UPGRADE_DESCRIPTION] = "Automatically processes water ice cargo into usable jet fuel";
         upgradeDictionary[UPGRADE_SEISMIC_CHARGES,          UPGRADE_DESCRIPTION] = "Explosive weapon. Useful for mining clusters of small asteroids";
         upgradeDictionary[UPGRADE_OUTLINE,                  UPGRADE_DESCRIPTION] = "Highlights natural celestial bodies, creating visibility even in eclipse";

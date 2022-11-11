@@ -150,7 +150,10 @@ public class Menu : MonoBehaviour
         else
         {
             //Reset tip text position
-            control.GetPlayerScript().DecideWhichModelsToRender();
+            if (control.generation.playerSpawned)
+            {
+                control.GetPlayerScript().DecideWhichModelsToRender();
+            }
         }
 
         //Toggle game pause
@@ -201,8 +204,17 @@ public class Menu : MonoBehaviour
     #region Restart
     public void MenuRestartConfirmOpen()
     {
-        menuMain.SetActive(false);
-        menuRestartConfirm.SetActive(true);
+        if (control.GetPlayerScript().isDestroyed)
+        {
+            //Don't warn; restart right away
+            MenuRestartConfirmed();
+        }
+        else
+        {
+            //Warn and ask for confirmation
+            menuMain.SetActive(false);
+            menuRestartConfirm.SetActive(true);
+        }
     }
 
     public void MenuRestartConfirmed()
@@ -579,6 +591,11 @@ public class Menu : MonoBehaviour
         control.settings.tips = !control.settings.tips;
         control.settings.Save();
 
+        if (!control.settings.tips && control.settings.tutorial)
+        {
+            menuSettingsToggleTutorial.isOn = false; //also calls the method attached to the switch
+        }
+
         control.ui.tipText.gameObject.SetActive(control.settings.tips);
     }
 
@@ -587,6 +604,14 @@ public class Menu : MonoBehaviour
         //Toggle music setting and save
         control.settings.tutorial = !control.settings.tutorial;
         control.settings.Save();
+
+        //Prevent this part of the tutorial from getting stuck on the screen!
+        control.GetPlayerScript().TargetReset();
+
+        if (control.settings.tutorial && !control.settings.tips)
+        {
+            menuSettingsToggleTips.isOn = true; //also calls the method attached to the switch
+        }
     }
 
     public void MenuSettingsAsteroidsMinSet()
@@ -657,11 +682,11 @@ public class Menu : MonoBehaviour
         if (menuKeybindsIsSettingBind)
         {
             control.ui.SetTip(
-                "Press the key you want to bind that input to, then primary click anywhere outside of the button to bind it",
+                "Use the input now that you want to cause that in-game action",
                 0f
             );
 
-            if (Input.anyKey || control.binds.GetInput(control.binds.MOUSE_SCROLL_UP) || control.binds.GetInput(control.binds.MOUSE_SCROLL_DOWN))
+            if (control.binds.GetAnyInput())
             {
                 //Get the bind, if there is one
                 bool isBind = false;
@@ -834,191 +859,272 @@ public class Menu : MonoBehaviour
 
     public void MenuKeybindsThurstForwardSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsThrustForward.text = "";
-        menuKeybindsBindID = BIND_ID_THRUST_FORWARD;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsThrustForward.text = "";
+            menuKeybindsBindID = BIND_ID_THRUST_FORWARD;
+        }
     }
 
     public void MenuKeybindsThrustLeftSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsThrustLeft.text = "";
-        menuKeybindsBindID = BIND_ID_THRUST_LEFT;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsThrustLeft.text = "";
+            menuKeybindsBindID = BIND_ID_THRUST_LEFT;
+        }
     }
 
     public void MenuKeybindsThrustBackwardSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsThrustBackward.text = "";
-        menuKeybindsBindID = BIND_ID_THRUST_BACKWARD;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsThrustBackward.text = "";
+            menuKeybindsBindID = BIND_ID_THRUST_BACKWARD;
+        }
     }
 
     public void MenuKeybindsThrustRightSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsThrustRight.text = "";
-        menuKeybindsBindID = BIND_ID_THRUST_RIGHT;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsThrustRight.text = "";
+            menuKeybindsBindID = BIND_ID_THRUST_RIGHT;
+        }
     }
 
     public void MenuKeybindsThrustUpSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsThrustUp.text = "";
-        menuKeybindsBindID = BIND_ID_THRUST_UP;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsThrustUp.text = "";
+            menuKeybindsBindID = BIND_ID_THRUST_UP;
+        }
     }
 
     public void MenuKeybindsThrustDownSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsThrustDown.text = "";
-        menuKeybindsBindID = BIND_ID_THRUST_DOWN;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsThrustDown.text = "";
+            menuKeybindsBindID = BIND_ID_THRUST_DOWN;
+        }
     }
 
     public void MenuKeybindsAlignShipToReticleSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsAlignShipToReticle.text = "";
-        menuKeybindsBindID = BIND_ID_ALIGN_SHIP;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsAlignShipToReticle.text = "";
+            menuKeybindsBindID = BIND_ID_ALIGN_SHIP;
+        }
     }
 
     public void MenuKeybindsCheat1Set()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsCheat1.text = "";
-        menuKeybindsBindID = BIND_ID_CHEAT1;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsCheat1.text = "";
+            menuKeybindsBindID = BIND_ID_CHEAT1;
+        }
     }
 
     public void MenuKeybindsCheat2Set()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsCheat2.text = "";
-        menuKeybindsBindID = BIND_ID_CHEAT2;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsCheat2.text = "";
+            menuKeybindsBindID = BIND_ID_CHEAT2;
+        }
     }
 
     public void MenuKeybindsCycleMovementModeSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsCycleMovementMode.text = "";
-        menuKeybindsBindID = BIND_ID_PAN_MAP;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsCycleMovementMode.text = "";
+            menuKeybindsBindID = BIND_ID_PAN_MAP;
+        }
     }
 
     public void MenuKeybindsCameraFreeLookSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsCameraFreeLook.text = "";
-        menuKeybindsBindID = BIND_ID_FREE_LOOK;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsCameraFreeLook.text = "";
+            menuKeybindsBindID = BIND_ID_FREE_LOOK;
+        }
     }
 
     public void MenuKeybindsCameraZoomInSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsCameraZoomIn.text = "";
-        menuKeybindsBindID = BIND_ID_ZOOM_IN;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsCameraZoomIn.text = "";
+            menuKeybindsBindID = BIND_ID_ZOOM_IN;
+        }
     }
 
     public void MenuKeybindsCameraZoomOutSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsCameraZoomOut.text = "";
-        menuKeybindsBindID = BIND_ID_ZOOM_OUT;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsCameraZoomOut.text = "";
+            menuKeybindsBindID = BIND_ID_ZOOM_OUT;
+        }
     }
 
     public void MenuKeybindsCameraZoomOpticalSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsCameraZoomOptical.text = "";
-        menuKeybindsBindID = BIND_ID_ZOOM_OPTICAL;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsCameraZoomOptical.text = "";
+            menuKeybindsBindID = BIND_ID_ZOOM_OPTICAL;
+        }
     }
 
     public void MenuKeybindsSetTargetSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsSetTarget.text = "";
-        menuKeybindsBindID = BIND_ID_SET_TARGET;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsSetTarget.text = "";
+            menuKeybindsBindID = BIND_ID_SET_TARGET;
+        }
     }
 
     public void MenuKeybindsPrimaryFireSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsPrimaryFire.text = "";
-        menuKeybindsBindID = BIND_ID_FIRE;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsPrimaryFire.text = "";
+            menuKeybindsBindID = BIND_ID_FIRE;
+        }
     }
 
     public void MenuKeybindsPrimaryReloadSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsPrimaryReload.text = "";
-        menuKeybindsBindID = BIND_ID_RELOAD;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsPrimaryReload.text = "";
+            menuKeybindsBindID = BIND_ID_RELOAD;
+        }
     }
 
     public void MenuKeybindsToggleSpotlightSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsToggleSpotlight.text = "";
-        menuKeybindsBindID = BIND_ID_SPOTLIGHT;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsToggleSpotlight.text = "";
+            menuKeybindsBindID = BIND_ID_SPOTLIGHT;
+        }
     }
 
     public void MenuKeybindsToggleOutlineSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsToggleOutline.text = "";
-        menuKeybindsBindID = BIND_ID_OUTLINE;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsToggleOutline.text = "";
+            menuKeybindsBindID = BIND_ID_OUTLINE;
+        }
     }
 
     public void MenuKeybindsToggleMapSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsToggleMap.text = "";
-        menuKeybindsBindID = BIND_ID_MAP;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsToggleMap.text = "";
+            menuKeybindsBindID = BIND_ID_MAP;
+        }
     }
 
     public void MenuKeybindsToggleRefineSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsToggleRefine.text = "";
-        menuKeybindsBindID = BIND_ID_REFINE;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsToggleRefine.text = "";
+            menuKeybindsBindID = BIND_ID_REFINE;
+        }
     }
 
     public void MenuKeybindsSelectWeapon1Set()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsSelectWeapon1.text = "";
-        menuKeybindsBindID = BIND_ID_WEAPON1;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsSelectWeapon1.text = "";
+            menuKeybindsBindID = BIND_ID_WEAPON1;
+        }
     }
 
     public void MenuKeybindsSelectWeapon2Set()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsSelectWeapon2.text = "";
-        menuKeybindsBindID = BIND_ID_WEAPON2;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsSelectWeapon2.text = "";
+            menuKeybindsBindID = BIND_ID_WEAPON2;
+        }
     }
 
     public void MenuKeybindsToggleHUDSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsToggleHUD.text = "";
-        menuKeybindsBindID = BIND_ID_HUD;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsToggleHUD.text = "";
+            menuKeybindsBindID = BIND_ID_HUD;
+        }
     }
 
     public void MenuKeybindsToggleFPSSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsToggleFPS.text = "";
-        menuKeybindsBindID = BIND_ID_FPS;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsToggleFPS.text = "";
+            menuKeybindsBindID = BIND_ID_FPS;
+        }
     }
 
     public void MenuKeybindsSaveScreenshotSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsSaveScreenshot.text = "";
-        menuKeybindsBindID = BIND_ID_SCREENSHOT;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsSaveScreenshot.text = "";
+            menuKeybindsBindID = BIND_ID_SCREENSHOT;
+        }
     }
 
     public void MenuKeybindsToggleMenuSet()
     {
-        menuKeybindsIsSettingBind = true;
-        menuBindsToggleMenu.text = "";
-        menuKeybindsBindID = BIND_ID_MENU;
+        if (!menuKeybindsIsSettingBind)
+        {
+            menuKeybindsIsSettingBind = true;
+            menuBindsToggleMenu.text = "";
+            menuKeybindsBindID = BIND_ID_MENU;
+        }
     }
     #endregion Keybinds
 }

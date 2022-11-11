@@ -143,12 +143,18 @@ public class Ore : MonoBehaviour
                 Scale(distanceBetweenOreAndPlayer);
 
                 //When close enough to player, absorb into and increment ore counter
-                if (
-                    distanceBetweenOreAndPlayer <= ABSORB_DIST
-                    && control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d //if there is room for one more
-                )
+                if (distanceBetweenOreAndPlayer <= ABSORB_DIST)
                 {
-                    AbsorbIntoPlayer();
+                    if (control.GetPlayerScript().GetTotalOre() <= control.GetPlayerScript().oreMax - 1.0d)
+                    {
+                        //Absorb if there is room for one more
+                        AbsorbIntoPlayer();
+                    }
+                    else
+                    {
+                        //Show tip if cargo full
+                        control.ui.SetTip("Cargo bay full");
+                    }
                 }
 
                 //If can't find way to player, absorb automagically

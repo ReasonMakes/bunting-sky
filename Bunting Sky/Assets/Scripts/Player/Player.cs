@@ -570,33 +570,33 @@ public class Player : MonoBehaviour
         //Cheats enabled only while in editor
         if (control.IS_EDITOR || true)
         {
-            ////Teleport forward
-            //if (binds.GetInputDown(binds.bindCheat1))
-            //{
-            //    transform.position += transform.forward * 150f;
-            //}
+            //Teleport forward
+            if (binds.GetInputDown(binds.bindCheat1))
+            {
+                transform.position += transform.forward * 150f;
+            }
 
-            ////Eclipse vision upgrade
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
-            //    UpdateUpgrades();
-            //}
+            //Invulnerable
+            if (binds.GetInputDown(binds.bindCheat1))
+            {
+                //Invulnerable
+                healthInfiniteCheat = true;
+            }
 
-            ////Invulnerable
-            //if (binds.GetInputDown(binds.bindCheat2))
-            //{
-            //    //Invulnerable
-            //    healthInfiniteCheat = true;
-            //}
-
-            //Spawn bandit
+            //Eclipse vision upgrade
             if (binds.GetInputDown(binds.bindCheat2))
             {
-                //Spawn next enemy in order of difficulty
-                control.generation.EnemySpawn(transform.position + (transform.forward * 30f), enemyStengthToSpawn);
-                enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Control.GetEnumLength(typeof(Enemy.Strength)));
+                upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
+                UpdateUpgrades();
             }
+
+            ////Spawn bandit
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    //Spawn next enemy in order of difficulty
+            //    control.generation.EnemySpawn(transform.position + (transform.forward * 30f), enemyStengthToSpawn);
+            //    enemyStengthToSpawn = (Enemy.Strength)(((int)enemyStengthToSpawn + 1) % Control.GetEnumLength(typeof(Enemy.Strength)));
+            //}
 
             ////Unlock max cargo space
             //if (binds.GetInputDown(binds.bindCheat2))
@@ -1302,7 +1302,8 @@ public class Player : MonoBehaviour
             else if (tutorialLevel == 6)
             {
                 control.ui.SetTip(
-                    "Whether mining or in combat, targetting assists aiming"
+                    "Targetting destructible objects displays a trajectory reticle to assist aiming"
+                    + "\nThis is especially helpful when mining or in combat"
                     + "\nTarget what you're looking at with " + binds.GetBindAsPrettyString(binds.bindSetTarget, true),
                     0f
                 );
@@ -1422,7 +1423,7 @@ public class Player : MonoBehaviour
                         targetString
                         + zoomInString + " and " + zoomOutString
                         + panMapString,
-                        0f
+                        TUTORIAL_TIP_DURATION
                     );
 
                     //Show this tutorial tip until the player demonstrates understanding
@@ -1437,7 +1438,7 @@ public class Player : MonoBehaviour
                         && tutorialHasPressedPanMap
                     )
                     {
-                        IncrementTutorial(0f);
+                        IncrementTutorial(TUTORIAL_TIP_DURATION);
                     }
                 }
                 else
@@ -1449,12 +1450,15 @@ public class Player : MonoBehaviour
                     );
                 }
             }
-            else if (tutorialLevel == 12 && !tutorialHasUsedHeighliner)
+            else if (tutorialLevel == 12)
             {
-                control.ui.SetTip(
-                    "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around planets",
-                    TUTORIAL_TIP_DURATION + 2f
-                );
+                if (!tutorialHasUsedHeighliner)
+                {
+                    control.ui.SetTip(
+                        "Travel to neighbouring planetary systems via heighliners\nFind them in orbit around planets",
+                        TUTORIAL_TIP_DURATION + 2f
+                    );
+                }
 
                 IncrementTutorial();
             }
@@ -1481,13 +1485,17 @@ public class Player : MonoBehaviour
         //Loop back and forth smoothly (this is also why we multiply by 2f instead of 1f above)
         intensity = Mathf.Abs(1f - intensity);
         //Apply the glow to the sprite colour
-        control.ui.targetImage.color = new Color(1f, 1f, 0f, intensity);
+        //control.ui.targetImage.color = new Color(1f, 1f, 0f, intensity);
+        control.ui.canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Target").Find("Target Tutorial").gameObject.SetActive(true);
+        control.ui.canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Target").Find("Target Tutorial").GetComponent<Image>().color = new Color(1f, 1f, 0f, intensity);
     }
 
-    private void TargetReset()
+    public void TargetReset()
     {
         //Same for the target image colour
-        control.ui.targetImage.color = new Color(1f, 1f, 1f, 0.36078431372f);
+        //control.ui.targetImage.color = new Color(1f, 1f, 1f, 0.36078431372f);
+
+        control.ui.canvas.transform.Find("HUD Centre").Find("Waypoint").Find("Target").Find("Target Tutorial").gameObject.SetActive(false);
     }
 
     private void IncrementTutorial()
@@ -1708,7 +1716,7 @@ public class Player : MonoBehaviour
             distToClosestMoonOrMoonChild = (transform.position - closestMoonOrMoonChildTransform.transform.position).magnitude;
 
             //Moonar discovery
-            if (distToClosestMoonOrMoonChild < 60f)
+            if (distToClosestMoonOrMoonChild < 100f)
             {
                 if (closestMoonOrMoonChildTransform.gameObject.name == control.generation.moon.name + "(Clone)")
                 {
@@ -2066,8 +2074,8 @@ public class Player : MonoBehaviour
                 if (binds.GetInput(binds.bindPanMap))
                 {
                     float mapRatio = 0.03f;
-                    mapOffset -= Vector3.right * (Input.GetAxisRaw("Mouse X") * mapCam.GetComponent<Camera>().orthographicSize * mapRatio);
-                    mapOffset -= Vector3.forward * (Input.GetAxisRaw("Mouse Y") * mapCam.GetComponent<Camera>().orthographicSize * mapRatio);
+                    mapOffset -= Vector3.right * (binds.GetMouseMovementX() * mapCam.GetComponent<Camera>().orthographicSize * mapRatio);
+                    mapOffset -= Vector3.forward * (binds.GetMouseMovementY() * mapCam.GetComponent<Camera>().orthographicSize * mapRatio);
                 }
 
                 //Set map zoom (default 1560)
@@ -2366,17 +2374,17 @@ public class Player : MonoBehaviour
     private void GetMouseToCameraTransform()
     {
         //Pitch
-        centreMountPitch -= Input.GetAxisRaw("Mouse Y") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
+        centreMountPitch -= binds.GetMouseMovementY() * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         //Yaw
         if (centreMountPitch >= 90 && centreMountPitch < 270)
         {
             //Normal
-            centreMountYaw -= Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
+            centreMountYaw -= binds.GetMouseMovementX() * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         }
         else
         {
             //Inverted
-            centreMountYaw += Input.GetAxisRaw("Mouse X") * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
+            centreMountYaw += binds.GetMouseMovementX() * control.settings.mouseSensitivity * MOUSE_SENS_COEFF;
         }
         //Roll
         centreMountRoll = 0f;
@@ -2709,19 +2717,56 @@ public class Player : MonoBehaviour
             {
                 if (bodyIndex == 0)
                 {
+                    GameObject thisPlanet = control.generation.planetarySystems[systemIndex][bodyIndex];
+
                     //Planet
                     UpdateOutlineMaterial(
                         Generation.HighlightableCBodyType.planet,
-                        control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material
+                        thisPlanet.GetComponentInChildren<MeshRenderer>().material
+                    );
+
+                    //Heighliners
+                    UpdateOutlineMaterial(
+                        Generation.HighlightableCBodyType.heighliner,
+                        thisPlanet.GetComponent<Planet>().heighliner0.transform.Find("Model").GetComponentInChildren<MeshRenderer>().material
+                    );
+                    UpdateOutlineMaterial(
+                        Generation.HighlightableCBodyType.heighliner,
+                        thisPlanet.GetComponent<Planet>().heighliner1.transform.Find("Model").GetComponentInChildren<MeshRenderer>().material
                     );
                 }
                 else
                 {
+                    GameObject thisMoon = control.generation.planetarySystems[systemIndex][bodyIndex];
+
                     //Moons
                     UpdateOutlineMaterial(
                         Generation.HighlightableCBodyType.moon,
-                        control.generation.planetarySystems[systemIndex][bodyIndex].GetComponentInChildren<MeshRenderer>().material
+                        thisMoon.GetComponentInChildren<MeshRenderer>().material
                     );
+
+                    //Station
+                    if (thisMoon.GetComponent<Moon>().hasStation)
+                    {
+                        Transform stationModelTransform = thisMoon.GetComponent<Moon>().instancedStation.transform.Find("StationModel");
+
+                        UpdateOutlineMaterial(
+                            Generation.HighlightableCBodyType.station,
+                            stationModelTransform.Find("StationModelMain").GetComponentInChildren<MeshRenderer>().material
+                        );
+                        UpdateOutlineMaterial(
+                            Generation.HighlightableCBodyType.station,
+                            stationModelTransform.Find("StationModelMainClimateControl").GetComponentInChildren<MeshRenderer>().material
+                        );
+                        UpdateOutlineMaterial(
+                            Generation.HighlightableCBodyType.station,
+                            stationModelTransform.Find("StationTower").GetComponentInChildren<MeshRenderer>().material
+                        );
+                        UpdateOutlineMaterial(
+                            Generation.HighlightableCBodyType.station,
+                            stationModelTransform.Find("StationDryDock").Find("StationModelArms").GetComponentInChildren<MeshRenderer>().material
+                        );
+                    }
                 }
             }
         }
@@ -2733,8 +2778,24 @@ public class Player : MonoBehaviour
             Transform asteroidTransform = control.generation.asteroidsEnabled.transform.GetChild(asteroidIndex);
             if (!asteroidTransform.GetComponentInChildren<Asteroid>().isDestroying)
             {
-                Material material = asteroidTransform.GetComponentInChildren<MeshRenderer>().material;
-                UpdateOutlineMaterial(Generation.HighlightableCBodyType.asteroid, material);
+                UpdateOutlineMaterial(
+                    Generation.HighlightableCBodyType.asteroid,
+                    asteroidTransform.GetComponentInChildren<MeshRenderer>().material
+                );
+            }
+        }
+
+        //Bandits
+        int nBandits = control.generation.enemies.transform.childCount;
+        for (int banditIndex = 0; banditIndex < nBandits; banditIndex++)
+        {
+            Enemy banditScript = control.generation.enemies.transform.GetChild(banditIndex).GetComponent<Enemy>();
+            if (!banditScript.isDestroying)
+            {
+                UpdateOutlineMaterial(
+                    Generation.HighlightableCBodyType.bandit,
+                    banditScript.model.transform.GetChild(0).GetComponent<MeshRenderer>().material
+                );
             }
         }
     }
@@ -2743,18 +2804,16 @@ public class Player : MonoBehaviour
     {
         if (isOutlinesVisible && upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1)
         {
-            if (cBodyType == Generation.HighlightableCBodyType.planet)
-            {
-                material.SetFloat("_NightVisionOutline", 0.3f * outlineFade);
-            }
-            else if (cBodyType == Generation.HighlightableCBodyType.moon)
-            {
-                material.SetFloat("_NightVisionOutline", 0.7f * outlineFade);
-            }
-            else if (cBodyType == Generation.HighlightableCBodyType.asteroid)
-            {
-                material.SetFloat("_NightVisionOutline", 5f * outlineFade);
-            }
+            float intensity = 1f;
+            if      (cBodyType == Generation.HighlightableCBodyType.planet)     { intensity = 0.3f; }
+            else if (cBodyType == Generation.HighlightableCBodyType.moon)       { intensity = 0.7f; }
+            else if (cBodyType == Generation.HighlightableCBodyType.heighliner) { intensity = 3f; }
+            else if (cBodyType == Generation.HighlightableCBodyType.station)    { intensity = 5f; }
+            else if (cBodyType == Generation.HighlightableCBodyType.asteroid)   { intensity = 5f; }
+            else if (cBodyType == Generation.HighlightableCBodyType.bandit)     { intensity = 5f; }
+            else { Debug.LogError("Unrecognized HighlightableCBodyType: " + cBodyType); }
+
+            material.SetFloat("_NightVisionOutline", intensity * outlineFade);
         }
         else
         {

@@ -39,7 +39,7 @@ public class Enemy : MonoBehaviour
     private readonly float DISTANCE_THRESHOLD_GREATER_THAN_TO_MOVE_FORWARD = 16f;
     private float distanceThresholdLessThanToStrafe = 30f; //overwritten by difficulty
     private readonly float DISTANCE_THRESHOLD_LESS_THAN_TO_FIRE = 70f;
-    [System.NonSerialized] public static readonly float DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE = 300f;
+    [System.NonSerialized] public static readonly float DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE = 700f; //300f;
     private bool canStrafeHorizontally = true; //true;
     private bool strafeHorizontalRight = true;
     private float strafeHorizontalDirectionChangeTimer = 2f;
@@ -480,8 +480,8 @@ public class Enemy : MonoBehaviour
             distanceThresholdLessThanToStrafe = 40f;
             tracerInterval = 1;
 
-            oreDropMin = 12;
-            oreDropMax = 20;
+            oreDropMin = 6;
+            oreDropMax = 12;
             oreDropType = Asteroid.Type.platinoid;
         }
         else if (this.strength == Strength.major)

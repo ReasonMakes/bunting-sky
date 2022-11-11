@@ -16,7 +16,9 @@ public class KeyBinds : MonoBehaviour
 
     //Mouse code definitions (1000 is subtracted later. TODO: make this into an enum)
     public readonly short MOUSE_PRIMARY = 1000;
+    public readonly short MOUSE_PRIMARY_ALTERNATIVE = 323;
     public readonly short MOUSE_SECONDARY = 1001;
+    public readonly short MOUSE_SECONDARY_ALTERNATIVE = 324;
     public readonly short MOUSE_MIDDLE = 1002;
     public readonly short MOUSE_MIDDLE_ALTERNATIVE = 325;
     public readonly short MOUSE_SCROLL_UP = 1003;
@@ -346,6 +348,18 @@ public class KeyBinds : MonoBehaviour
         }
     }
 
+    public float GetMouseMovementX()
+    {
+        //return 100f * Input.GetAxisRaw("Mouse X") * Time.deltaTime;
+        return Input.GetAxisRaw("Mouse X");
+    }
+
+    public float GetMouseMovementY()
+    {
+        //return 100f * Input.GetAxisRaw("Mouse Y") * Time.deltaTime;
+        return Input.GetAxisRaw("Mouse Y");
+    }
+
     public string GetBindAsPrettyString(short bind, bool addBrackets)
     {
         string pretty = "error";
@@ -358,6 +372,14 @@ public class KeyBinds : MonoBehaviour
             else if (bind == MOUSE_SCROLL_UP) { pretty = "scroll up"; }
             else if (bind == MOUSE_SCROLL_DOWN) { pretty = "scroll down"; }
             else { pretty = "unrecognized keycode"; }
+        }
+        else if (bind == MOUSE_PRIMARY_ALTERNATIVE)
+        {
+            pretty = "mouse primary";
+        }
+        else if (bind == MOUSE_SECONDARY_ALTERNATIVE)
+        {
+            pretty = "mouse secondary";
         }
         else if (bind == MOUSE_MIDDLE_ALTERNATIVE)
         {
@@ -387,6 +409,11 @@ public class KeyBinds : MonoBehaviour
         }
 
         return pretty;
+    }
+
+    public bool GetAnyInput()
+    {
+        return Input.anyKey || GetInput(MOUSE_SCROLL_UP) || GetInput(MOUSE_SCROLL_DOWN);
     }
     #endregion
 }

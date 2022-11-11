@@ -101,7 +101,10 @@ public class Generation : MonoBehaviour
     {
         planet,
         moon,
-        asteroid
+        asteroid,
+        station,
+        heighliner,
+        bandit
     };
 
     //Colours
