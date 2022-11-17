@@ -570,25 +570,71 @@ public class Player : MonoBehaviour
         //Cheats enabled only while in editor
         if (control.IS_EDITOR || true)
         {
-            //Teleport forward
+            //Spawn test ore
             if (binds.GetInputDown(binds.bindCheat1))
             {
-                transform.position += transform.forward * 150f;
+                float startDistAway = 70f;
+                float intervalDist = 40f;
+                int amountOfEachType = 20;
+
+                for (int i = 0; i < amountOfEachType; i++)
+                {
+                    control.generation.OrePoolSpawn(
+                        transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))),
+                        Asteroid.Type.water, rb.velocity
+                    );
+                }
+
+                for (int i = 0; i < amountOfEachType; i++)
+                {
+                    control.generation.OrePoolSpawn(
+                        transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))) + (Vector3.left * intervalDist),
+                        Asteroid.Type.platinoid, rb.velocity
+                    );
+                }
+
+                for (int i = 0; i < amountOfEachType; i++)
+                {
+                    control.generation.OrePoolSpawn(
+                        transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))) + (Vector3.right * intervalDist),
+                        Asteroid.Type.preciousMetal, rb.velocity
+                    );
+                }
             }
 
-            //Invulnerable
-            if (binds.GetInputDown(binds.bindCheat1))
-            {
-                //Invulnerable
-                healthInfiniteCheat = true;
-            }
+            //if (binds.GetInputDown(binds.bindCheat1))
+            //{
+            //    for (int i = 0; i < 18; i++)
+            //    {
+            //        control.generation.OrePoolSpawn(transform.position + Vector3.forward * 10f, Asteroid.Type.water, rb.velocity);
+            //    }
+            //}
 
-            //Eclipse vision upgrade
-            if (binds.GetInputDown(binds.bindCheat2))
-            {
-                upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
-                UpdateUpgrades();
-            }
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    control.generation.OrePoolSpawn(transform.position + Vector3.forward * 10f, Asteroid.Type.platinoid, rb.velocity);
+            //    control.generation.OrePoolSpawn(transform.position + Vector3.forward * 30f, Asteroid.Type.preciousMetal, rb.velocity);
+            //}
+
+            ////Teleport forward
+            //if (binds.GetInputDown(binds.bindCheat1))
+            //{
+            //    transform.position += transform.forward * 150f;
+            //}
+
+            ////Invulnerable
+            //if (binds.GetInputDown(binds.bindCheat1))
+            //{
+            //    //Invulnerable
+            //    healthInfiniteCheat = true;
+            //}
+
+            ////Eclipse vision upgrade
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    upgradeLevels[control.commerce.UPGRADE_OUTLINE] = 1;
+            //    UpdateUpgrades();
+            //}
 
             ////Spawn bandit
             //if (binds.GetInputDown(binds.bindCheat2))

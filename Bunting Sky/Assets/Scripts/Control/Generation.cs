@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -9,7 +9,7 @@ public class Generation : MonoBehaviour
     //Control
     public Control control;
 
-    //Generation type
+    //Generation types
     public enum GenerationType
     {
         none,
@@ -17,27 +17,7 @@ public class Generation : MonoBehaviour
         loaded,
         restarted
     };
-    private GenerationType newGameTypeQueued = GenerationType.none;
-
-    //Player
-    public GameObject playerPrefab;
-    [System.NonSerialized] public GameObject instancePlayer;
-    [System.NonSerialized] public bool playerSpawned = false;
-    [System.NonSerialized] private GameObject playerSpawnMoon;
-    [System.NonSerialized] public int playerPlanetIndex = 0; //planetary system the player is currently in
-
-    //CBodies
-    private readonly int MOONS_RANGE_LOW = 1; //4; //6;
-    private readonly int MOONS_RANGE_HIGH = 5; //4; //10;
-    [System.NonSerialized] public readonly float MOONS_DISTANCE_OUT = 300f;
-    [System.NonSerialized] public readonly float MOONS_SPACING_BASE_MAX = 50f;
-    [System.NonSerialized] public readonly float MOONS_SPACING_POWER = 1.5f;
-
-    private readonly int PLANETS_RANGE_LOW = 3; //6;
-    private readonly int PLANETS_RANGE_HIGH = 5; //10;
-    private readonly float PLANET_DISTANCE_OUT = 3600f;
-    private readonly float PLANET_DISTANCE_OUT_NOISE = 500f;
-
+    private GenerationType genTypeQueued = GenerationType.none;
     private enum ClusterType
     {
         voidClump,
@@ -47,11 +27,109 @@ public class Generation : MonoBehaviour
         moonClump
     };
 
+    //Generation amounts & distances
+    public struct GenerationParamsCBody //because this is more than 16 bytes it should really be a class
+    {
+        public readonly int COUNT_RANGE_LOW;
+        public readonly int COUNT_RANGE_HIGH;
+        public readonly float DISTANCE_OUT;
+        public readonly float DISTANCE_OUT_NOISE;
+        public readonly float ANGLE_NOISE;
+        public readonly float ANGLE_PADDING;
+
+        public readonly int ASTEROID_COUNT;
+        public readonly float ASTEROID_DISTANCE_OUT;
+        public readonly float ASTEROID_DISTANCE_OUT_NOISE;
+        public readonly float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW;
+        public readonly float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_HIGH;
+        
+        public GenerationParamsCBody
+        (
+            int rangeLow, int rangeHigh,
+            float distanceOut, float distanceOutNoise,
+            float angleNoise, float anglePadding,
+
+            int asteroidCount,
+            float asteroidDistanceOut, float asteroidDistanceOutNoise,
+            float asteroidPercentValuableTypeRangeLow, float asteroidPercentValuableTypeRangeHigh
+        )
+        {
+            COUNT_RANGE_LOW = rangeLow;
+            COUNT_RANGE_HIGH = rangeHigh;
+            DISTANCE_OUT = distanceOut;
+            DISTANCE_OUT_NOISE = distanceOutNoise;
+            ANGLE_NOISE = angleNoise;
+            ANGLE_PADDING = anglePadding;
+
+            ASTEROID_COUNT = asteroidCount;
+            ASTEROID_DISTANCE_OUT = asteroidDistanceOut;
+            ASTEROID_DISTANCE_OUT_NOISE = asteroidDistanceOutNoise;
+            ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW = asteroidPercentValuableTypeRangeLow;
+            ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_HIGH = asteroidPercentValuableTypeRangeHigh;
+        }
+    }
+    private readonly GenerationParamsCBody GEN_PARAMS_PLANETS = new GenerationParamsCBody(
+        /*int RANGE_LOW*/ 1,
+        /*int RANGE_HIGH*/ 5,
+        /*float DISTANCE_OUT*/ 4500f, //3000f
+        /*float DISTANCE_OUT_NOISE*/ 2000f, //3800f
+        /*float ANGLE_NOISE*/ 2f,
+        /*float ANGLE_PADDING*/ 5f,
+        /*int ASTEROID_COUNT*/ 100,
+        /*float ASTEROID_DISTANCE_OUT*/ 250f,
+        /*float ASTEROID_DISTANCE_OUT_NOISE*/ 21f,
+        /*float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW*/ 0f,
+        /*float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_HIGH*/ 30f
+    );
+    private readonly GenerationParamsCBody GEN_PARAMS_MOONS = new GenerationParamsCBody(
+        /*int RANGE_LOW*/ 1,
+        /*int RANGE_HIGH*/ 5,
+        /*float DISTANCE_OUT*/ 350f, //500f
+        /*float DISTANCE_OUT_NOISE*/ 200f, //350f
+        /*float ANGLE_NOISE*/ 2f,
+        /*float ANGLE_PADDING*/ 0f,
+        /*int ASTEROID_COUNT*/ 40,
+        /*float ASTEROID_DISTANCE_OUT*/ 70f,
+        /*float ASTEROID_DISTANCE_OUT_NOISE*/ 21f,
+        /*float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW*/ 0f,
+        /*float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_HIGH*/ 40f
+    );
+
+    //Eclipse Vision - affected objects
+    public enum HighlightableCBodyType
+    {
+        planet,
+        moon,
+        asteroid,
+        station,
+        heighliner,
+        bandit
+    };
+
+    //Colour palette
+    private readonly string[,] COLOR_PALETTE = new string[10, 4]
+    {
+        {"6184D8", "50C5B7", "9CEC5B", "F0F465"},
+        {"53DD6C", "63A088", "6F5E53", "8980F5"},
+        {"788AA3", "92B6B1", "B2C9AB", "E8DDB5"},
+        {"FA8334", "FFFD77", "FFE882", "388697"},
+        {"8D8D92", "BEB2C8", "D7D6D6", "53D8FB"},
+        {"FFEDDF", "C5D86D", "86615C", "AFE0CE"},
+        {"BA1200", "9DD1F1", "508AA8", "C8E0F4"},
+        {"7E8287", "9DA39A", "B98389", "DB2955"},
+        {"A99F96", "DDA77B", "945D5E", "474B24"},
+        {"F06543", "E8E9EB", "E0DFD5", "F09D51"}
+    };
+
+    //Player
+    public GameObject playerPrefab;
+    [System.NonSerialized] public GameObject instancePlayer;
+    [System.NonSerialized] public bool playerSpawned = false;
+
+    //Performance swaps
     public int asteroidsDetailed = 0;
-    private int hitboxSwapMoonsChild = 0;
-    private int hitboxSwapPlanetsChild = 0;
-    private readonly float SATELLITE_SWAP_DISTANCE = 120f; //70f
-    private readonly float PLANET_SWAP_DISTANCE = 170f;
+    private int hitboxSwapIndexMoons = 0;
+    private int hitboxSwapIndexPlanets = 0;
 
     //Verse hierarchy
     public GameObject verseSpace;
@@ -76,13 +154,11 @@ public class Generation : MonoBehaviour
                     public GameObject asteroidsEnabled;
                     public GameObject asteroidsDisabled;
                         public GameObject asteroid;
-                        //[System.NonSerialized] public List<GameObject> asteroidsPool = new List<GameObject>();
 
         public GameObject ores;
             public GameObject oreEnabled;
             public GameObject oreDisabled;
                 public GameObject ore;
-                [System.NonSerialized] public List<GameObject> orePool = new List<GameObject>();
             
         public GameObject projectiles;
             public GameObject playerProjectiles;
@@ -95,32 +171,6 @@ public class Generation : MonoBehaviour
             public GameObject enemy;
 
         public GameObject damageParticles;
-
-    //Eclipse Vision
-    public enum HighlightableCBodyType
-    {
-        planet,
-        moon,
-        asteroid,
-        station,
-        heighliner,
-        bandit
-    };
-
-    //Colours
-    private readonly string[,] COLOR_PALETTE = new string[10, 4]
-    {
-        {"6184D8", "50C5B7", "9CEC5B", "F0F465"},
-        {"53DD6C", "63A088", "6F5E53", "8980F5"},
-        {"788AA3", "92B6B1", "B2C9AB", "E8DDB5"},
-        {"FA8334", "FFFD77", "FFE882", "388697"},
-        {"8D8D92", "BEB2C8", "D7D6D6", "53D8FB"},
-        {"FFEDDF", "C5D86D", "86615C", "AFE0CE"},
-        {"BA1200", "9DD1F1", "508AA8", "C8E0F4"},
-        {"7E8287", "9DA39A", "B98389", "DB2955"},
-        {"A99F96", "DDA77B", "945D5E", "474B24"},
-        {"F06543", "E8E9EB", "E0DFD5", "F09D51"}
-    };
 
     private void Start()
     {
@@ -135,14 +185,11 @@ public class Generation : MonoBehaviour
     #region Update
     private void Update()
     {
-        //Debug
-        //Debug.Log(asteroidsEnabled.transform.childCount);
-
         //Wait to generate new game (otherwise we will be spawning asteroids at the same time we are destroying them!)
-        if (newGameTypeQueued != GenerationType.none && asteroidsEnabled.transform.childCount == 0)
+        if (genTypeQueued != GenerationType.none && asteroidsEnabled.transform.childCount == 0)
         {
-            GenerateGameNew(newGameTypeQueued);
-            newGameTypeQueued = GenerationType.none;
+            GenerateGameNew(genTypeQueued);
+            genTypeQueued = GenerationType.none;
         }
 
         //Slow update
@@ -150,158 +197,62 @@ public class Generation : MonoBehaviour
         {
             SlowUpdate();
         }
-
-        ////Very slow update
-        //if (Time.frameCount % control.settings.targetFPS == 0) //Every 1 second
-        //{
-        //    VerySlowUpdate();
-        //}
     }
 
     private void SlowUpdate()
     {
-        //AFTER GENERATION COMPLETE
+        //Complete generation
         //Setup all heighliners' map models and rotations
-        if (!heighlinersSetup && heighlinerExitNodesSet >= nPlanetsPlanned * 2)
+        if (!heighlinersSetup)
         {
-            bool loopSuccess = true;
-
-            for (int planetaryIndex = 0; planetaryIndex < nPlanetsPlanned; planetaryIndex++)
-            {
-                Planet planetScript = control.generation.planets.transform.GetChild(planetaryIndex).GetComponent<Planet>();
-
-                if (!planetScript.heighliner0.GetComponentInChildren<HeighlinerEntry>().Setup())
-                {
-                    loopSuccess = false;
-                }
-
-                if (!planetScript.heighliner1.GetComponentInChildren<HeighlinerEntry>().Setup())
-                {
-                    loopSuccess = false;
-                }
-            }
-
-            heighlinersSetup = loopSuccess;
+            SetupHeighlinerMapModelsAndRotation();
         }
 
-        //Checks one object per type per frame to avoid lag spikes
-        SwapHitboxes();
-
-        //Performance mode swaps
+        //Impostering
         if (playerSpawned)
         {
+            //Entity performance mode swaps
             SwapAsteroidPerformanceMode();
             SwapEnemyPerformanceMode();
+
+            //Mesh Collider to Sphere collider swapper (for performance) - checks one object per type - doing this here to avoid lag spikes
+            SwapObjectGroupHitboxes(moons, ref hitboxSwapIndexMoons, 120f);
+            SwapObjectGroupHitboxes(planets, ref hitboxSwapIndexPlanets, 170f);
         }
     }
 
     private void VerySlowUpdate()
     {
+        //Populate asteroids in new system? (Should also be called when going through heighliner)
+
         //AsteroidManageCount();
     }
     #endregion
 
-    #region Performance swappers
-    private void SwapHitboxes()
+    #region Generalized Mesh Swapper
+    private void SwapObjectGroupHitboxes(GameObject groupForWhichToSwapHitboxes, ref int indexWithinGroup, float swapDistanceThreshold)
     {
-        //Mesh Collider to Sphere collider swapper (for performance)
-
-        //MOONS CHILDREN
-        //Could be a moon, station, or heighliner (all have the same children collider names)
         //The transform to check whether to swap
-        Transform transformToSwap = moons.transform.GetChild(hitboxSwapMoonsChild);
+        Transform transformToSwap = groupForWhichToSwapHitboxes.transform.GetChild(indexWithinGroup);
 
-        //Check which collider to use
+        //Swap?
         bool useMesh = (
             Vector3.Distance(
-            instancePlayer.transform.Find("Body").position,
+            control.GetPlayerTransform().position,
             transformToSwap.position
-            ) < SATELLITE_SWAP_DISTANCE
+            ) < swapDistanceThreshold
         );
 
-        //Use proper colliders
+        //Swap
         transformToSwap.Find("Mesh Collider").gameObject.SetActive(useMesh);
         transformToSwap.Find("Sphere Collider").gameObject.SetActive(!useMesh);
 
-        //Increment, unless at max
-        hitboxSwapMoonsChild = (hitboxSwapMoonsChild + 1) % moons.transform.childCount;
-
-
-        //PLANETS CHILDREN
-        //The transform to check whether to swap
-        Transform planetsChildTransformToSwap = planets.transform.GetChild(hitboxSwapPlanetsChild);
-
-        //Check which collider to use
-        bool planetsChildUseMesh = (
-            Vector3.Distance(
-            instancePlayer.transform.Find("Body").position,
-            planetsChildTransformToSwap.position
-            ) < PLANET_SWAP_DISTANCE
-        );
-
-        //Use proper colliders
-        planetsChildTransformToSwap.Find("Mesh Collider").gameObject.SetActive(planetsChildUseMesh);
-        planetsChildTransformToSwap.Find("Sphere Collider").gameObject.SetActive(!planetsChildUseMesh);
-
-        //Increment, unless at max
-        hitboxSwapPlanetsChild = (hitboxSwapPlanetsChild + 1) % planets.transform.childCount;
-    }
-
-    private void SwapAsteroidPerformanceMode()
-    {
-        int detailed = 0;
-
-        for (int i = 0; i < asteroidsEnabled.transform.childCount; i++)
-        {
-            //The transform to check whether to swap
-            Transform transformToSwap = asteroidsEnabled.transform.GetChild(i);
-
-            Asteroid instanceAsteroidScript = transformToSwap.GetComponent<Asteroid>();
-
-            //Check which performance mode to use (fast-moving asteroids must be farther away before switching to performance mode)
-            bool performant = (
-                Vector3.Distance( //moderately-far from player
-                    control.GetPlayerTransform().position,
-                    transformToSwap.position
-                ) >= Asteroid.THRESHOLD_DISTANCE_MAX_PERFORMANCE_MODE * Mathf.Max(1f, transformToSwap.GetComponent<Asteroid>().rb.velocity.magnitude * 0.3f)
-
-                && Time.time > instanceAsteroidScript.timeLastDamaged + instanceAsteroidScript.PERIOD_ACTIVE_AFTER_DAMAGED //not damaged recently
-            );
-
-            //Use proper performance mode
-            transformToSwap.GetComponent<Asteroid>().SetPerformant(performant);
-
-            //Keep track of how many asteroids of each type we have
-            if (!performant)
-            {
-                detailed++;
-            }
-        }
-
-        asteroidsDetailed = detailed;
-    }
-
-    private void SwapEnemyPerformanceMode()
-    {
-        for (int i = 0; i < enemies.transform.childCount; i++)
-        {
-            //The transform to check whether to swap
-            Transform transformToSwap = enemies.transform.GetChild(i);
-
-            //Check which performance mode to use
-            bool performant = (
-                Vector3.Distance(
-                control.GetPlayerTransform().position,
-                transformToSwap.position
-                ) >= Enemy.DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE
-            );
-
-            //Use proper performance mode
-            transformToSwap.GetComponent<Enemy>().SetPerformant(performant);
-        }
+        //Increment to the next transform in the folder, unless at max
+        indexWithinGroup = (indexWithinGroup + 1) % groupForWhichToSwapHitboxes.transform.childCount;
     }
     #endregion
 
+    #region Generation Start
     public void GenerateGame(GenerationType generationType)
     {
         //Destroy the previous game's objects
@@ -311,7 +262,7 @@ public class Generation : MonoBehaviour
         }
 
         //Queue generating new game until we are finished destroying the previous game's objects if restarting, or instantly if new game
-        newGameTypeQueued = generationType;
+        genTypeQueued = generationType;
     }
 
     private void GenerateGameNew(GenerationType generationType)
@@ -324,7 +275,7 @@ public class Generation : MonoBehaviour
         StarSpawn(null);
 
         //Planetary system (planets > moons > heighliners, stations > player)
-        nPlanetsPlanned = (PLANETS_RANGE_HIGH + PLANETS_RANGE_LOW) / 2; //the player's first system should have a very stable number of planets for progression reasons
+        nPlanetsPlanned = 3; //the player's first system should have a very stable number of planets for progression reasons
         //nPlanetsPlanned = Random.Range(PLANETS_RANGE_LOW, PLANETS_RANGE_HIGH + 1); //extrastellar systems should have varied planet numbers
         PlanetarySystemClusterSpawn(nPlanetsPlanned, generationType);
 
@@ -345,7 +296,7 @@ public class Generation : MonoBehaviour
         Destroy(instanceStarHome, 0f);
 
         Control.DestroyAllChildren(planets, 0f);
-        hitboxSwapPlanetsChild = 0;
+        hitboxSwapIndexPlanets = 0;
         foreach (List<GameObject> planetarySystemChildren in planetarySystems)
         {
             planetarySystemChildren.Clear();
@@ -353,15 +304,13 @@ public class Generation : MonoBehaviour
         planetarySystems.Clear();
 
         Control.DestroyAllChildren(moons, 0f);
-        hitboxSwapMoonsChild = 0;
+        hitboxSwapIndexMoons = 0;
 
         Control.DestroyAllChildren(asteroidsEnabled, 0f);
         Control.DestroyAllChildren(asteroidsDisabled, 0f);
-        //asteroidsPool.Clear();
 
         Control.DestroyAllChildren(oreEnabled, 0f);
         Control.DestroyAllChildren(oreDisabled, 0f);
-        orePool.Clear();
 
         Control.DestroyAllChildren(playerProjectilesLasers, 0f);
         Control.DestroyAllChildren(playerProjectilesSeismicCharges, 0f);
@@ -380,6 +329,7 @@ public class Generation : MonoBehaviour
             Destroy(instancePlayer, 0f);
         }
     }
+#endregion
 
     #region Stars
     private void StarSpawn(string titleOverride)
@@ -405,18 +355,118 @@ public class Generation : MonoBehaviour
         }
 
         //Set light range
-        instanceStarHome.GetComponentInChildren<Light>().range = PLANET_DISTANCE_OUT * 2f;
+        instanceStarHome.GetComponentInChildren<Light>().range = GEN_PARAMS_PLANETS.DISTANCE_OUT * 2f;
     }
     #endregion
 
     #region Planets
+    public void SpawnPlanetarySystemEntities(int planetarySystemIndex)
+    {
+        //Planetary systems OTHER than player spawn
+        Vector3 systemPosition = planetarySystems[planetarySystemIndex][0].transform.position;
+
+        //Asteroid belt (some percent of all planets have one)
+        float nPercentAsteroidBelts = 50f;
+        if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanetsPlanned, nPercentAsteroidBelts))
+        {
+            //Any asteroid type can spawn in other planetary systems than the one the player spawns at
+            AsteroidPoolSpawnCluster(
+                ClusterType.planetRing,
+                Asteroid.GetRandomType(),
+                systemPosition,
+                false
+            );
+        }
+
+        //Bandits
+        float nPercentEnemies = 85f; //50f;
+        if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanetsPlanned, nPercentEnemies))
+        {
+            float roll = Random.value;
+            if (roll >= 0.65f) //35% chance
+            {
+                //Standard squad
+                EnemySpawnCluster(
+                    ClusterType.planetClump,
+                    systemPosition,
+                      ((int)Enemy.Strength.major).ToString()
+                    + ((int)Enemy.Strength.major).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                );
+            }
+
+            else if (roll >= 0.4f) //25% chance
+            {
+                //Elite squad
+                EnemySpawnCluster(
+                    ClusterType.planetClump,
+                    systemPosition,
+                      ((int)Enemy.Strength.elite).ToString()
+                    + ((int)Enemy.Strength.major).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                );
+            }
+            else if (roll >= 0.15f) //25% chance
+            {
+                //Strike team
+                EnemySpawnCluster(
+                    ClusterType.planetClump,
+                    systemPosition,
+                      ((int)Enemy.Strength.ultra).ToString()
+                    + ((int)Enemy.Strength.elite).ToString()
+                    + ((int)Enemy.Strength.elite).ToString()
+                );
+            }
+            else //15% chance
+            {
+                //Hoard of minors
+                EnemySpawnCluster(
+                    ClusterType.planetClump,
+                    systemPosition,
+                      ((int)Enemy.Strength.minor).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                    + ((int)Enemy.Strength.minor).ToString()
+                );
+            }
+        }
+    }
+
     private void PlanetarySystemClusterSpawn(int nPlanets, GenerationType generationType)
     {
         //Spawn all planetary systems
 
         //Get positions for each planetary system
+        float radiusPlanetSystem = GEN_PARAMS_MOONS.DISTANCE_OUT + GEN_PARAMS_MOONS.DISTANCE_OUT_NOISE
+            + GEN_PARAMS_MOONS.ASTEROID_DISTANCE_OUT + GEN_PARAMS_MOONS.ASTEROID_DISTANCE_OUT_NOISE;
+        float radiusStarToPlanet = GEN_PARAMS_PLANETS.DISTANCE_OUT;
+        
+        /*
+         * https://www.omnicalculator.com/math/arc-length
+         * To find arc length you can use the radius and chord length:
+         * 
+         * 1. Divide the chord length by double the radius. c/2r
+         * 2. Find the inverse sine of the result (in radians). Asin(c/2r)
+         * 3. Double the result of the inverse sine to get the central angle in radians. 2Asin(c/2r)
+         * 4. Once you have the central angle in radians, multiply it by the radius to get the arc length. r2Asin(c/2r)
+         */
+        float arcLengthPlanetSystem = radiusStarToPlanet * 2f * Mathf.Asin(radiusPlanetSystem / (2f * radiusStarToPlanet));
+
+        float circumferencePlanetAroundStar = control.TAU * radiusStarToPlanet; //C = τr
+        int nAnglesMax = System.Convert.ToInt32(Mathf.Floor(circumferencePlanetAroundStar / arcLengthPlanetSystem));
+        
         Vector3[] position = new Vector3[nPlanets];
-        position = GenerateOrbitalPositionsWithReservedAngles(nPlanets, (int)(nPlanets * 1.5f), 2f, PLANET_DISTANCE_OUT, PLANET_DISTANCE_OUT_NOISE); //3000f //3800f old distanceOut
+        position = GenerateOrbitalPositionsWithReservedAngles(
+            nPlanets,
+            nAnglesMax, //(int)(anglesMax * 2f), //(int)(nPlanets * 1.5f),
+            GEN_PARAMS_PLANETS.ANGLE_NOISE + GEN_PARAMS_PLANETS.ANGLE_PADDING,
+            GEN_PARAMS_PLANETS.DISTANCE_OUT,
+            GEN_PARAMS_PLANETS.DISTANCE_OUT_NOISE
+        );
 
         //Spawn each planetary system
         for (int planetaryIndex = 0; planetaryIndex < nPlanets; planetaryIndex++)
@@ -432,83 +482,11 @@ public class Generation : MonoBehaviour
         }
     }
 
-    private Vector3[] GenerateOrbitalPositionsWithReservedAngles(int nPositions, int nAngles, float angleNoiseMagnitude, float distanceOut, float distanceOutNoiseMagnitude)
-    {
-        /*  Returns an array of positions in a ring around (0,0), with angle reserving to prevent overlapping
-         * 
-         *  nPositions - how many positions to return
-         *  nAngles - how many discrete, evenly divided angles to reserve for each possible position
-         *            this number needs to be higher than nPositions otherwise we will not be able to generate angles for each position
-         *            a higher number results in finer angles, but more chance of overlapping
-         *  angleNoiseMagnitude - magnitude of random offset angle in degrees, to make a more natural generation
-         *  distanceOut - how far from the centre each position should be
-         *  distanceOutNoiseMagnitude - similar to angleNoiseMagnitude; adds some random noise to how far out from centre the position will generate
-         */
-
-        //Create a list of position to return later
-        Vector3[] positions = new Vector3[nPositions];
-
-        //Create a list of all available degrees, defaulting to be available
-        bool[] availableAngles = new bool[nAngles];
-        for (int angleIndex = 0; angleIndex < availableAngles.Length; angleIndex++)
-        {
-            availableAngles[angleIndex] = true;
-        }
-
-        //Loop for each position
-        for (int positionIndex = 0; positionIndex < nPositions; positionIndex++)
-        {
-            //Try to find an available angle for this position
-            float angle = 0f;
-            int triesMax = 50;
-            for (int tryIndex = 0; tryIndex < triesMax; tryIndex++)
-            {
-                int angleToCheck = (int)Random.Range(0f, (float)nAngles);
-                if (availableAngles[angleToCheck])
-                {
-                    //Set the angle to use as no longer available for other positions to use
-                    availableAngles[angleToCheck] = false;
-
-                    //Convert from angle index to degrees (because we add random noise in degrees)
-                    angle = angleToCheck * (360f / availableAngles.Length);
-
-                    //Add random noise to the angle
-                    angle += Random.value * angleNoiseMagnitude;
-
-                    //Convert from degrees to radians, since that's what the Mathf struct uses
-                    angle *= 0.01745329251f; //TauRadiansPerTurn / degreesPerTurn = 6.28 / 360;
-
-                    //Exit the try loop - we have found a working angle for this position
-                    break;
-                }
-                else if (tryIndex == triesMax - 1)
-                {
-                    //Default to a random angle if we run out of tries
-                    Debug.LogError("Ran out of tries trying to find an available angle to use for this position");
-                    angle = Random.Range(0f, 360f);
-                }
-            }
-
-            //Generate the distance away from centre
-            float instanceDistanceOut = distanceOut + (Random.value * distanceOutNoiseMagnitude);
-
-            //Assign the position
-            positions[positionIndex] = new Vector3(
-                Mathf.Cos(angle) * instanceDistanceOut,
-                0f,
-                Mathf.Sin(angle) * instanceDistanceOut
-            );
-        }
-
-        //Return the positions Vector3 array
-        return positions;
-    }
-
     private GameObject PlanetarySystemSpawn(
         GenerationType generationType,
         int planetarySystemIndex, int nPlanets, Vector3 position, string titleOverride,
         bool spawnAsteroids
-        )
+    )
     {
         //Includes possibly spawning the player
 
@@ -533,13 +511,13 @@ public class Generation : MonoBehaviour
             }
             else
             {
-                nMoons = Random.Range(MOONS_RANGE_LOW, MOONS_RANGE_HIGH + 1);
+                nMoons = Random.Range(GEN_PARAMS_MOONS.COUNT_RANGE_LOW, GEN_PARAMS_MOONS.COUNT_RANGE_HIGH + 1);
             }
             GameObject instanceLastMoonSpawnedInCluster = MoonClusterSpawn(
                 nMoons,
                 planetarySystemIndex,
                 position,
-                spawnAsteroids,
+                (planetarySystemIndex == 0), //only spawn asteroids if this is the player's home system
                 colorPaletteIndex
             );
 
@@ -578,13 +556,10 @@ public class Generation : MonoBehaviour
             //If home planetary system
             if (planetarySystemIndex == 0)
             {
-                //Set home moon
-                playerSpawnMoon = instanceLastMoonSpawnedInCluster;
-
                 //Player
                 PlayerSpawn(
                     generationType,
-                    playerSpawnMoon.transform.position + new Vector3(6f, 14f, 2f)
+                    instanceLastMoonSpawnedInCluster.transform.position + new Vector3(6f, 14f, 2f)
                 );
 
                 //Asteroid belt guaranteed at player's spawn planet
@@ -603,6 +578,7 @@ public class Generation : MonoBehaviour
                         false
                     );
                 }
+                instancePlanet.GetComponent<Planet>().hasGeneratedAsteroids = true;
 
                 //One minor bandit is guaranteed to spawn at the player's spawn planet
                 EnemySpawnCluster(
@@ -611,131 +587,9 @@ public class Generation : MonoBehaviour
                     ((int)Enemy.Strength.minor).ToString()
                 );
             }
-            else
-            {
-                //Planetary systems OTHER than player spawn
-                //Asteroid belt (some percent of all planets have one)
-                float nPercentAsteroidBelts = 50f;
-                if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentAsteroidBelts))
-                {
-                    //Any asteroid type can spawn in other planetary systems than the one the player spawns at
-                    if (spawnAsteroids)
-                    {
-                        AsteroidPoolSpawnCluster(
-                            ClusterType.planetRing,
-                            Asteroid.GetRandomType(),
-                            position,
-                            false
-                        );
-                    }
-                }
-
-                //Bandits
-                float nPercentEnemies = 85f; //50f;
-                if (Control.GetTrueForPercentOfIndices(planetarySystemIndex, nPlanets, nPercentEnemies))
-                {
-                    float roll = Random.value;
-                    if (roll >= 0.65f) //35% chance
-                    {
-                        //Standard squad
-                        EnemySpawnCluster(
-                            ClusterType.planetClump,
-                            position,
-                              ((int)Enemy.Strength.major).ToString()
-                            + ((int)Enemy.Strength.major).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                        );
-                    }
-                    
-                    else if (roll >= 0.4f) //25% chance
-                    {
-                        //Elite squad
-                        EnemySpawnCluster(
-                            ClusterType.planetClump,
-                            position,
-                              ((int)Enemy.Strength.elite).ToString()
-                            + ((int)Enemy.Strength.major).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                        );
-                    }
-                    else if (roll >= 0.15f) //25% chance
-                    {
-                        //Strike team
-                        EnemySpawnCluster(
-                            ClusterType.planetClump,
-                            position,
-                              ((int)Enemy.Strength.ultra).ToString()
-                            + ((int)Enemy.Strength.elite).ToString()
-                            + ((int)Enemy.Strength.elite).ToString()
-                        );
-                    }
-                    else //15% chance
-                    {
-                        //Hoard of minors
-                        EnemySpawnCluster(
-                            ClusterType.planetClump,
-                            position,
-                              ((int)Enemy.Strength.minor).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                            + ((int)Enemy.Strength.minor).ToString()
-                        );
-                    }
-                }
-            }
         }
 
         return instancePlanet;
-    }
-
-    public GameObject SpawnHeighliner(Vector3 position, GameObject hostPlanet)
-    {
-        //Spawn the heighliner
-        GameObject instanceHeighliner = Instantiate(
-            heighliner,
-            position,
-            Quaternion.identity
-        );
-
-        //Setup script
-        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().parentPlanet = hostPlanet;
-        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().control = control;
-
-        ////Set exit node
-        //if (heighlinerCount == 0)
-        //{
-        //    heighlinerInitial = instanceHeighliner;
-        //}
-        ////cant do initial (index[0]) as it links with final; can't do index[1] as it has no previous to link to
-        //else if (heighlinerCount >= 1 && heighlinerCount <= (nPlanetsPlanned * 2) - 2)
-        //{
-        //    if (heighlinerOpenLinker == null)
-        //    {
-        //        //If no open linker, make this the open linker and let the last heighliner set this heighliner's TP nodes
-        //        heighlinerOpenLinker = instanceHeighliner;
-        //    }
-        //    else
-        //    {
-        //        //Set this heighliner's exit node, and connect its sister's exit node to it
-        //        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = heighlinerOpenLinker;
-        //        heighlinerOpenLinker.GetComponentInChildren<HeighlinerEntry>().exitNode = instanceHeighliner;
-        //
-        //        //Reset generation to having no open linker at present
-        //        heighlinerOpenLinker = null;
-        //    }
-        //}
-        //else if (heighlinerCount == (nPlanetsPlanned * 2) - 1)
-        //{ //last heighliner is -1 because we haven't incremented the count yet
-        //    //Set this heighliner's exit node, and connect its sister's exit node to it
-        //    instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().exitNode = heighlinerInitial;
-        //    heighlinerInitial.GetComponentInChildren<HeighlinerEntry>().exitNode = instanceHeighliner;
-        //}
-
-        return instanceHeighliner;
     }
 
     private GameObject PlanetSpawn(Vector3 position, int planetarySystemIndex, string titleOverride, int colorPaletteIndex)
@@ -746,9 +600,6 @@ public class Generation : MonoBehaviour
             position,
             Quaternion.Euler(0f, 0f, 0f)
         );
-
-        //Update outline
-        //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_PLANET, instancePlanet.GetComponentInChildren<MeshRenderer>().material);
 
         //Pass control ref
         instancePlanet.GetComponent<Planet>().control = control;
@@ -781,7 +632,93 @@ public class Generation : MonoBehaviour
     }
     #endregion
 
+    #region Heighliners
+    private void SetupHeighlinerMapModelsAndRotation()
+    {
+        if (heighlinerExitNodesSet >= nPlanetsPlanned * 2)
+        {
+            bool loopSuccess = true;
+
+            for (int planetaryIndex = 0; planetaryIndex < nPlanetsPlanned; planetaryIndex++)
+            {
+                Planet planetScript = control.generation.planets.transform.GetChild(planetaryIndex).GetComponent<Planet>();
+
+                if (!planetScript.heighliner0.GetComponentInChildren<HeighlinerEntry>().Setup())
+                {
+                    loopSuccess = false;
+                }
+
+                if (!planetScript.heighliner1.GetComponentInChildren<HeighlinerEntry>().Setup())
+                {
+                    loopSuccess = false;
+                }
+            }
+
+            heighlinersSetup = loopSuccess;
+        }
+    }
+
+    public GameObject SpawnHeighliner(Vector3 position, GameObject hostPlanet)
+    {
+        //Spawn the heighliner
+        GameObject instanceHeighliner = Instantiate(
+            heighliner,
+            position,
+            Quaternion.identity
+        );
+
+        //Setup script
+        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().parentPlanet = hostPlanet;
+        instanceHeighliner.GetComponentInChildren<HeighlinerEntry>().control = control;
+
+        //Map lines and enter/exit nodes are setup by Update() calling SetupHeighlinerMapModelsAndRotation() after system generation complete
+
+        return instanceHeighliner;
+    }
+    #endregion
+
     #region Moons
+    public void SpawnMoonEntities(int planetIndex, int moonIndex, int nMoons, Vector3 instanceMoonPosition)
+    {
+        Asteroid.Type asteroidType = Asteroid.Type.water;
+        bool isValuablesGuaranteed = false;
+
+        //Decide whether to spawn, and if so with what properties
+        float nPercentAsteroidBelts = 50f;
+        if (moonIndex == nMoons - 1)
+        {
+            //Player spawn moon - water asteroids only but GUARANTEED valuables
+            asteroidType = Asteroid.Type.water;
+            isValuablesGuaranteed = true;
+        }
+        else if (planetIndex == 0)
+        {
+            //Not player spawn moon BUT IS player spawn planetary system
+            if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+            {
+                //Player spawn SYSTEM - water and platinoid only
+                if (Random.value > 0.5f)
+                {
+                    asteroidType = Asteroid.Type.platinoid;
+                }
+                //else water, as defined at declaration time
+            }
+        }
+        else if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
+        {
+            //All other systems - any asteroid type
+            asteroidType = Asteroid.GetRandomType();
+        }
+
+        //Spawn the asteroids
+        AsteroidPoolSpawnCluster(
+            ClusterType.moonRing,
+            asteroidType,
+            instanceMoonPosition,
+            isValuablesGuaranteed
+        );
+    }
+
     private GameObject MoonClusterSpawn(int nMoons, int planetIndex, Vector3 planetPosition, bool spawnAsteroids, int colorPaletteIndex)
     {
         //At the end we will return the last generated moon
@@ -791,7 +728,13 @@ public class Generation : MonoBehaviour
 
         //Get positions for each moon
         Vector3[] moonPositions = new Vector3[nMoons];
-        moonPositions = GenerateOrbitalPositionsWithReservedAngles(nMoons, (int)(nMoons * 2f), 2f, 350f, 200f); //500f, 350f old distance //nMoons, (int)(nMoons * 2f), 2f, 300f, 200f
+        moonPositions = GenerateOrbitalPositionsWithReservedAngles(
+            nMoons,
+            (int)(nMoons * 2f),
+            GEN_PARAMS_MOONS.ANGLE_NOISE,
+            GEN_PARAMS_MOONS.DISTANCE_OUT,
+            GEN_PARAMS_MOONS.DISTANCE_OUT_NOISE
+        );
 
         //Spawn each moon
         for (int moonIndex = 0; moonIndex < nMoons; moonIndex++)
@@ -821,45 +764,7 @@ public class Generation : MonoBehaviour
             //Spawn asteroid belt around this moon (some percentage of moons - other than player's spawn moon - have them)
             if (spawnAsteroids)
             {
-                float nPercentAsteroidBelts = 50f;
-                if (moonIndex == nMoons - 1)
-                {
-                    //Player spawn moon - water asteroids only but GUARANTEED valuables
-                    AsteroidPoolSpawnCluster(
-                        ClusterType.moonRing,
-                        Asteroid.Type.water,
-                        instanceMoonPosition,
-                        true
-                    );
-                }
-                else if (planetIndex == 0)
-                {
-                    if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
-                    {
-                        //Player spawn SYSTEM - water and platinoid only
-                        Asteroid.Type asteroidType = Asteroid.Type.water;
-                        if (Random.value > 0.5f)
-                        {
-                            asteroidType = Asteroid.Type.platinoid;
-                        }
-                        AsteroidPoolSpawnCluster(
-                            ClusterType.moonRing,
-                            asteroidType,
-                            instanceMoonPosition,
-                            false
-                        );
-                    }
-                }
-                else if (Control.GetTrueForPercentOfIndices(moonIndex, nMoons, nPercentAsteroidBelts))
-                {
-                    //All other systems - any asteroid type
-                    AsteroidPoolSpawnCluster(
-                        ClusterType.moonRing,
-                        Asteroid.GetRandomType(),
-                        instanceMoonPosition,
-                        false
-                    );
-                }
+                SpawnMoonEntities(planetIndex, moonIndex, nMoons, instanceMoonPosition);
             }
         }
 
@@ -867,9 +772,12 @@ public class Generation : MonoBehaviour
         return instanceMoon;
     }
 
-    public GameObject MoonSpawn(bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position, Color tint,
+    public GameObject MoonSpawn
+    (
+        bool loaded, int planetarySystemIndex, int moonIndex, Vector3 position, Color tint,
         bool forceStation, string titleOverride, bool ifLoadingIsStation, string stationTitleOverride,
-        bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex)
+        bool stationGenerateOffers, float stationPricePlatinoid, float stationPricePreciousMetal, float stationPriceWater, int[] stationUpgradeIndex
+    )
     {
         //Generate a moon within a planetary system and return its station's coordinates for possible use in spawning the player
 
@@ -893,9 +801,6 @@ public class Generation : MonoBehaviour
 
         //Give control reference
         instanceMoon.GetComponent<Moon>().control = control;
-
-        //Update outline
-        //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_MOON, instanceMoon.GetComponentInChildren<MeshRenderer>().material);
 
         //Set colour/tint
         instanceMoon.transform.Find("Model").GetComponent<MeshRenderer>().material.SetColor("_Tint", tint);
@@ -934,12 +839,6 @@ public class Generation : MonoBehaviour
                 //Force a station to spawn and return those coords to spawn the player there (mainly for player station, but also to ensure each planetary system has at least one station)
                 instanceMoon.GetComponent<Moon>().SpawnStation(null, true, 0f, 0f, 0f, null);
             }
-            //else if (moonIndex == 1 || moonIndex == 2)
-            //{
-            //    //Heighliner
-            //    //Force a heighliner to spawn
-            //    instanceMoon.GetComponent<Moon>().SpawnHeighliner("Heighliner");
-            //}
             else if (forceStation)
             {
                 //Force a station to spawn (unless a heighliner is required)
@@ -959,126 +858,39 @@ public class Generation : MonoBehaviour
     }
     #endregion
 
-    #region Player
-    private void PlayerSpawn(GenerationType generationType, Vector3 position)
+    #region Asteroids
+    private void SwapAsteroidPerformanceMode()
     {
-        //Remember that the player has spawned. This must be placed at the top of this method otherwise the player's own functions will null reference on the player itself!
-        playerSpawned = true;
+        int detailed = 0;
 
-        //Instantiate at position, rotation, velocity
-        instancePlayer = Instantiate(
-            playerPrefab,
-            Vector3.zero,
-            Quaternion.identity
-        );
-        instancePlayer.transform.Find("Body").transform.position = position;
-
-        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
-
-        if (generationType == GenerationType.newGame || generationType == GenerationType.restarted)
+        for (int i = 0; i < asteroidsEnabled.transform.childCount; i++)
         {
-            playerScript.vitalsHealth = playerScript.vitalsHealthMax;
-            playerScript.vitalsFuel = playerScript.vitalsFuelMax * 0.75d;
-            playerScript.isDestroyed = false;
-            //instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
-            instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnMoon.GetComponent<Rigidbody>().velocity;
-        }
+            //The transform to check whether to swap
+            Transform transformToSwap = asteroidsEnabled.transform.GetChild(i);
 
-        //Script properties
-        instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().control = control;
-        instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().player = instancePlayer.GetComponentInChildren<Player>();
+            Asteroid instanceAsteroidScript = transformToSwap.GetComponent<Asteroid>();
 
-        instancePlayer.GetComponentInChildren<PlayerWeaponSeismicCharge>().control = control;
-        instancePlayer.GetComponentInChildren<PlayerWeaponSeismicCharge>().player = instancePlayer.GetComponentInChildren<Player>();
+            //Check which performance mode to use (fast-moving asteroids must be farther away before switching to performance mode)
+            bool performant = (
+                Vector3.Distance( //moderately-far from player
+                    control.GetPlayerTransform().position,
+                    transformToSwap.position
+                ) >= Asteroid.THRESHOLD_DISTANCE_MAX_PERFORMANCE_MODE * Mathf.Max(1f, transformToSwap.GetComponent<Asteroid>().rb.velocity.magnitude * 0.3f)
 
-        playerScript.control = control;
-        playerScript.cBodies = cBodies;
-
-        playerScript.vitalsHealthUI = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsHealth").gameObject;
-        playerScript.vitalsHealthUIText = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsHealthText").gameObject.GetComponent<TextMeshProUGUI>();
-        playerScript.vitalsFuelUI = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsFuel").gameObject;
-        playerScript.vitalsFuelUIText = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsFuelText").gameObject.GetComponent<TextMeshProUGUI>();
-        playerScript.warningUIText = control.ui.canvas.transform.Find("HUD Top").Find("WarningText").gameObject.GetComponent<TextMeshProUGUI>();
-
-        playerScript.LateStart();
-
-        control.ui.CreatePlayerShipDirectionReticles();
-    }
-    #endregion
-
-    #region Entities
-    private void AsteroidPoolPopulate(int asteroidPoolLength)
-    {
-        for (int nAsteroids = 0; nAsteroids < asteroidPoolLength; nAsteroids++)
-        {
-            //OBJECT
-            //Instantiate
-            GameObject instanceAsteroid = Instantiate(
-                asteroid,
-                Vector3.zero,
-                Quaternion.identity
+                && Time.time > instanceAsteroidScript.timeLastDamaged + instanceAsteroidScript.PERIOD_ACTIVE_AFTER_DAMAGED //not damaged recently
             );
 
-            //SCRIPT
-            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
-            //Give control reference
-            instanceAsteroidScript.control = control;
-            //Ignore all collisions unless explicitly enabled (once asteroid is enabled and separated from siblings)
-            instanceAsteroidScript.rb.detectCollisions = false;
-            
-            //ORGANIZATION
-            //Put in hierarchy (disabling this will put it in the hierarchy anyway)
-            //instanceAsteroid.transform.parent = asteroidsDisabled.transform;
-            //Add to pool
-            //asteroidsPool.Add(instanceAsteroid);
-            //Set as disabled until needed
-            instanceAsteroidScript.DisableInPool();
+            //Use proper performance mode
+            transformToSwap.GetComponent<Asteroid>().SetPerformant(performant);
+
+            //Keep track of how many asteroids of each type we have
+            if (!performant)
+            {
+                detailed++;
+            }
         }
 
-        //Update hierarchy names
-        UpdateAsteroidPoolHierarchyCount();
-    }
-
-    public GameObject AsteroidPoolSpawn(Vector3 position, Asteroid.Size size, Asteroid.Type type)
-    {
-        //Spawn a single asteroid from the pool (move an asteroid from disabled to enabled)
-
-        GameObject instanceAsteroid = null;
-
-        //If we have room in the pool to draw from
-        if (asteroidsDisabled.transform.childCount > 0)
-        {
-            //Remember which asteroid we're working with so we can return it later
-            instanceAsteroid = asteroidsDisabled.transform.GetChild(0).gameObject;
-
-            //Enable that asteroid
-            instanceAsteroid.GetComponent<Asteroid>().EnableInPool(position, size, type);
-
-            //Add random torque
-            //float torqueMagnitudeRangeMax = 500f;
-            //float torqueMagnitude = Random.Range(0f, torqueMagnitudeRangeMax) * ((0.5f * Mathf.Sin(((control.TAU / 2f) * Random.value) - (control.TAU / 4f))) + 0.5f); //biased toward middle of range
-            //float torqueMagnitude = Mathf.Pow(30f, 2f) * Mathf.Sqrt(Random.value);
-            float torqueMagnitude = Mathf.Pow(Random.value, 1f / 4f) * (150f * instanceAsteroid.GetComponent<Asteroid>().rb.mass); //120f; //60f;
-            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(torqueMagnitude * control.GetRandomDirection());
-
-            //Remember movement
-            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
-            instanceAsteroidScript.rbMemVel = instanceAsteroidScript.rb.velocity;
-            instanceAsteroidScript.rbMemAngularVel = instanceAsteroidScript.rb.angularVelocity;
-
-            //Update outline
-            //control.GetPlayerScript().UpdateOutlineMaterial(Player.CBODY_TYPE_ASTEROID, instanceAsteroidScript.modelObject.GetComponentInChildren<MeshRenderer>().material);
-
-            //Update hierarchy name to reflect count
-            UpdateAsteroidPoolHierarchyCount();
-        }
-        else
-        {
-            Debug.LogError("No free asteroids!");
-            //TODO: later we could either expand the pool or reuse enabled asteroids
-        }
-
-        return instanceAsteroid;
+        asteroidsDetailed = detailed;
     }
 
     public void UpdateAsteroidPoolHierarchyCount()
@@ -1098,36 +910,46 @@ public class Generation : MonoBehaviour
             int nAsteroids = 0;
             float chancePercentOfValuableType = 0f;
             float radius = 0f;
-            
+            float radiusRandomness = 0f;
+
             if (clusterType == ClusterType.planetRing)
             {
-                radius = 250f; //200 //170
-                nAsteroids = 100; //70;
+                nAsteroids = GEN_PARAMS_PLANETS.ASTEROID_COUNT; //100; //70;
+                radius = GEN_PARAMS_PLANETS.ASTEROID_DISTANCE_OUT; //250f; //200 //170
+                radiusRandomness = GEN_PARAMS_PLANETS.ASTEROID_DISTANCE_OUT_NOISE; //21f; //radius * 0.28f; //0.4 //0.12
+
                 if (guaranteeValuables)
                 {
                     chancePercentOfValuableType = 20f;
                 }
                 else
                 {
-                    chancePercentOfValuableType = Random.Range(0f, 30f); //10f;
+                    chancePercentOfValuableType = Random.Range(
+                        GEN_PARAMS_PLANETS.ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW,
+                        GEN_PARAMS_PLANETS.ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_HIGH
+                    ); //Random.Range(0f, 30f); //10f;
                 }
             }
             else if (clusterType == ClusterType.moonRing)
             {
-                radius = 70f; //60
-                nAsteroids = 40; //70;
+                nAsteroids = GEN_PARAMS_MOONS.ASTEROID_COUNT; //40; //70;
+                radius = GEN_PARAMS_MOONS.ASTEROID_DISTANCE_OUT; //70f; //60
+                radiusRandomness = GEN_PARAMS_MOONS.ASTEROID_DISTANCE_OUT_NOISE; //21f; //radius * 0.28f; //0.4 //0.12
+                
                 if (guaranteeValuables)
                 {
                     chancePercentOfValuableType = 30f;
                 }
                 else
                 {
-                    chancePercentOfValuableType = Random.Range(0f, 40f); //10f;
+                    chancePercentOfValuableType = Random.Range(
+                        GEN_PARAMS_MOONS.ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW,
+                        GEN_PARAMS_MOONS.ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_HIGH
+                    ); //Random.Range(0f, 40f); //10f;
                 }
             }
-
-            float radiusRandomness = 21f; //radius * 0.28f; //0.4 //0.12
-            float heightRandomness = 20f; //radius * 0.28f; //0.3 //0.24 0.12
+            
+            float heightRandomness = 15f; //20f; //radius * 0.28f; //0.3 //0.24 0.12
             float angle = 0f;
             float angleRandomness = 6f;
 
@@ -1167,6 +989,65 @@ public class Generation : MonoBehaviour
         }
     }
 
+    public GameObject AsteroidPoolSpawn(Vector3 position, Asteroid.Size size, Asteroid.Type type)
+    {
+        //Spawn a single asteroid from the pool (move an asteroid from disabled to enabled)
+
+        GameObject instanceAsteroid = null;
+
+        //If we have room in the pool to draw from
+        if (asteroidsDisabled.transform.childCount > 0)
+        {
+            //Remember which asteroid we're working with so we can return it later
+            instanceAsteroid = asteroidsDisabled.transform.GetChild(0).gameObject;
+
+            //Enable that asteroid
+            instanceAsteroid.GetComponent<Asteroid>().EnableInPool(position, size, type);
+
+            //Add random torque
+            float torqueMagnitude = Mathf.Pow(Random.value, 1f / 4f) * (150f * instanceAsteroid.GetComponent<Asteroid>().rb.mass); //120f; //60f;
+            instanceAsteroid.GetComponent<Rigidbody>().AddTorque(torqueMagnitude * control.GetRandomDirection());
+
+            //Remember movement
+            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
+            instanceAsteroidScript.rbMemVel = instanceAsteroidScript.rb.velocity;
+            instanceAsteroidScript.rbMemAngularVel = instanceAsteroidScript.rb.angularVelocity;
+
+            //Update hierarchy name to reflect count
+            UpdateAsteroidPoolHierarchyCount();
+        }
+        else
+        {
+            Debug.LogError("No free asteroids!");
+            //TODO: later we could either expand the pool or reuse enabled asteroids
+        }
+
+        return instanceAsteroid;
+    }
+
+    private void AsteroidPoolPopulate(int asteroidPoolLength)
+    {
+        for (int nAsteroids = 0; nAsteroids < asteroidPoolLength; nAsteroids++)
+        {
+            //Instantiate
+            GameObject instanceAsteroid = Instantiate(
+                asteroid,
+                Vector3.zero,
+                Quaternion.identity
+            );
+
+            Asteroid instanceAsteroidScript = instanceAsteroid.GetComponent<Asteroid>();
+            instanceAsteroidScript.control = control;
+            instanceAsteroidScript.rb.detectCollisions = false;
+            instanceAsteroidScript.DisableInPool();
+        }
+
+        //Update hierarchy names
+        UpdateAsteroidPoolHierarchyCount();
+    }
+    #endregion
+
+    #region Ore
     private void OrePoolPopulate(int orePoolLength)
     {
         for (int oreIndex = 0; oreIndex < orePoolLength; oreIndex++)
@@ -1183,9 +1064,6 @@ public class Generation : MonoBehaviour
 
             //Hierarchy
             instanceOre.transform.parent = oreDisabled.transform;
-
-            //Add to pool
-            orePool.Add(instanceOre);
         }
 
         //Update hierarchy names
@@ -1255,6 +1133,28 @@ public class Generation : MonoBehaviour
             Random.Range(0f, 7000f) //Random.Range(3000f, 7000f) //5000f
             * control.GetRandomDirection()
         );
+    }
+    #endregion
+
+    #region Bandits
+    private void SwapEnemyPerformanceMode()
+    {
+        for (int i = 0; i < enemies.transform.childCount; i++)
+        {
+            //The transform to check whether to swap
+            Transform transformToSwap = enemies.transform.GetChild(i);
+
+            //Check which performance mode to use
+            bool performant = (
+                Vector3.Distance(
+                control.GetPlayerTransform().position,
+                transformToSwap.position
+                ) >= Enemy.DISTANCE_THRESHOLD_GREATER_THAN_PERFORMANT_MODE
+            );
+
+            //Use proper performance mode
+            transformToSwap.GetComponent<Enemy>().SetPerformant(performant);
+        }
     }
 
     private void EnemySpawnCluster(ClusterType clusterType, Vector3 position, string list)
@@ -1331,7 +1231,54 @@ public class Generation : MonoBehaviour
     }
     #endregion
 
-    #region: Saving and loading
+    #region Player
+    private void PlayerSpawn(GenerationType generationType, Vector3 position)
+    {
+        //Remember that the player has spawned. This must be placed at the top of this method otherwise the player's own functions will null reference on the player itself!
+        playerSpawned = true;
+
+        //Instantiate at position, rotation, velocity
+        instancePlayer = Instantiate(
+            playerPrefab,
+            Vector3.zero,
+            Quaternion.identity
+        );
+        instancePlayer.transform.Find("Body").transform.position = position;
+
+        Player playerScript = instancePlayer.GetComponentInChildren<Player>();
+
+        if (generationType == GenerationType.newGame || generationType == GenerationType.restarted)
+        {
+            playerScript.vitalsHealth = playerScript.vitalsHealthMax;
+            playerScript.vitalsFuel = playerScript.vitalsFuelMax * 0.75d;
+            playerScript.isDestroyed = false;
+            //instancePlayer.transform.Find("Body").transform.rotation = Quaternion.Euler(5f, 20f, 0f); //x = pitch, y = yaw, z = roll
+            //instancePlayer.GetComponentInChildren<Rigidbody>().velocity = playerSpawnMoon.GetComponent<Rigidbody>().velocity;
+        }
+
+        //Script properties
+        instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().control = control;
+        instancePlayer.GetComponentInChildren<PlayerWeaponLaser>().player = instancePlayer.GetComponentInChildren<Player>();
+
+        instancePlayer.GetComponentInChildren<PlayerWeaponSeismicCharge>().control = control;
+        instancePlayer.GetComponentInChildren<PlayerWeaponSeismicCharge>().player = instancePlayer.GetComponentInChildren<Player>();
+
+        playerScript.control = control;
+        playerScript.cBodies = cBodies;
+
+        playerScript.vitalsHealthUI = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsHealth").gameObject;
+        playerScript.vitalsHealthUIText = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsHealthText").gameObject.GetComponent<TextMeshProUGUI>();
+        playerScript.vitalsFuelUI = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsFuel").gameObject;
+        playerScript.vitalsFuelUIText = control.ui.canvas.transform.Find("HUD Bottom-Left").Find("Vitals").Find("VitalsFuelText").gameObject.GetComponent<TextMeshProUGUI>();
+        playerScript.warningUIText = control.ui.canvas.transform.Find("HUD Top").Find("WarningText").gameObject.GetComponent<TextMeshProUGUI>();
+
+        playerScript.LateStart();
+
+        control.ui.CreatePlayerShipDirectionReticles();
+    }
+    #endregion
+
+    #region Saving and loading
     public void SaveGame()
     {
         ////INIT ARRAYS TO BE USED FOR SAVING
@@ -1682,4 +1629,87 @@ public class Generation : MonoBehaviour
         }
     }
     #endregion
-}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+
+    #region Math
+    private Vector3[] GenerateOrbitalPositionsWithReservedAngles
+    (
+        int nPositions, int nAngles, float angleNoiseMagnitudeDegrees, float distanceOut, float distanceOutNoiseMagnitude
+    )
+    {
+        /*  Returns an array of positions in a ring around (0,0), with angle reserving to prevent overlapping
+         * 
+         *  nPositions - how many positions to return
+         *  nAngles - how many discrete, evenly divided angles to reserve for each possible position
+         *            this number needs to be higher than nPositions otherwise we will not be able to generate angles for each position
+         *            a higher number results in finer angles, but more chance of overlapping
+         *  angleNoiseMagnitude - magnitude of random offset angle in degrees, to make a more natural generation
+         *  distanceOut - how far from the centre each position should be
+         *  distanceOutNoiseMagnitude - similar to angleNoiseMagnitude; adds some random noise to how far out from centre the position will generate
+         */
+
+        if (nPositions > nAngles)
+        {
+            Debug.LogError("Not enough space to ensure no overlap for :" + nPositions + " positions at " + distanceOut + " radius requiring " + nAngles + " angles");
+        }
+
+        //Create a list of position to return later
+        Vector3[] positions = new Vector3[nPositions];
+
+        //Create a list of all available degrees, defaulting to be available
+        bool[] availableAngles = new bool[nAngles];
+        for (int angleIndex = 0; angleIndex < availableAngles.Length; angleIndex++)
+        {
+            availableAngles[angleIndex] = true;
+        }
+
+        //Loop for each position
+        for (int positionIndex = 0; positionIndex < nPositions; positionIndex++)
+        {
+            //Try to find an available angle for this position
+            float angle = 0f;
+            int triesMax = 50;
+            for (int tryIndex = 0; tryIndex < triesMax; tryIndex++)
+            {
+                int angleToCheck = (int)Random.Range(0f, (float)nAngles); //-1 because we start at 0
+                //Debug.Log("Checking angle " + angleToCheck + "/" + availableAngles.Length);
+                if (availableAngles[angleToCheck])
+                {
+                    //Set the angle to use as no longer available for other positions to use
+                    availableAngles[angleToCheck] = false;
+
+                    //Convert from angle index to degrees (because we add random noise in degrees)
+                    angle = angleToCheck * (360f / availableAngles.Length);
+
+                    //Add random noise in degrees to the angle
+                    angle += Random.value * angleNoiseMagnitudeDegrees;
+
+                    //Convert from degrees to radians, since that's what the Mathf struct uses
+                    angle *= 0.01745329251f; //TauRadiansPerTurn / degreesPerTurn = 6.28 / 360;
+
+                    //Exit the try loop - we have found a working angle for this position
+                    break;
+                }
+                else if (tryIndex == triesMax - 1)
+                {
+                    //Default to a random angle if we run out of tries
+                    Debug.LogError("Ran out of tries trying to find an available angle to use for this position; assigning a random angle");
+                    angle = Random.Range(0f, 360f);
+                }
+            }
+
+            //Generate the distance away from centre
+            float instanceDistanceOut = distanceOut + (Random.value * distanceOutNoiseMagnitude);
+
+            //Assign the position
+            positions[positionIndex] = new Vector3(
+                Mathf.Cos(angle) * instanceDistanceOut,
+                0f,
+                Mathf.Sin(angle) * instanceDistanceOut
+            );
+        }
+
+        //Return the positions Vector3 array
+        return positions;
+    }
+    #endregion
+}

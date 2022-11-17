@@ -53,6 +53,9 @@ public class UI : MonoBehaviour
     [System.NonSerialized] public Image resourcesFillPlatinoid;
     [System.NonSerialized] public Image resourcesFillPreciousMetals;
     [System.NonSerialized] public Image resourcesFillWater;
+    [System.NonSerialized] public Transform resourcesIconAndTextWater;
+    [System.NonSerialized] public Transform resourcesIconAndTextPlatinoid;
+    [System.NonSerialized] public Transform resourcesIconAndTextPreciousMetals;
     [System.NonSerialized] public Transform resourcesWater;
     [System.NonSerialized] public Transform resourcesPlatinoid;
     [System.NonSerialized] public Transform resourcesPreciousMetals;
@@ -116,20 +119,23 @@ public class UI : MonoBehaviour
         resourcesImageCurrency = resourcesFolder.Find("Currency").GetComponent<Image>();
         resourcesTextCurrency = resourcesFolder.Find("Currency Text").GetComponent<TextMeshProUGUI>();
 
-        resourcesWater =        resourcesFolder.Find("Total Ore").Find("Water");
-        resourcesFillWater =    resourcesWater.Find("Fill").GetComponent<Image>();
-        resourcesImageWater =   resourcesWater.Find("Icon").GetComponent<Image>();
-        resourcesTextWater =    resourcesWater.Find("Text").GetComponent<TextMeshProUGUI>();
+        resourcesWater =            resourcesFolder.Find("Total Ore").Find("Water");
+        resourcesFillWater =        resourcesWater.Find("Fill").GetComponent<Image>();
+        resourcesIconAndTextWater = resourcesWater.Find("Icon and Text");
+        resourcesImageWater =       resourcesIconAndTextWater.Find("Icon").GetComponent<Image>();
+        resourcesTextWater =        resourcesIconAndTextWater.Find("Text").GetComponent<TextMeshProUGUI>();
 
-        resourcesPlatinoid =        resourcesFolder.Find("Total Ore").Find("Platinoid");
-        resourcesFillPlatinoid =    resourcesPlatinoid.Find("Fill").GetComponent<Image>();
-        resourcesImagePlatinoid =   resourcesPlatinoid.Find("Icon").GetComponent<Image>();
-        resourcesTextPlatinoid =    resourcesPlatinoid.Find("Text").GetComponent<TextMeshProUGUI>();
+        resourcesPlatinoid =            resourcesFolder.Find("Total Ore").Find("Platinoid");
+        resourcesFillPlatinoid =        resourcesPlatinoid.Find("Fill").GetComponent<Image>();
+        resourcesIconAndTextPlatinoid = resourcesPlatinoid.Find("Icon and Text");
+        resourcesImagePlatinoid =       resourcesIconAndTextPlatinoid.Find("Icon").GetComponent<Image>();
+        resourcesTextPlatinoid =        resourcesIconAndTextPlatinoid.Find("Text").GetComponent<TextMeshProUGUI>();
 
-        resourcesPreciousMetals =       resourcesFolder.Find("Total Ore").Find("Precious Metals");
-        resourcesFillPreciousMetals =   resourcesPreciousMetals.Find("Fill").GetComponent<Image>();
-        resourcesImagePreciousMetals =  resourcesPreciousMetals.Find("Icon").GetComponent<Image>();
-        resourcesTextPreciousMetals =   resourcesPreciousMetals.Find("Text").GetComponent<TextMeshProUGUI>();
+        resourcesPreciousMetals =               resourcesFolder.Find("Total Ore").Find("Precious Metals");
+        resourcesFillPreciousMetals =           resourcesPreciousMetals.Find("Fill").GetComponent<Image>();
+        resourcesIconAndTextPreciousMetals =    resourcesPreciousMetals.Find("Icon and Text");
+        resourcesImagePreciousMetals =          resourcesIconAndTextPreciousMetals.Find("Icon").GetComponent<Image>();
+        resourcesTextPreciousMetals =           resourcesIconAndTextPreciousMetals.Find("Text").GetComponent<TextMeshProUGUI>();
 
         resourcesTextTotalOre =   resourcesFolder.Find("Total Ore Text").GetComponent<TextMeshProUGUI>();
 
@@ -919,10 +925,15 @@ public class UI : MonoBehaviour
             //Target
             if (rayHit.collider == null)
             {
-                SetPlayerTargetObject(null);
+                if (!UI.displayMap)
+                {
+                    //Toggle off by pressing the target keybind while looking at nothing
+                    SetPlayerTargetObject(null);
+                }
             }
             else
             {
+                //Target what we're looking at
                 SetPlayerTargetObject(rayHit.collider.gameObject);
             }
 
@@ -1083,8 +1094,31 @@ public class UI : MonoBehaviour
         resourcesFillPreciousMetals.GetComponent<Image>().fillAmount = (float)(playerScript.ore[(int)Asteroid.Type.preciousMetal] / control.GetPlayerScript().oreMax);
 
         //Positions within mixed fill bar
-        resourcesPlatinoid.GetComponent<RectTransform>().anchoredPosition =         new Vector3(384f * resourcesFillWater.GetComponent<Image>().fillAmount, 0f, 0f);
-        resourcesPreciousMetals.GetComponent<RectTransform>().anchoredPosition =    new Vector3((384f * resourcesFillPlatinoid.GetComponent<Image>().fillAmount) + resourcesPlatinoid.GetComponent<RectTransform>().anchoredPosition.x, 0f, 0f);
+        //Base positions
+        float waterFillWidth = 384f * resourcesFillWater.GetComponent<Image>().fillAmount;
+        float platinoidX = waterFillWidth;
+        resourcesPlatinoid.GetComponent<RectTransform>().anchoredPosition = new Vector3(platinoidX, 0f, 0f);
+
+        float platinoidFillWidth = 384f * resourcesFillPlatinoid.GetComponent<Image>().fillAmount;
+        float preciousMetalsX = platinoidFillWidth + resourcesPlatinoid.GetComponent<RectTransform>().anchoredPosition.x;
+        resourcesPreciousMetals.GetComponent<RectTransform>().anchoredPosition = new Vector3(preciousMetalsX, 0f, 0f);
+
+        //Icon and text minimum distance between each other (prevents overlapping)
+        float minDist = 66f; //total width of the icon + distance between edge of icon and edge of text + text width + padding
+
+        float iconAndTextOffsetPlatinoid = 0f;
+        if (playerScript.ore[(int)Asteroid.Type.water] > 0d)
+        {
+            iconAndTextOffsetPlatinoid = Mathf.Max(minDist - waterFillWidth, 0f);
+        }
+        resourcesIconAndTextPlatinoid.GetComponent<RectTransform>().anchoredPosition = new Vector3(iconAndTextOffsetPlatinoid, 0f, 0f);
+
+        float iconAndTextOffsetPreciousMetals = 0f;
+        if (playerScript.ore[(int)Asteroid.Type.platinoid] > 0d)
+        {
+            iconAndTextOffsetPreciousMetals = Mathf.Max((minDist + iconAndTextOffsetPlatinoid) - platinoidFillWidth, 0f);
+        }
+        resourcesIconAndTextPreciousMetals.GetComponent<RectTransform>().anchoredPosition = new Vector3(iconAndTextOffsetPreciousMetals, 0f, 0f);
 
         //Total ore text
         resourcesTextTotalOre.text = control.GetPlayerScript().GetTotalOre() + " kg / " + playerScript.oreMax + " kg";
