@@ -55,8 +55,16 @@ public class Player : MonoBehaviour
     private Vector3 lastVelocity = Vector3.zero;
     #endregion
 
-    //Visuals
+    //Abilities
+    //Spotlight
     public GameObject spotlight;
+    [System.NonSerialized] public bool spotlightIsOn = false;
+    [System.NonSerialized] private bool spotlightIsFlickeredOff = false;
+    [System.NonSerialized] private readonly float SPOTLIGHT_PERIOD_ENABLED_MAX = 20f; //3f; //Maximum time in seconds active for
+    [System.NonSerialized] private float spotlightEnergyRemaining = 20f; //3f; //Time in seconds active for (starts off as the same as enabled_max)
+    [System.NonSerialized] private readonly float SPOTLIGHT_PERIOD_COOLDOWN = 3f; //Time in seconds before can use again
+    [System.NonSerialized] private float spotlightEnergyDepletedTime = 0f; //Time last depleted at
+    //Eclipse Vision
     [System.NonSerialized] public bool isOutlinesVisible = false;
     [System.NonSerialized] public float outlineFade = 1f; //Multiplier for outline intensity - DO NOT EDIT; this changes dynamically
     [System.NonSerialized] public readonly float OUTLINE_PERIOD_FADING_WHILE_ENABLED = 2f; //Fade out over this period of time, in seconds
@@ -570,37 +578,37 @@ public class Player : MonoBehaviour
         //Cheats enabled only while in editor
         if (control.IS_EDITOR || true)
         {
-            //Spawn test ore
-            if (binds.GetInputDown(binds.bindCheat1))
-            {
-                float startDistAway = 70f;
-                float intervalDist = 40f;
-                int amountOfEachType = 20;
-
-                for (int i = 0; i < amountOfEachType; i++)
-                {
-                    control.generation.OrePoolSpawn(
-                        transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))),
-                        Asteroid.Type.water, rb.velocity
-                    );
-                }
-
-                for (int i = 0; i < amountOfEachType; i++)
-                {
-                    control.generation.OrePoolSpawn(
-                        transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))) + (Vector3.left * intervalDist),
-                        Asteroid.Type.platinoid, rb.velocity
-                    );
-                }
-
-                for (int i = 0; i < amountOfEachType; i++)
-                {
-                    control.generation.OrePoolSpawn(
-                        transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))) + (Vector3.right * intervalDist),
-                        Asteroid.Type.preciousMetal, rb.velocity
-                    );
-                }
-            }
+            ////Spawn test ore
+            //if (binds.GetInputDown(binds.bindCheat2))
+            //{
+            //    float startDistAway = 70f;
+            //    float intervalDist = 40f;
+            //    int amountOfEachType = 20;
+            //
+            //    for (int i = 0; i < amountOfEachType; i++)
+            //    {
+            //        control.generation.OrePoolSpawn(
+            //            transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))),
+            //            Asteroid.Type.water, rb.velocity
+            //        );
+            //    }
+            //
+            //    for (int i = 0; i < amountOfEachType; i++)
+            //    {
+            //        control.generation.OrePoolSpawn(
+            //            transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))) + (Vector3.left * intervalDist),
+            //            Asteroid.Type.platinoid, rb.velocity
+            //        );
+            //    }
+            //
+            //    for (int i = 0; i < amountOfEachType; i++)
+            //    {
+            //        control.generation.OrePoolSpawn(
+            //            transform.position + (Vector3.forward * ((startDistAway - intervalDist) + (intervalDist * (i + 1)))) + (Vector3.right * intervalDist),
+            //            Asteroid.Type.preciousMetal, rb.velocity
+            //        );
+            //    }
+            //}
 
             //if (binds.GetInputDown(binds.bindCheat1))
             //{
@@ -616,11 +624,11 @@ public class Player : MonoBehaviour
             //    control.generation.OrePoolSpawn(transform.position + Vector3.forward * 30f, Asteroid.Type.preciousMetal, rb.velocity);
             //}
 
-            ////Teleport forward
-            //if (binds.GetInputDown(binds.bindCheat1))
-            //{
-            //    transform.position += transform.forward * 150f;
-            //}
+            //Teleport forward
+            if (binds.GetInputDown(binds.bindCheat1))
+            {
+                transform.position += transform.forward * 150f;
+            }
 
             ////Invulnerable
             //if (binds.GetInputDown(binds.bindCheat1))
@@ -936,65 +944,9 @@ public class Player : MonoBehaviour
                 mapModel.position = new Vector3(transform.position.x, mapCam.transform.position.y - 200f, transform.position.z);
             }
 
-            //OUTLINES
-            float timeUntilCanUse = Time.time - (outlineActivatedTime + OUTLINE_PERIOD_ENABLED + OUTLINE_PERIOD_COOLDOWN);
-
-            //Debug.Log("---------------------------------");
-            //Debug.Log("timeUntilCanUse: " + timeUntilCanUse);
-            //Debug.Log("isOutlinesVisible:" + isOutlinesVisible);
-            //Debug.Log("outlineActivatedTime: " + outlineActivatedTime);
-            //Debug.Log("Time.time: " + Time.time);
-            //Debug.Log("outlineFade: " + outlineFade);
-
-            //Cooldown UI
-            float timePastDisableMoment = Time.time - (outlineActivatedTime + OUTLINE_PERIOD_ENABLED);
-            float remainingCDFraction = timePastDisableMoment / OUTLINE_PERIOD_COOLDOWN;
-            control.ui.abilityEclipseVision.Find("Cooldown").GetComponent<Image>().fillAmount = Mathf.Max(0f, Mathf.Min(1f,
-                1f - remainingCDFraction
-            ));
-
-            //Visible? (Including faded)
-            if (Time.time < outlineActivatedTime + OUTLINE_PERIOD_ENABLED)
-            {
-                //Outline active
-                if (
-                    outlineFade > 0f
-                    && isOutlinesVisible
-                    //&& Time.time >= outlineActivatedTime + OUTLINE_PERIOD_ENABLED - OUTLINE_PERIOD_FADING_WHILE_ENABLED
-                )
-                {
-                    //Fade outlines out over time
-                    outlineFade = Mathf.Max(0f, (outlineActivatedTime + OUTLINE_PERIOD_ENABLED - OUTLINE_PERIOD_FADING_WHILE_ENABLED - Time.time) / OUTLINE_PERIOD_FADING_WHILE_ENABLED);
-                    UpdateOutlines();
-                }
-                else
-                {
-                    //Reset fade
-                    outlineFade = 1f;
-
-                    if (isOutlinesVisible)
-                    {
-                        //Turn off
-                        ToggleOutline();
-                    }
-                }
-            }
-
-            //Toggle
-            if (
-                binds.GetInputDown(binds.bindToggleOutline)
-                && upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1
-            )
-            {
-                //Can only turn on when cooldown allows it, but can turn off at any time
-                if (
-                    timeUntilCanUse >= 0f
-                    || isOutlinesVisible
-                )
-                {
-                    ToggleOutline();
-                }
-            }
+            //ABILITIES
+            UpdateAbilityEclipseVision();
+            UpdateAbilityFlashlight();
 
             //Tutorial
             UpdateTutorial();
@@ -1147,6 +1099,138 @@ public class Player : MonoBehaviour
             {
                 cameraZoom = 1f;
                 UpdateCameraSettings();
+            }
+        }
+    }
+
+    private void UpdateAbilityFlashlight()
+    {
+        //Energy and cooldown data
+        //Cooldown period
+        float timePastDisableMoment = SPOTLIGHT_PERIOD_COOLDOWN;
+        if (spotlightEnergyRemaining <= 0f)
+        {
+            timePastDisableMoment = Time.time - spotlightEnergyDepletedTime;
+        }
+        //canUse
+        bool canUse = spotlightEnergyRemaining > 0f || timePastDisableMoment >= SPOTLIGHT_PERIOD_COOLDOWN;
+        //Cooldown UI
+        control.ui.abilitySpotlight.Find("Mana").GetComponent<Image>().fillAmount = Mathf.Clamp01(1f - (spotlightEnergyRemaining / SPOTLIGHT_PERIOD_ENABLED_MAX));
+        control.ui.abilitySpotlight.Find("Cooldown").GetComponent<Image>().fillAmount = Mathf.Clamp01(1f - (timePastDisableMoment / SPOTLIGHT_PERIOD_COOLDOWN));
+
+        //Keybind
+        if (binds.GetInputDown(binds.bindToggleSpotlight))
+        {
+            if (!spotlightIsOn && canUse)
+            {
+                spotlightIsOn = true;
+            }
+            else
+            {
+                spotlightIsOn = false;
+            }
+
+            DecideWhichModelsToRenderSpotlight();
+        }
+
+        //Energy and cooldown logic
+        float flickerFrameIntervalFloat = control.settings.targetFPS / 53f;
+        flickerFrameIntervalFloat *= 1f + (0.25f * control.GetRandomNeg1ToPos1());
+        int flickerFrameInterval = Mathf.RoundToInt(flickerFrameIntervalFloat);
+        if (spotlightIsFlickeredOff && Time.frameCount % flickerFrameInterval == 0)
+        {
+            spotlightIsFlickeredOff = false;
+            DecideWhichModelsToRenderSpotlight();
+        }
+        if (spotlightIsOn)
+        {
+            //Decrement
+            spotlightEnergyRemaining = Mathf.Max(0f, spotlightEnergyRemaining - Time.deltaTime);
+
+            //Out of energy - turn off and begin cooldown period
+            if (spotlightEnergyRemaining <= 0f)
+            {
+                spotlightEnergyDepletedTime = Time.time;
+                spotlightIsOn = false;
+                DecideWhichModelsToRenderSpotlight();
+            }
+            else if (spotlightEnergyRemaining <= 1f) //(spotlightEnergyRemaining / SPOTLIGHT_PERIOD_ENABLED_MAX <= 0.18f)
+            {
+                //Flickering
+                if (
+                    control.settings.spotlightFlicker
+                    && Time.frameCount % flickerFrameInterval == 0
+                    && UnityEngine.Random.value >= 0.7f
+                )
+                {
+                    spotlightIsFlickeredOff = true;
+                    DecideWhichModelsToRenderSpotlight();
+                }
+            }
+        }
+        else
+        {
+            //Increment
+            if (canUse)
+            {
+                //Recharge when not on
+                //If completely exhausted energy, only begin recharging after cooldown period is up
+                spotlightEnergyRemaining = Mathf.Min(SPOTLIGHT_PERIOD_ENABLED_MAX, spotlightEnergyRemaining + Time.deltaTime);
+            }
+        }
+    }
+
+    private void UpdateAbilityEclipseVision()
+    {
+        float timeUntilCanUse = Time.time - (outlineActivatedTime + OUTLINE_PERIOD_ENABLED + OUTLINE_PERIOD_COOLDOWN);
+
+        //Cooldown UI
+        float timePastDisableMoment = Time.time - (outlineActivatedTime + OUTLINE_PERIOD_ENABLED);
+        float remainingCDFraction = timePastDisableMoment / OUTLINE_PERIOD_COOLDOWN;
+        control.ui.abilityEclipseVision.Find("Cooldown").GetComponent<Image>().fillAmount = Mathf.Max(0f, Mathf.Min(1f,
+            1f - remainingCDFraction
+        ));
+
+        //Visible? (Including faded)
+        if (Time.time < outlineActivatedTime + OUTLINE_PERIOD_ENABLED)
+        {
+            //Outline active
+            if (
+                outlineFade > 0f
+                && isOutlinesVisible
+            //&& Time.time >= outlineActivatedTime + OUTLINE_PERIOD_ENABLED - OUTLINE_PERIOD_FADING_WHILE_ENABLED
+            )
+            {
+                //Fade outlines out over time
+                outlineFade = Mathf.Max(0f, (outlineActivatedTime + OUTLINE_PERIOD_ENABLED - OUTLINE_PERIOD_FADING_WHILE_ENABLED - Time.time) / OUTLINE_PERIOD_FADING_WHILE_ENABLED);
+                UpdateOutlines();
+            }
+            else
+            {
+                //Reset fade
+                outlineFade = 1f;
+
+                if (isOutlinesVisible)
+                {
+                    //Turn off
+                    ToggleOutline();
+                }
+            }
+        }
+
+        //Toggle
+        if (
+            binds.GetInputDown(binds.bindToggleOutline)
+            && upgradeLevels[control.commerce.UPGRADE_OUTLINE] >= 1
+        )
+        {
+            //Can only turn on when cooldown allows it, but can turn off at any time
+            if (
+                timeUntilCanUse >= 0f
+                || isOutlinesVisible
+            )
+            {
+                ToggleOutline();
             }
         }
     }
@@ -2387,14 +2471,7 @@ public class Player : MonoBehaviour
         tpModel.SetActive(thirdPerson);
 
         //Spotlight
-        if (!isDestroyed && control.settings.spotlight)
-        {
-            transform.Find("Spotlight").gameObject.SetActive(true);
-        }
-        else
-        {
-            transform.Find("Spotlight").gameObject.SetActive(false);
-        }
+        DecideWhichModelsToRenderSpotlight();
 
         //Jet glow
         //transform.Find("TP Model").Find("Blackness Behind Jet").gameObject.SetActive(!(isDestroyed || vitalsFuel <= 0.0d));
@@ -2414,6 +2491,18 @@ public class Player : MonoBehaviour
         {
             control.ui.tipText.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector3(0f, 205f, 0f);
             tractorBeamMaterial.SetFloat("minAlpha", 0.005f);
+        }
+    }
+
+    public void DecideWhichModelsToRenderSpotlight()
+    {
+        if (!isDestroyed && spotlightIsOn && !spotlightIsFlickeredOff)
+        {
+            transform.Find("Spotlight").gameObject.SetActive(true);
+        }
+        else
+        {
+            transform.Find("Spotlight").gameObject.SetActive(false);
         }
     }
 

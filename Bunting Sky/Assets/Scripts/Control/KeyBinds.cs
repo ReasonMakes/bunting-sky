@@ -92,7 +92,7 @@ public class KeyBinds : MonoBehaviour
             bindCheat1 = (short)KeyCode.I,
             bindCheat2 = (short)KeyCode.O,
 
-            bindPanMap = MOUSE_MIDDLE,
+            bindPanMap = MOUSE_PRIMARY,
             bindCameraFreeLook = MOUSE_SECONDARY,
             bindCameraZoomFollowDistIn = MOUSE_SCROLL_UP,
             bindCameraZoomFollowDistOut = MOUSE_SCROLL_DOWN,

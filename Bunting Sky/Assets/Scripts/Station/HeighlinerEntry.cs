@@ -54,6 +54,9 @@ public class HeighlinerEntry : MonoBehaviour
 
                 //Teleport player to exit node
                 playerScript.rb.position = exitNode.transform.position;
+
+                //Ensure entities are spawned at this planetary system
+                control.generation.EnsureAllPlanetarySystemsInRangeHaveSpawnedEntities();
             }
         }
     }

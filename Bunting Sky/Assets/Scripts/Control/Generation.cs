@@ -75,7 +75,7 @@ public class Generation : MonoBehaviour
         /*float DISTANCE_OUT_NOISE*/ 2000f, //3800f
         /*float ANGLE_NOISE*/ 2f,
         /*float ANGLE_PADDING*/ 5f,
-        /*int ASTEROID_COUNT*/ 100,
+        /*int ASTEROID_COUNT*/ 200, //100,
         /*float ASTEROID_DISTANCE_OUT*/ 250f,
         /*float ASTEROID_DISTANCE_OUT_NOISE*/ 21f,
         /*float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW*/ 0f,
@@ -88,7 +88,7 @@ public class Generation : MonoBehaviour
         /*float DISTANCE_OUT_NOISE*/ 200f, //350f
         /*float ANGLE_NOISE*/ 2f,
         /*float ANGLE_PADDING*/ 0f,
-        /*int ASTEROID_COUNT*/ 40,
+        /*int ASTEROID_COUNT*/ 80, //40,
         /*float ASTEROID_DISTANCE_OUT*/ 70f,
         /*float ASTEROID_DISTANCE_OUT_NOISE*/ 21f,
         /*float ASTEROID_PERCENT_VALUABLE_TYPE_RANGE_LOW*/ 0f,
@@ -130,6 +130,8 @@ public class Generation : MonoBehaviour
     public int asteroidsDetailed = 0;
     private int hitboxSwapIndexMoons = 0;
     private int hitboxSwapIndexPlanets = 0;
+    private int planetarySystemIndexToCheckEntityGeneration = 0;
+    private readonly float PLANETARY_SYSTEM_ENTITY_GENERATION_DISTANCE = 1700f; //how close the player must be for a planetary system to generate its entities
 
     //Verse hierarchy
     public GameObject verseSpace;
@@ -197,6 +199,12 @@ public class Generation : MonoBehaviour
         {
             SlowUpdate();
         }
+
+        //Very slow update - once per x seconds
+        if (Time.frameCount % (control.settings.targetFPS * 5) == 0)
+        {
+            VerySlowUpdate();
+        }
     }
 
     private void SlowUpdate()
@@ -223,7 +231,13 @@ public class Generation : MonoBehaviour
 
     private void VerySlowUpdate()
     {
-        //Populate asteroids in new system? (Should also be called when going through heighliner)
+        //Impostering
+        if (playerSpawned)
+        {
+            //Spawn entities at planetary systems the player enters
+            SpawnPlanetarySystemEntitiesIfInRange(planetarySystemIndexToCheckEntityGeneration);
+            planetarySystemIndexToCheckEntityGeneration = (planetarySystemIndexToCheckEntityGeneration + 1) % planetarySystems.Count;
+        }
 
         //AsteroidManageCount();
     }
@@ -360,9 +374,32 @@ public class Generation : MonoBehaviour
     #endregion
 
     #region Planets
+    public void EnsureAllPlanetarySystemsInRangeHaveSpawnedEntities()
+    {
+        for (int planetarySystemIndex = 0; planetarySystemIndex < planetarySystems.Count; planetarySystemIndex++)
+        {
+            SpawnPlanetarySystemEntitiesIfInRange(planetarySystemIndex);
+        }
+    }
+
+    public void SpawnPlanetarySystemEntitiesIfInRange(int planetarySystemIndex)
+    {
+        GameObject planet = planetarySystems[planetarySystemIndex][0];
+        Planet planetScript = planet.GetComponent<Planet>();
+
+        if (!planetScript.hasGeneratedEntities)
+        {
+            if (Vector3.Distance(control.GetPlayerTransform().position, planet.transform.position) < PLANETARY_SYSTEM_ENTITY_GENERATION_DISTANCE)
+            {
+                SpawnPlanetarySystemEntities(planetarySystemIndex);
+                planetScript.hasGeneratedEntities = true;
+            }
+        }
+    }
+
     public void SpawnPlanetarySystemEntities(int planetarySystemIndex)
     {
-        //Planetary systems OTHER than player spawn
+        Debug.Log("SpawnPlanetarySystemEntities()");
         Vector3 systemPosition = planetarySystems[planetarySystemIndex][0].transform.position;
 
         //Asteroid belt (some percent of all planets have one)
@@ -578,14 +615,16 @@ public class Generation : MonoBehaviour
                         false
                     );
                 }
-                instancePlanet.GetComponent<Planet>().hasGeneratedAsteroids = true;
-
+                
                 //One minor bandit is guaranteed to spawn at the player's spawn planet
                 EnemySpawnCluster(
                     ClusterType.planetClump,
                     position,
                     ((int)Enemy.Strength.minor).ToString()
                 );
+
+                //Remember that the system's entities have been spawned
+                instancePlanet.GetComponent<Planet>().hasGeneratedEntities = true;
             }
         }
 
@@ -1224,7 +1263,9 @@ public class Generation : MonoBehaviour
 
         //Update script
         instanceEnemy.GetComponent<Enemy>().control = control;
-        instanceEnemy.GetComponent<Enemy>().spawnPointRaw = position;
+        //instanceEnemy.GetComponent<Enemy>().spawnPointRaw = position;
+        //instanceEnemy.GetComponent<Enemy>().spawnPointRaw = position + verseSpace.transform.position;
+        instanceEnemy.GetComponent<Enemy>().spawnPointRaw = position - verseSpace.transform.position;
         instanceEnemy.GetComponent<Enemy>().Enable(position, strength);
 
         return instanceEnemy;

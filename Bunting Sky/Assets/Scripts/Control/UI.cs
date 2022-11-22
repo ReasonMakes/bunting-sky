@@ -101,13 +101,17 @@ public class UI : MonoBehaviour
     //Abilities
     public Transform abilities;
     [System.NonSerialized] public Transform abilityEclipseVision;
+    [System.NonSerialized] public Transform abilitySpotlight;
 
     private void Awake()
     {
-        //Get references
+        //System info
         systemInfo = canvas.transform.Find("HUD Top-Right").Find("SystemInfo").GetComponent<TextMeshProUGUI>();
+
+        //Reticle
         cameraReticle = canvas.transform.Find("HUD Centre").Find("CameraReticle").gameObject;
 
+        //Waypoint and target
         Transform waypointFolder = canvas.transform.Find("HUD Centre").Find("Waypoint");
         waypointImage = waypointFolder.Find("Waypoint").GetComponent<Image>();
         waypointTextType = waypointFolder.Find("Waypoint Type Text").GetComponent<TextMeshProUGUI>();
@@ -115,21 +119,23 @@ public class UI : MonoBehaviour
         waypointTextBody = waypointFolder.Find("Waypoint Body Text").GetComponent<TextMeshProUGUI>();
         targetImage = waypointFolder.Find("Target").GetComponent<Image>();
 
+        //Resources
         Transform resourcesFolder = canvas.transform.Find("HUD Top-Left").Find("Resources");
-        resourcesImageCurrency = resourcesFolder.Find("Currency").GetComponent<Image>();
-        resourcesTextCurrency = resourcesFolder.Find("Currency Text").GetComponent<TextMeshProUGUI>();
 
-        resourcesWater =            resourcesFolder.Find("Total Ore").Find("Water");
-        resourcesFillWater =        resourcesWater.Find("Fill").GetComponent<Image>();
-        resourcesIconAndTextWater = resourcesWater.Find("Icon and Text");
-        resourcesImageWater =       resourcesIconAndTextWater.Find("Icon").GetComponent<Image>();
-        resourcesTextWater =        resourcesIconAndTextWater.Find("Text").GetComponent<TextMeshProUGUI>();
+        resourcesImageCurrency =                resourcesFolder.Find("Currency").GetComponent<Image>();
+        resourcesTextCurrency =                 resourcesFolder.Find("Currency Text").GetComponent<TextMeshProUGUI>();
 
-        resourcesPlatinoid =            resourcesFolder.Find("Total Ore").Find("Platinoid");
-        resourcesFillPlatinoid =        resourcesPlatinoid.Find("Fill").GetComponent<Image>();
-        resourcesIconAndTextPlatinoid = resourcesPlatinoid.Find("Icon and Text");
-        resourcesImagePlatinoid =       resourcesIconAndTextPlatinoid.Find("Icon").GetComponent<Image>();
-        resourcesTextPlatinoid =        resourcesIconAndTextPlatinoid.Find("Text").GetComponent<TextMeshProUGUI>();
+        resourcesWater =                        resourcesFolder.Find("Total Ore").Find("Water");
+        resourcesFillWater =                    resourcesWater.Find("Fill").GetComponent<Image>();
+        resourcesIconAndTextWater =             resourcesWater.Find("Icon and Text");
+        resourcesImageWater =                   resourcesIconAndTextWater.Find("Icon").GetComponent<Image>();
+        resourcesTextWater =                    resourcesIconAndTextWater.Find("Text").GetComponent<TextMeshProUGUI>();
+
+        resourcesPlatinoid =                    resourcesFolder.Find("Total Ore").Find("Platinoid");
+        resourcesFillPlatinoid =                resourcesPlatinoid.Find("Fill").GetComponent<Image>();
+        resourcesIconAndTextPlatinoid =         resourcesPlatinoid.Find("Icon and Text");
+        resourcesImagePlatinoid =               resourcesIconAndTextPlatinoid.Find("Icon").GetComponent<Image>();
+        resourcesTextPlatinoid =                resourcesIconAndTextPlatinoid.Find("Text").GetComponent<TextMeshProUGUI>();
 
         resourcesPreciousMetals =               resourcesFolder.Find("Total Ore").Find("Precious Metals");
         resourcesFillPreciousMetals =           resourcesPreciousMetals.Find("Fill").GetComponent<Image>();
@@ -139,16 +145,20 @@ public class UI : MonoBehaviour
 
         resourcesTextTotalOre =   resourcesFolder.Find("Total Ore Text").GetComponent<TextMeshProUGUI>();
 
+        //Weapons
         Transform weaponsFolder = canvas.transform.Find("HUD Bottom-Right").Find("Weapons");
-        weaponCooldown = weaponsFolder.Find("Cooldown").GetComponent<Image>();
-        weaponSelectedClipRemainingText = weaponsFolder.Find("Selected Clip Remaining Text").GetComponent<TextMeshProUGUI>();
-        weaponSelectedClipSizeText = weaponsFolder.Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
-        weaponSelectedTitleText = weaponsFolder.Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
-        weaponAlternateTitleText = weaponsFolder.Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
+        weaponCooldown =                    weaponsFolder.Find("Cooldown").GetComponent<Image>();
+        weaponSelectedClipRemainingText =   weaponsFolder.Find("Selected Clip Remaining Text").GetComponent<TextMeshProUGUI>();
+        weaponSelectedClipSizeText =        weaponsFolder.Find("Selected Clip Size Text").GetComponent<TextMeshProUGUI>();
+        weaponSelectedTitleText =           weaponsFolder.Find("Selected Title Text").GetComponent<TextMeshProUGUI>();
+        weaponAlternateTitleText =          weaponsFolder.Find("Alternate Title Text").GetComponent<TextMeshProUGUI>();
 
+        //Tips
         tipText = canvas.transform.Find("HUD Bottom").Find("Tips").Find("Tip Text").GetComponent<TextMeshProUGUI>();
 
-        abilityEclipseVision = abilities.Find("Eclipse Vision");
+        //Abilities
+        abilityEclipseVision =  abilities.Find("Eclipse Vision");
+        abilitySpotlight =      abilities.Find("Spotlight");
     }
 
     private void Start()
@@ -1321,6 +1331,7 @@ public class UI : MonoBehaviour
 
         //UpdateWeapons(); //Can't update until player has spawned
         control.ui.abilityEclipseVision.Find("Keybind").GetComponent<TextMeshProUGUI>().text = control.binds.GetBindAsPrettyString(control.binds.bindToggleOutline, true);
+        control.ui.abilitySpotlight.Find("Keybind").GetComponent<TextMeshProUGUI>().text = control.binds.GetBindAsPrettyString(control.binds.bindToggleSpotlight, true);
         control.menu.MenuKeybindsUpdateBindText();
     }
     #endregion

@@ -23,7 +23,7 @@ public class Menu : MonoBehaviour
     public TMP_InputField menuSettingsAsteroidsMaxIn;
     public Toggle menuSettingsToggleDisplayHUD;
     public Toggle menuSettingsToggleDisplayFPS;
-    public Toggle menuSettingsToggleSpotlight;
+    public Toggle menuSettingsToggleSpotlightFlicker;
     public Toggle menuSettingsToggleRefine;
     public Toggle menuSettingsToggleMusic;
     public Toggle menuSettingsToggleTips;
@@ -243,16 +243,16 @@ public class Menu : MonoBehaviour
 
         //Toggles
         //Changing isOn activates the method, so we need to run methods twice to cancel-out running them once
-        if (menuSettingsToggleDisplayHUD.isOn       != control.settings.displayHUD)         { menuSettingsToggleDisplayHUD.isOn         = control.settings.displayHUD;      MenuSettingsHUDToggle();                }
-        if (menuSettingsToggleDisplayFPS.isOn       != control.settings.displayFPS)         { menuSettingsToggleDisplayFPS.isOn         = control.settings.displayFPS;      MenuSettingsFPSToggle();                }
-        if (menuSettingsToggleFullscreen.isOn       != control.settings.fullscreen)         { menuSettingsToggleFullscreen.isOn         = control.settings.fullscreen;      MenuSettingsFullscreenToggle();         }
-        if (menuSettingsToggleMatchVelocity.isOn    != control.settings.matchVelocity)      { menuSettingsToggleMatchVelocity.isOn      = control.settings.matchVelocity;   MenuSettingsMatchVelocityToggle();      }
-        if (menuSettingsToggleSpinStabilizers.isOn  != control.settings.spinStabilizers)    { menuSettingsToggleSpinStabilizers.isOn    = control.settings.spinStabilizers; MenuSettingsSpinStabilizersToggle();    }
-        if (menuSettingsToggleSpotlight.isOn        != control.settings.spotlight)          { menuSettingsToggleSpotlight.isOn          = control.settings.spotlight;       MenuSettingsSpotlightToggle();          }
-        if (menuSettingsToggleRefine.isOn           != control.settings.refine)             { menuSettingsToggleRefine.isOn             = control.settings.refine;          MenuSettingsRefineToggle();             }
-        if (menuSettingsToggleMusic.isOn            != control.settings.music)              { menuSettingsToggleMusic.isOn              = control.settings.music;           MenuSettingsMusicToggle();              }
-        if (menuSettingsToggleTips.isOn             != control.settings.tips)               { menuSettingsToggleTips.isOn               = control.settings.tips;            MenuSettingsTipsToggle();               }
-        if (menuSettingsToggleTutorial.isOn         != control.settings.tutorial)           { menuSettingsToggleTutorial.isOn           = control.settings.tutorial;        MenuSettingsTutorialToggle();           }
+        if (menuSettingsToggleDisplayHUD.isOn       != control.settings.displayHUD)         { menuSettingsToggleDisplayHUD.isOn         = control.settings.displayHUD;       MenuSettingsHUDToggle();                }
+        if (menuSettingsToggleDisplayFPS.isOn       != control.settings.displayFPS)         { menuSettingsToggleDisplayFPS.isOn         = control.settings.displayFPS;       MenuSettingsFPSToggle();                }
+        if (menuSettingsToggleFullscreen.isOn       != control.settings.fullscreen)         { menuSettingsToggleFullscreen.isOn         = control.settings.fullscreen;       MenuSettingsFullscreenToggle();         }
+        if (menuSettingsToggleMatchVelocity.isOn    != control.settings.matchVelocity)      { menuSettingsToggleMatchVelocity.isOn      = control.settings.matchVelocity;    MenuSettingsMatchVelocityToggle();      }
+        if (menuSettingsToggleSpinStabilizers.isOn  != control.settings.spinStabilizers)    { menuSettingsToggleSpinStabilizers.isOn    = control.settings.spinStabilizers;  MenuSettingsSpinStabilizersToggle();    }
+        if (menuSettingsToggleSpotlightFlicker.isOn != control.settings.spotlightFlicker)   { menuSettingsToggleSpotlightFlicker.isOn   = control.settings.spotlightFlicker; MenuSettingsSpotlightFlickerToggle();          }
+        if (menuSettingsToggleRefine.isOn           != control.settings.refine)             { menuSettingsToggleRefine.isOn             = control.settings.refine;           MenuSettingsRefineToggle();             }
+        if (menuSettingsToggleMusic.isOn            != control.settings.music)              { menuSettingsToggleMusic.isOn              = control.settings.music;            MenuSettingsMusicToggle();              }
+        if (menuSettingsToggleTips.isOn             != control.settings.tips)               { menuSettingsToggleTips.isOn               = control.settings.tips;             MenuSettingsTipsToggle();               }
+        if (menuSettingsToggleTutorial.isOn         != control.settings.tutorial)           { menuSettingsToggleTutorial.isOn           = control.settings.tutorial;         MenuSettingsTutorialToggle();           }
     }
 
     public void MenuSettingsMouseSensitivitySet()
@@ -406,24 +406,24 @@ public class Menu : MonoBehaviour
         control.ui.canvas.transform.Find("HUD Bottom-Left").gameObject.SetActive(control.settings.displayHUD);
     }
 
-    public void MenuSettingsSpotlightToggle()
+    public void MenuSettingsSpotlightFlickerToggle()
     {
         //Rectify toggle button being out-of-phase with actual setting boolean
         //(Counter-intuitive: in this case isOn has JUST been changed, calling this method, so if they are equal now they would have been inequal prior to calling the method)
-        if (menuSettingsToggleSpotlight.isOn == control.settings.spotlight)
+        if (menuSettingsToggleSpotlightFlicker.isOn == control.settings.spotlightFlicker)
         {
             //Rectifying this also calls the method again, causing the spotlight to still be updated from just one button toggle
-            menuSettingsToggleSpotlight.isOn = !menuSettingsToggleSpotlight.isOn;
+            menuSettingsToggleSpotlightFlicker.isOn = !menuSettingsToggleSpotlightFlicker.isOn;
         }
         else
         {
             //Toggle spotlight setting
-            control.settings.spotlight = !control.settings.spotlight;
+            control.settings.spotlightFlicker = !control.settings.spotlightFlicker;
             control.settings.Save();
         }
         
-        //Update spotlight gameObject
-        control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
+        ////Update spotlight gameObject
+        //control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
     }
 
     //public void MenuSettingsOutlineToggle()
@@ -788,16 +788,16 @@ public class Menu : MonoBehaviour
                 //MenuSettingsFPSToggle();
             }
 
-            //Spotlight toggle
-            if (control.binds.GetInputDown(control.binds.bindToggleSpotlight))
-            {
-                //Update the settings menu and toggle the actual spotlight
-                //(Changing isOn also calls the method attached to that toggle button. In this case: MenuSettingsSpotlightToggle())
-                menuSettingsToggleSpotlight.isOn = !menuSettingsToggleSpotlight.isOn;
-
-                //Update spotlight gameObject
-                control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
-            }
+            ////Spotlight toggle
+            //if (control.binds.GetInputDown(control.binds.bindToggleSpotlight))
+            //{
+            //    //Update the settings menu and toggle the actual spotlight
+            //    //(Changing isOn also calls the method attached to that toggle button. In this case: MenuSettingsSpotlightToggle())
+            //    menuSettingsToggleSpotlightFlicker.isOn = !menuSettingsToggleSpotlightFlicker.isOn;
+            //
+            //    //Update spotlight gameObject
+            //    control.generation.instancePlayer.GetComponentInChildren<Player>().DecideWhichModelsToRender();
+            //}
 
             ////Outline toggle
             //if (control.binds.GetInputDown(control.binds.bindToggleOutline))

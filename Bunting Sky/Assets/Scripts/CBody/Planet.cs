@@ -5,7 +5,7 @@ using UnityEngine;
 public class Planet : MonoBehaviour
 {
     [System.NonSerialized] public Control control;
-    [System.NonSerialized] public bool hasGeneratedAsteroids;
+    [System.NonSerialized] public bool hasGeneratedEntities;
     [System.NonSerialized] public GameObject heighliner0;
     [System.NonSerialized] public GameObject heighliner1;
     [System.NonSerialized] public Color tint;

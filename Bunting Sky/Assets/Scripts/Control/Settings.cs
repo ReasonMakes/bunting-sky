@@ -41,8 +41,8 @@ public class Settings : MonoBehaviour
     [System.NonSerialized] public bool displayFPS;
     [System.NonSerialized] public bool displayHUD;
     [System.NonSerialized] public int targetFPS;
-    [System.NonSerialized] public bool spotlight;
-    [System.NonSerialized] public bool outline;
+    [System.NonSerialized] public bool outlineOn;
+    [System.NonSerialized] public bool spotlightFlicker;
     [System.NonSerialized] public bool refine;
     [System.NonSerialized] public bool music;
     [System.NonSerialized] public float volumeAll;
@@ -80,8 +80,8 @@ public class Settings : MonoBehaviour
         ioBuffer.displayFPS = false;
         ioBuffer.displayHUD = true;
         ioBuffer.targetFPS = 300;
-        ioBuffer.spotlightOn = true;
         ioBuffer.outlineOn = true;
+        ioBuffer.spotlightFlicker = true;
         ioBuffer.refine = false;
         ioBuffer.volumeAll = 0.75f;
         ioBuffer.volumeMusic = 0.75f;
@@ -105,8 +105,8 @@ public class Settings : MonoBehaviour
         ioBuffer.displayFPS = displayFPS;
         ioBuffer.displayHUD = displayHUD;
         ioBuffer.targetFPS = targetFPS;
-        ioBuffer.spotlightOn = spotlight;
-        ioBuffer.outlineOn = outline;
+        ioBuffer.outlineOn = outlineOn;
+        ioBuffer.spotlightFlicker = spotlightFlicker;
         ioBuffer.refine = refine;
         ioBuffer.volumeAll = volumeAll;
         ioBuffer.volumeMusic = volumeMusic;
@@ -130,8 +130,8 @@ public class Settings : MonoBehaviour
         displayFPS = ioBuffer.displayFPS;
         displayHUD = ioBuffer.displayHUD;
         targetFPS = ioBuffer.targetFPS;
-        spotlight = ioBuffer.spotlightOn;
-        outline = ioBuffer.outlineOn;
+        outlineOn = ioBuffer.outlineOn;
+        spotlightFlicker = ioBuffer.spotlightFlicker;
         refine = ioBuffer.refine;
         volumeAll = ioBuffer.volumeAll;
         volumeMusic = ioBuffer.volumeMusic;
@@ -156,8 +156,8 @@ public class Settings : MonoBehaviour
         public bool displayFPS;
         public bool displayHUD;
         public int targetFPS;
-        public bool spotlightOn;
         public bool outlineOn;
+        public bool spotlightFlicker;
         public bool refine;
         public float volumeAll;
         public float volumeMusic;
